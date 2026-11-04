@@ -45,4 +45,4 @@ PYTHONSAFEPATH=1 uvicorn solardoctor.api.app:app --host 0.0.0.0 --port 8000
 ## Gotchas
 - CORS already allows `axalonsystems.com` — extend the list in `app.py` if adding origins.
 - `NEXT_PUBLIC_SOLARDOCTOR_API_URL` (Vercel) must point at the live backend; it's baked at build time.
-- Don't cross-import website code. Detection logic comes from `platform/core` + `ml.src.utils`.
+- Don't cross-import website code. Detection logic comes from `platform/core` + `ml.thermal.src.utils`.

@@ -55,7 +55,7 @@ AxalonSystems/
 │   ├── park/               ← grid, layout, numbering, diff, trend, recurring
 │   ├── pipeline/           ← ingest.py, orchestrator.py, tracking.py
 │   └── reporting/          ← report.py, geojson_writer.py
-├── website/nextjs/
+├── legacy/axalon-nextjs/
 │   ├── app/platform/       ← Platform UI route
 │   ├── app/track/          ← Track workspace route
 │   └── components/Platform/← ~30 tab components

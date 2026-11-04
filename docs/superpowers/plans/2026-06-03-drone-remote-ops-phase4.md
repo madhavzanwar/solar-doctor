@@ -14,7 +14,7 @@
 ---
 
 ## Conventions
-- Frontend tests: `cd website/nextjs && npx vitest run <file>`. Build: `npm run build`.
+- Frontend tests: `cd legacy/axalon-nextjs && npx vitest run <file>`. Build: `npm run build`.
 - Commit after every green step. Match `PlanMap.tsx` for Leaflet usage.
 
 ---
@@ -22,13 +22,13 @@
 ## Task 1: Pure breadcrumb track buffer
 
 **Files:**
-- Create: `website/nextjs/lib/track.ts`
-- Test: `website/nextjs/tests/unit/track.test.ts`
+- Create: `legacy/axalon-nextjs/lib/track.ts`
+- Test: `legacy/axalon-nextjs/tests/unit/track.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// website/nextjs/tests/unit/track.test.ts
+// legacy/axalon-nextjs/tests/unit/track.test.ts
 import { describe, it, expect } from "vitest";
 import { appendTrackPoint, type LatLon } from "@/lib/track";
 
@@ -60,13 +60,13 @@ describe("appendTrackPoint", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/track.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/track.test.ts`
 Expected: FAIL — cannot resolve `@/lib/track`
 
-- [ ] **Step 3: Write `website/nextjs/lib/track.ts`**
+- [ ] **Step 3: Write `legacy/axalon-nextjs/lib/track.ts`**
 
 ```ts
-// website/nextjs/lib/track.ts
+// legacy/axalon-nextjs/lib/track.ts
 // Pure breadcrumb buffer for the live map. Immutable: returns a new array.
 // Drops the oldest point past maxLen and skips negligible jitter so the polyline
 // stays smooth and bounded.
@@ -101,13 +101,13 @@ export function appendTrackPoint(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/track.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/track.test.ts`
 Expected: PASS (4 passed)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/track.ts website/nextjs/tests/unit/track.test.ts
+git add legacy/axalon-nextjs/lib/track.ts legacy/axalon-nextjs/tests/unit/track.test.ts
 git commit -m "feat(web): pure breadcrumb track buffer"
 ```
 
@@ -116,9 +116,9 @@ git commit -m "feat(web): pure breadcrumb track buffer"
 ## Task 2: LiveMap component (drone marker + breadcrumb + follow)
 
 **Files:**
-- Create: `website/nextjs/components/Platform/LiveMap.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/LiveMap.tsx`
 
-No unit test (Leaflet DOM); validated visually. **Read `website/nextjs/components/Platform/PlanMap.tsx` first** and copy its dynamic-import / `ssr:false` / Leaflet-icon setup exactly.
+No unit test (Leaflet DOM); validated visually. **Read `legacy/axalon-nextjs/components/Platform/PlanMap.tsx` first** and copy its dynamic-import / `ssr:false` / Leaflet-icon setup exactly.
 
 - [ ] **Step 1: Read the existing map pattern**
 
@@ -128,7 +128,7 @@ sets up the default marker icon, and how it fits bounds.
 - [ ] **Step 2: Create `LiveMap.tsx`**
 
 ```tsx
-// website/nextjs/components/Platform/LiveMap.tsx
+// legacy/axalon-nextjs/components/Platform/LiveMap.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -210,7 +210,7 @@ export default function LiveMap({ position, headingDeg, track, follow = true }: 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/LiveMap.tsx
+git add legacy/axalon-nextjs/components/Platform/LiveMap.tsx
 git commit -m "feat(web): live map with heading-rotated drone marker + breadcrumb"
 ```
 
@@ -219,7 +219,7 @@ git commit -m "feat(web): live map with heading-rotated drone marker + breadcrum
 ## Task 3: Integrate map + track into LiveOpsTab
 
 **Files:**
-- Modify: `website/nextjs/components/Platform/LiveOpsTab.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx`
 
 - [ ] **Step 1: Add a dynamic (ssr:false) import + track state**
 
@@ -257,13 +257,13 @@ handler with one that also appends to the track:
 
 - [ ] **Step 3: Verify build**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Expected: build succeeds.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/LiveOpsTab.tsx
+git add legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 git commit -m "feat(web): wire live map + breadcrumb into Live Ops tab"
 ```
 
@@ -272,8 +272,8 @@ git commit -m "feat(web): wire live map + breadcrumb into Live Ops tab"
 ## Task 4: Cockpit layout + CSS
 
 **Files:**
-- Modify: `website/nextjs/app/globals.css` (or the platform stylesheet the other tabs use — check where `.liveops-*` would live)
-- Modify: `website/nextjs/components/Platform/LiveOpsTab.tsx` (apply the grid wrapper)
+- Modify: `legacy/axalon-nextjs/app/globals.css` (or the platform stylesheet the other tabs use — check where `.liveops-*` would live)
+- Modify: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx` (apply the grid wrapper)
 
 - [ ] **Step 1: Add cockpit styles**
 
@@ -326,7 +326,7 @@ Group the control bar, command bar, ack line, and `VideoPanel` inside a
 
 - [ ] **Step 3: Verify build + visual check**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Then `npm run dev`, open `/platform` → Live Ops with relay+agent (SITL + test
 pattern) running. Confirm: HUD across the top, map left, controls+video right;
 mobile collapses to a single column. Resize to 375/768/1440 — no overflow.
@@ -334,7 +334,7 @@ mobile collapses to a single column. Resize to 375/768/1440 — no overflow.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/app/globals.css website/nextjs/components/Platform/LiveOpsTab.tsx
+git add legacy/axalon-nextjs/app/globals.css legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 git commit -m "feat(web): cockpit grid layout + styling for Live Ops"
 ```
 

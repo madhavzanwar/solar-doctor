@@ -25,7 +25,7 @@ An operator opens `http://localhost:3000/platform`, walks every tab, runs one re
    - `Inspect` — upload single image, see annotated result + detection list
    - `History` — list parks, view past inspections, show summary
    - `Settings` — load settings.yaml, edit, save
-3. **Thin API client** at `website/nextjs/lib/api.ts` — extract repeated `fetch(${API_BASE}/…)` calls into a single client with shared error handling. Keeps `page.tsx` from growing further and gives one place to surface errors.
+3. **Thin API client** at `legacy/axalon-nextjs/lib/api.ts` — extract repeated `fetch(${API_BASE}/…)` calls into a single client with shared error handling. Keeps `page.tsx` from growing further and gives one place to surface errors.
 4. **Visible error surface.** Every failed fetch shows a toast with HTTP status + first 200 chars of response body. One toast component, no retry logic.
 5. **AnomalyMap real-data fixes.** Currently may assume demo-shaped data; fix to render from `/map/{job_id}` response.
 6. **Report download verification.** All four formats (JSON, Excel, GeoJSON, PDF) either download successfully or fail loudly via the toast.
@@ -44,10 +44,10 @@ An operator opens `http://localhost:3000/platform`, walks every tab, runs one re
 |---|---|---|
 | Test data | `tests/fixtures/sample_mission/` | New: ~20 thermal + RGB pairs |
 | Test data | `scripts/make_sample_mission.py` | New: regenerates the fixture deterministically |
-| API client | `website/nextjs/lib/api.ts` | New: typed wrapper around `fetch`, central error handling |
-| Toast | `website/nextjs/components/Platform/Toast.tsx` | New: minimal toast container + `useToast` hook |
-| Platform page | `website/nextjs/app/platform/page.tsx` | Bug fixes + replace inline `fetch` with `api.*` calls |
-| Map | `website/nextjs/components/Platform/AnomalyMap.tsx` | Bug fixes for real-data shape |
+| API client | `legacy/axalon-nextjs/lib/api.ts` | New: typed wrapper around `fetch`, central error handling |
+| Toast | `legacy/axalon-nextjs/components/Platform/Toast.tsx` | New: minimal toast container + `useToast` hook |
+| Platform page | `legacy/axalon-nextjs/app/platform/page.tsx` | Bug fixes + replace inline `fetch` with `api.*` calls |
+| Map | `legacy/axalon-nextjs/components/Platform/AnomalyMap.tsx` | Bug fixes for real-data shape |
 | Backend | `platform/api/app.py` | Only fixes triggered by the walkthrough; no new endpoints |
 | Docs | `docs/OPERATOR_RUNBOOK.md` | New |
 
@@ -75,7 +75,7 @@ If the planted hotspots don't survive the YOLO threshold reliably, fall back to 
 
 ## API client design
 
-`website/nextjs/lib/api.ts` — small, no dependencies beyond `fetch`:
+`legacy/axalon-nextjs/lib/api.ts` — small, no dependencies beyond `fetch`:
 
 ```ts
 // pseudo-shape, not committed

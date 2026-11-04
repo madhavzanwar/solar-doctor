@@ -4,7 +4,7 @@
 
 - Python `3.10+`
 - `pip`
-- Model weights at `ml/checkpoints/best.pt`
+- Model weights at `ml/thermal/checkpoints/best.pt`
 - Optional GPU: CUDA-capable environment for `device=0`
 
 ## Clone and install
@@ -14,7 +14,7 @@ git clone <repo-url> AxalonSystems
 cd AxalonSystems
 
 # ML dependencies
-pip install -r ml/requirements.txt
+pip install -r ml/thermal/requirements.txt
 
 # Platform dependencies
 pip install -r requirements_platform.txt
@@ -40,7 +40,7 @@ brew install pango
 ```bash
 python -c "import solardoctor; print('axalon package OK')"
 python -c "from solardoctor.api.app import app; print(app.title)"
-python -c "from ml.src.utils import CANONICAL_CLASSES; print(len(CANONICAL_CLASSES))"
+python -c "from ml.thermal.src.utils import CANONICAL_CLASSES; print(len(CANONICAL_CLASSES))"
 ```
 
 Optional service check:
@@ -54,7 +54,7 @@ Optional service check:
 Expected path:
 
 ```bash
-ml/checkpoints/best.pt
+ml/thermal/checkpoints/best.pt
 ```
 
 This repo treats that file as the primary YOLOv8s thermal model.

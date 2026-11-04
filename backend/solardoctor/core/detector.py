@@ -2,9 +2,9 @@
 detector.py — YOLO11m inference wrapper for solar anomaly detection.
 
 Uses the pre-trained model at:
-    ml/checkpoints/best.pt
+    ml/thermal/checkpoints/best.pt
 
-Import severity/class constants ONLY from ml/src/utils.py — never redefine them here.
+Import severity/class constants ONLY from ml/thermal/src/utils.py — never redefine them here.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from ml.src.utils import (
+from ml.thermal.src.utils import (
     CANONICAL_CLASSES,
     SEVERITY_MAP,
     SEVERITY_COLOR_BGR,
@@ -30,7 +30,7 @@ from ml.src.utils import (
 logger = get_logger("axalon.detector")
 
 # Default model path relative to repo root
-DEFAULT_WEIGHTS = Path(__file__).resolve().parents[3] / "ml" / "checkpoints" / "best.pt"
+DEFAULT_WEIGHTS = Path(__file__).resolve().parents[3] / "ml" / "thermal" / "checkpoints" / "best.pt"
 
 
 class SolarDetector:

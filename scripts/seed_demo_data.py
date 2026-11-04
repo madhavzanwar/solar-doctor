@@ -36,7 +36,7 @@ try:
     from solardoctor.db.session import init_db, session_scope
     from solardoctor.db.models import Park, Inspection, Detection
     # Canonical class/severity definitions — never redefine these locally.
-    from ml.src.utils import CANONICAL_CLASSES, CLASS2ID, SEVERITY_MAP
+    from ml.thermal.src.utils import CANONICAL_CLASSES, CLASS2ID, SEVERITY_MAP
 except ImportError as exc:
     sys.exit(
         f"[seed_demo_data] Cannot import solardoctor package: {exc}\n"

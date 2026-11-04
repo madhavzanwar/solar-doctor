@@ -33,7 +33,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements_platform.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-      - run: python -m pip install -r requirements_platform.txt -r ml/requirements.txt -e . pytest pytest-timeout
+      - run: python -m pip install -r requirements_platform.txt -r ml/thermal/requirements.txt -e . pytest pytest-timeout
       - run: PYTHONSAFEPATH=1 python -m pytest tests/backend/ -ra --strict-markers
       - name: Drone agent + relay tests (SITL e2e skipped without RUN_SITL_E2E)
         run: |
@@ -56,11 +56,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('website/nextjs/package-lock.json') }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('legacy/axalon-nextjs/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
-      - run: cd website/nextjs && npm ci
-      - run: cd website/nextjs && npm test
+      - run: cd legacy/axalon-nextjs && npm ci
+      - run: cd legacy/axalon-nextjs && npm test
 
   e2e:
     runs-on: ubuntu-latest
@@ -73,9 +73,9 @@ jobs:
 
       - name: Verify model weights resolved from LFS
         run: |
-          mkdir -p ml/checkpoints
-          if [ ! -s ml/checkpoints/best.pt ] || head -c 7 ml/checkpoints/best.pt | grep -q "version"; then
-            echo "ERROR: ml/checkpoints/best.pt is missing or still an unresolved LFS pointer" >&2
+          mkdir -p ml/thermal/checkpoints
+          if [ ! -s ml/thermal/checkpoints/best.pt ] || head -c 7 ml/thermal/checkpoints/best.pt | grep -q "version"; then
+            echo "ERROR: ml/thermal/checkpoints/best.pt is missing or still an unresolved LFS pointer" >&2
             exit 1
           fi
 
@@ -119,11 +119,11 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: website/nextjs/package-lock.json
+          cache-dependency-path: legacy/axalon-nextjs/package-lock.json
 
       - name: Install npm deps + Playwright
         run: |
-          cd website/nextjs
+          cd legacy/axalon-nextjs
           npm ci
           npx playwright install --with-deps chromium
 
@@ -131,14 +131,14 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           PLAYWRIGHT_CI: "1"
-        run: cd website/nextjs && npm run test:e2e
+        run: cd legacy/axalon-nextjs && npm run test:e2e
 
       - name: Upload Playwright trace on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-trace
-          path: website/nextjs/test-results/
+          path: legacy/axalon-nextjs/test-results/
 
       - name: Stop docker-compose stack
         if: always()

@@ -69,10 +69,10 @@ chainlit.md
 ml/data/images/
 ml/data/labels/
 ml/data/augmented/
-ml/output/annotated/
-ml/runs/thermal/train/weights/
+ml/thermal/output/annotated/
+ml/thermal/runs/thermal/train/weights/
 # Stock Ultralytics pretrained weights are auto-downloaded on first use
-ml/notebooks/*.pt
+ml/thermal/notebooks/*.pt
 
 # Claude Code tooling
 .claude/*
@@ -122,7 +122,7 @@ web_temp.html
 axalon_inspections.db
 
 # Next.js build output (never commit)
-website/nextjs/.next/
+legacy/axalon-nextjs/.next/
 **/.next/
 
 # Secrets — never commit real env files
@@ -150,7 +150,7 @@ docs/pipelines/
 ml/data/combined/
 ml/data/combined_coco/
 ml/data/_staging/
-ml/checkpoints/candidates/
-ml/checkpoints/*_legacy.pt
+ml/thermal/checkpoints/candidates/
+ml/thermal/checkpoints/*_legacy.pt
 /runs/
 .gstack/

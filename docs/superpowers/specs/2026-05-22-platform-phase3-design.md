@@ -24,7 +24,7 @@ The current 2,584-line monolith is reduced to a ~100-line shell that owns only t
 **Target structure:**
 
 ```
-website/nextjs/
+legacy/axalon-nextjs/
 ├── app/platform/
 │   ├── page.tsx              ← ~100 lines: tab enum + renders <XTab />
 │   └── platform.css          ← NEW: all inline styles extracted from page.tsx
@@ -156,7 +156,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       - uses: actions/cache@v4  # pip cache
-      - run: pip install -r requirements_platform.txt -r ml/requirements.txt
+      - run: pip install -r requirements_platform.txt -r ml/thermal/requirements.txt
       - run: pytest tests/backend/ -ra --strict-markers
 
   frontend-unit:
@@ -166,8 +166,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - uses: actions/cache@v4  # npm cache
-      - run: cd website/nextjs && npm ci
-      - run: cd website/nextjs && npm test
+      - run: cd legacy/axalon-nextjs && npm ci
+      - run: cd legacy/axalon-nextjs && npm test
 ```
 
 Playwright e2e is intentionally excluded — it requires live services and belongs in `scripts/test_all.sh` for local pre-push use. A comment in the workflow documents this.
@@ -178,22 +178,22 @@ Playwright e2e is intentionally excluded — it requires live services and belon
 
 | Area | File | Action |
 |---|---|---|
-| Page shell | `website/nextjs/app/platform/page.tsx` | Refactor: slim to ~100 lines |
-| Styles | `website/nextjs/app/platform/platform.css` | New: extract inline styles + responsive breakpoints |
-| | `website/nextjs/app/platform/layout.tsx` | Modify: add `import './platform.css'` (shell inline styles stay) |
-| Tab components | `website/nextjs/components/Platform/OperationsTab.tsx` | New |
-| | `website/nextjs/components/Platform/InspectTab.tsx` | New |
-| | `website/nextjs/components/Platform/HistoryTab.tsx` | New |
-| | `website/nextjs/components/Platform/ParkMapTab.tsx` | New |
-| | `website/nextjs/components/Platform/SettingsTab.tsx` | New |
-| | `website/nextjs/components/Platform/DiffTab.tsx` | New |
-| Hooks | `website/nextjs/components/Platform/hooks/useParks.ts` | New |
-| | `website/nextjs/components/Platform/hooks/useJob.ts` | New |
-| | `website/nextjs/components/Platform/hooks/useSettings.ts` | New |
-| Shared UI | `website/nextjs/components/Platform/Skeleton.tsx` | New |
+| Page shell | `legacy/axalon-nextjs/app/platform/page.tsx` | Refactor: slim to ~100 lines |
+| Styles | `legacy/axalon-nextjs/app/platform/platform.css` | New: extract inline styles + responsive breakpoints |
+| | `legacy/axalon-nextjs/app/platform/layout.tsx` | Modify: add `import './platform.css'` (shell inline styles stay) |
+| Tab components | `legacy/axalon-nextjs/components/Platform/OperationsTab.tsx` | New |
+| | `legacy/axalon-nextjs/components/Platform/InspectTab.tsx` | New |
+| | `legacy/axalon-nextjs/components/Platform/HistoryTab.tsx` | New |
+| | `legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx` | New |
+| | `legacy/axalon-nextjs/components/Platform/SettingsTab.tsx` | New |
+| | `legacy/axalon-nextjs/components/Platform/DiffTab.tsx` | New |
+| Hooks | `legacy/axalon-nextjs/components/Platform/hooks/useParks.ts` | New |
+| | `legacy/axalon-nextjs/components/Platform/hooks/useJob.ts` | New |
+| | `legacy/axalon-nextjs/components/Platform/hooks/useSettings.ts` | New |
+| Shared UI | `legacy/axalon-nextjs/components/Platform/Skeleton.tsx` | New |
 | Backend | `platform/park/diff.py` | New: `build_diff()` pure function |
 | Backend | `platform/api/app.py` | Add `GET /park/{id}/diff` endpoint |
-| API client | `website/nextjs/lib/api.ts` | Add `api.parkDiff()` + `ParkDiff` / `DiffPanel` types |
+| API client | `legacy/axalon-nextjs/lib/api.ts` | Add `api.parkDiff()` + `ParkDiff` / `DiffPanel` types |
 | Seed data | `scripts/seed_demo_data.py` | New |
 | CI | `.github/workflows/ci.yml` | New |
 | Docs | `docs/OPERATOR_RUNBOOK.md` | Add "Demo mode" + "CI" sections |

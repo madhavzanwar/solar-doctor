@@ -15,7 +15,7 @@
 
 ## Conventions
 
-- Same as Phase 1: Python under `drone/`, tests via `python -m pytest drone/tests -v`; frontend via `cd website/nextjs && npx vitest run <file>`.
+- Same as Phase 1: Python under `drone/`, tests via `python -m pytest drone/tests -v`; frontend via `cd legacy/axalon-nextjs && npx vitest run <file>`.
 - Commit after every green step.
 - **Operator identity:** the browser generates a random `operator_id` per session and passes it as a query param on the ops socket; the relay uses it for the control lock.
 
@@ -1418,8 +1418,8 @@ git commit -m "feat(agent): bidirectional main (commands+heartbeat+deadman) + SI
 ## Task 10: Frontend command client (extend liveOps.ts)
 
 **Files:**
-- Modify: `website/nextjs/lib/liveOps.ts`
-- Test: `website/nextjs/tests/unit/liveOpsCommands.test.ts`
+- Modify: `legacy/axalon-nextjs/lib/liveOps.ts`
+- Test: `legacy/axalon-nextjs/tests/unit/liveOpsCommands.test.ts`
 
 Add pure builders/parsers (unit-tested) and upgrade `connectLiveOps` to return a
 handle that can `send` frames. The existing telemetry behavior is unchanged.
@@ -1427,7 +1427,7 @@ handle that can `send` frames. The existing telemetry behavior is unchanged.
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// website/nextjs/tests/unit/liveOpsCommands.test.ts
+// legacy/axalon-nextjs/tests/unit/liveOpsCommands.test.ts
 import { describe, it, expect } from "vitest";
 import {
   buildCommandEnvelope,
@@ -1476,10 +1476,10 @@ describe("frame parsers", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/liveOpsCommands.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/liveOpsCommands.test.ts`
 Expected: FAIL — exports `buildCommandEnvelope` etc. not found
 
-- [ ] **Step 3: Extend `website/nextjs/lib/liveOps.ts`**
+- [ ] **Step 3: Extend `legacy/axalon-nextjs/lib/liveOps.ts`**
 
 Append these types, builders, and parsers (keep existing exports):
 
@@ -1588,13 +1588,13 @@ Replace the final `return` (was a bare disposer) with the handle:
 
 - [ ] **Step 4: Run command test + the Phase 1 telemetry test**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/liveOpsCommands.test.ts tests/unit/liveOps.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/liveOpsCommands.test.ts tests/unit/liveOps.test.ts`
 Expected: PASS (both files green)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/liveOps.ts website/nextjs/tests/unit/liveOpsCommands.test.ts
+git add legacy/axalon-nextjs/lib/liveOps.ts legacy/axalon-nextjs/tests/unit/liveOpsCommands.test.ts
 git commit -m "feat(web): live-ops command builders/parsers + send-capable handle"
 ```
 
@@ -1603,7 +1603,7 @@ git commit -m "feat(web): live-ops command builders/parsers + send-capable handl
 ## Task 11: Frontend Live Ops command UI (control lock + buttons + confirm gates)
 
 **Files:**
-- Modify: `website/nextjs/components/Platform/LiveOpsTab.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx`
 
 No new unit test (presentational + live socket); validated against SITL. Confirm
 gates use `window.confirm` for the destructive trio (arm/takeoff/land). Note: the
@@ -1613,7 +1613,7 @@ a `LiveOpsHandle`), so this replaces the Phase 1 `LiveOpsTab` body.
 - [ ] **Step 1: Rewrite `LiveOpsTab.tsx` to use the send-capable handle**
 
 ```tsx
-// website/nextjs/components/Platform/LiveOpsTab.tsx
+// legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1711,7 +1711,7 @@ export default function LiveOpsTab({ droneId = "sitl-01" }: { droneId?: string }
 
 - [ ] **Step 2: Verify build**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Expected: build succeeds; `/platform` Live Ops tab compiles with command UI.
 
 - [ ] **Step 3: Manual verification against SITL**
@@ -1725,7 +1725,7 @@ disable when tier shows RED.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/LiveOpsTab.tsx
+git add legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 git commit -m "feat(web): Live Ops command UI with control lock + confirm gates"
 ```
 
@@ -1734,9 +1734,9 @@ git commit -m "feat(web): Live Ops command UI with control lock + confirm gates"
 ## Task 12: Upload a planned mission to the drone
 
 **Files:**
-- Create: `website/nextjs/lib/missionToWaypoints.ts`
-- Test: `website/nextjs/tests/unit/missionToWaypoints.test.ts`
-- Modify: `website/nextjs/components/Platform/LiveOpsTab.tsx`
+- Create: `legacy/axalon-nextjs/lib/missionToWaypoints.ts`
+- Test: `legacy/axalon-nextjs/tests/unit/missionToWaypoints.test.ts`
+- Modify: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx`
 
 Reuse the existing mission planner output. The `UPLOAD_MISSION` command param is
 `{waypoints: [{seq, lat, lon, alt_m}]}` (matches `commander.upload_mission`).
@@ -1744,7 +1744,7 @@ Reuse the existing mission planner output. The `UPLOAD_MISSION` command param is
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// website/nextjs/tests/unit/missionToWaypoints.test.ts
+// legacy/axalon-nextjs/tests/unit/missionToWaypoints.test.ts
 import { describe, it, expect } from "vitest";
 import { missionToWaypoints } from "@/lib/missionToWaypoints";
 
@@ -1774,13 +1774,13 @@ describe("missionToWaypoints", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/missionToWaypoints.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/missionToWaypoints.test.ts`
 Expected: FAIL — cannot resolve `@/lib/missionToWaypoints`
 
-- [ ] **Step 3: Write `website/nextjs/lib/missionToWaypoints.ts`**
+- [ ] **Step 3: Write `legacy/axalon-nextjs/lib/missionToWaypoints.ts`**
 
 ```ts
-// website/nextjs/lib/missionToWaypoints.ts
+// legacy/axalon-nextjs/lib/missionToWaypoints.ts
 // Adapts mission-planner waypoints into the UPLOAD_MISSION command payload the
 // drone agent expects ({seq, lat, lon, alt_m}). Keeps the live-ops surface
 // decoupled from the planner's internal Waypoint shape.
@@ -1813,7 +1813,7 @@ export function missionToWaypoints(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/missionToWaypoints.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/missionToWaypoints.test.ts`
 Expected: PASS (3 passed)
 
 - [ ] **Step 5: Wire an "Upload mission to drone" button into `LiveOpsTab.tsx`**
@@ -1846,13 +1846,13 @@ Add inside the `.liveops-commands` div:
 
 - [ ] **Step 6: Verify build**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Expected: build succeeds.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add website/nextjs/lib/missionToWaypoints.ts website/nextjs/tests/unit/missionToWaypoints.test.ts website/nextjs/components/Platform/LiveOpsTab.tsx
+git add legacy/axalon-nextjs/lib/missionToWaypoints.ts legacy/axalon-nextjs/tests/unit/missionToWaypoints.test.ts legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 git commit -m "feat(web): upload planned mission to drone via UPLOAD_MISSION"
 ```
 

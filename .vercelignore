@@ -1,4 +1,4 @@
-# Only website/nextjs is needed for the build (rootDirectory=website/nextjs).
+# Only legacy/axalon-nextjs is needed for the build (rootDirectory=legacy/axalon-nextjs).
 # Exclude heavy / irrelevant top-level dirs to stay under CLI upload limits.
 # Leading slash anchors to repo root so nested dirs (e.g. app/platform) aren't matched.
 /ml

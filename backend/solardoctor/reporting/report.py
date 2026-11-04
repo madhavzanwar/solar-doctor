@@ -13,7 +13,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 logger = get_logger("solardoctor.reporting")
 

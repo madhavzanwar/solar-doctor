@@ -19,7 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 logger = get_logger("axalon.numbering")
 

@@ -42,14 +42,14 @@ ROOT = Path(_ROOT)
 
 @test("load_training_config reads yolo11x config")
 def _():
-    cfg = load_training_config(ROOT / "ml/configs/thermal_yolo11x.yaml")
+    cfg = load_training_config(ROOT / "ml/thermal/configs/thermal_yolo11x.yaml")
     assert cfg["model"] == "yolo11x.pt"
-    assert cfg["dataset_yaml"] == "ml/thermal_dataset.yaml"
+    assert cfg["dataset_yaml"] == "ml/thermal/thermal_dataset.yaml"
 
 
 @test("load_training_config reads rtdetr config")
 def _():
-    cfg = load_training_config(ROOT / "ml/configs/thermal_rtdetr_x.yaml")
+    cfg = load_training_config(ROOT / "ml/thermal/configs/thermal_rtdetr_x.yaml")
     assert cfg["model"] == "rtdetr-x.pt"
 
 
@@ -71,7 +71,7 @@ def _():
 
 @test("run_training calls model.train() with config's hyperparameters")
 def _():
-    cfg_path = ROOT / "ml/configs/thermal_yolo11x.yaml"
+    cfg_path = ROOT / "ml/thermal/configs/thermal_yolo11x.yaml"
     cfg = yaml.safe_load(cfg_path.read_text())
     with patch("ml.scripts.train_ultralytics.build_model") as mock_build:
         mock_model = MagicMock()
@@ -95,7 +95,7 @@ def _():
 
 @test("run_training(resume_from=...) passes resume=True to model.train()")
 def _():
-    cfg_path = ROOT / "ml/configs/thermal_yolo11x.yaml"
+    cfg_path = ROOT / "ml/thermal/configs/thermal_yolo11x.yaml"
     with patch("ml.scripts.train_ultralytics.build_model") as mock_build:
         mock_model = MagicMock()
         mock_build.return_value = mock_model

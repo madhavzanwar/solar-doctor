@@ -5,11 +5,11 @@
 
 ## Problem
 
-The current production model (`ml/checkpoints/best.pt`) cannot be reproduced or improved from what's in this repo:
+The current production model (`ml/thermal/checkpoints/best.pt`) cannot be reproduced or improved from what's in this repo:
 
-- `ml/thermal_dataset.yaml` points to `ml/data/combined`, which does not exist.
-- `ml/Datasets/` contains three raw candidate datasets, none of which matches the canonical 11-class taxonomy defined in `ml/src/utils.py` (`CANONICAL_CLASSES`).
-- The one prior training run recorded in-repo (`ml/runs/thermal/train/results.csv`) shows mAP/precision/recall stuck at 0 through 79 epochs — a stalled/failed run from the old `AxalonPIPE` repo, not a usable baseline.
+- `ml/thermal/thermal_dataset.yaml` points to `ml/data/combined`, which does not exist.
+- `ml/Datasets/` contains three raw candidate datasets, none of which matches the canonical 11-class taxonomy defined in `ml/thermal/src/utils.py` (`CANONICAL_CLASSES`).
+- The one prior training run recorded in-repo (`ml/thermal/runs/thermal/train/results.csv`) shows mAP/precision/recall stuck at 0 through 79 epochs — a stalled/failed run from the old `AxalonPIPE` repo, not a usable baseline.
 - We have $300 of Google Cloud credit earmarked for this effort and no cost/VRAM constraint, since inference will run server-side (see Non-Goals).
 
 This spec covers: (1) building a real, honestly-labeled combined training set from the datasets we actually have, and (2) training and comparing multiple detector architectures to pick the best model for production, using GCP GPU compute.
@@ -21,7 +21,7 @@ This spec covers: (1) building a real, honestly-labeled combined training set fr
   1. **YOLO11x** (Ultralytics)
   2. **RT-DETR-x** (Ultralytics)
   3. **Co-DETR** (MMDetection), with DINO as a fallback if Co-DETR training proves unstable
-- Select a winner using `ml/eval/compare.py`-style per-class metrics, weighted toward CRITICAL-severity classes (`string`, `bypass-diode`, `hot-spot-high`), and promote it to `ml/checkpoints/best.pt`.
+- Select a winner using `ml/thermal/eval/compare.py`-style per-class metrics, weighted toward CRITICAL-severity classes (`string`, `bypass-diode`, `hot-spot-high`), and promote it to `ml/thermal/checkpoints/best.pt`.
 - Run all training on GCP Compute Engine within the $300 credit budget.
 - Document `short-circuit` as a class with no real training data across all three sources, kept in the schema for downstream (severity map, API) compatibility but explicitly flagged as unsupported.
 
@@ -29,7 +29,7 @@ This spec covers: (1) building a real, honestly-labeled combined training set fr
 
 - Real-time or onboard (Jetson) inference. Detection today runs server-side, post-flight, via `platform/core/detector.py` with no latency constraint. Onboard deployment is a separate, future effort with its own model (likely a smaller/distilled architecture) — out of scope here.
 - Sourcing new data for `short-circuit`. This spec documents the gap; filling it is future work.
-- Any change to the detection dict schema, severity map, or platform API — this is purely a training/model-swap effort. `ml/src/utils.py` constants stay the source of truth.
+- Any change to the detection dict schema, severity map, or platform API — this is purely a training/model-swap effort. `ml/thermal/src/utils.py` constants stay the source of truth.
 
 ## Dataset Plan
 
@@ -84,12 +84,12 @@ For classification-only sources (InfraredSolarModules, PVMD), each crop becomes 
 
 ### Pipeline implementation
 
-Extend the existing `ml/scripts/prepare_dataset.py` (not a new script) to:
+Extend the existing `ml/thermal/scripts/prepare_dataset.py` (not a new script) to:
 1. Extract and normalize all three sources into a common intermediate format.
 2. Apply the class-mapping tables above.
 3. Generate weak bboxes for classification sources.
 4. Split into train/val/test (stratified by class where possible, respecting any existing splits from `archive.zip`).
-5. Write output to `ml/data/combined/{train,val,test}/{images,labels}` matching what `ml/thermal_dataset.yaml` already expects -- no config changes needed there.
+5. Write output to `ml/data/combined/{train,val,test}/{images,labels}` matching what `ml/thermal/thermal_dataset.yaml` already expects -- no config changes needed there.
 6. Emit a class-distribution report (counts per canonical class per split) so imbalance is visible before training starts, not discovered after.
 
 ## Model Bake-Off
@@ -98,7 +98,7 @@ All three candidates train on the identical `ml/data/combined` dataset for a fai
 
 ### 1. YOLO11x (Ultralytics)
 
-Reuse `ml/configs/thermal.yaml`, swapping `model: yolo11m.pt` -> `yolo11x.pt`. Keep the existing thermal-tuned augmentation (no hue/saturation, brightness jitter, small rotation, mosaic/mixup/copy-paste) and AdamW/cos_lr schedule. Largest model in the YOLO11 family Ultralytics ships -- best accuracy ceiling within that family.
+Reuse `ml/thermal/configs/thermal.yaml`, swapping `model: yolo11m.pt` -> `yolo11x.pt`. Keep the existing thermal-tuned augmentation (no hue/saturation, brightness jitter, small rotation, mosaic/mixup/copy-paste) and AdamW/cos_lr schedule. Largest model in the YOLO11 family Ultralytics ships -- best accuracy ceiling within that family.
 
 ### 2. RT-DETR-x (Ultralytics)
 
@@ -108,16 +108,16 @@ Same training entrypoint and dataset format as YOLO11x (Ultralytics supports RT-
 
 Requires:
 - Converting `ml/data/combined` YOLO-format labels to COCO JSON.
-- A separate MMDetection training config (not reusing `ml/configs/thermal.yaml`).
+- A separate MMDetection training config (not reusing `ml/thermal/configs/thermal.yaml`).
 - DINO as a documented fallback if Co-DETR training is unstable or fails to converge on our dataset size (Co-DETR's collaborative-head training is more hyperparameter-sensitive than YOLO/RT-DETR).
 
 Currently near the top of COCO leaderboards, particularly for small-object detection -- the candidate most likely to beat YOLO/RT-DETR on accuracy, at the cost of more engineering surface.
 
 ### Evaluation & selection
 
-- Run all three checkpoints through `ml/eval/evaluate.py` and `ml/eval/compare.py` against each other and against the current `best.pt` baseline.
+- Run all three checkpoints through `ml/thermal/eval/evaluate.py` and `ml/thermal/eval/compare.py` against each other and against the current `best.pt` baseline.
 - Report per-class precision/recall/mAP50-95, with explicit extra weight on CRITICAL-severity classes (`string`, `bypass-diode`, `hot-spot-high`) since those drive real-world remediation priority.
-- Winner is promoted to `ml/checkpoints/best.pt`; the other two runs' weights remain under `ml/runs/` for reference, not deployed.
+- Winner is promoted to `ml/thermal/checkpoints/best.pt`; the other two runs' weights remain under `ml/thermal/runs/` for reference, not deployed.
 - `short-circuit` is reported with zero/near-zero support explicitly -- not silently omitted from the report.
 
 ## Compute Plan (GCP, $300 budget)
@@ -125,7 +125,7 @@ Currently near the top of COCO leaderboards, particularly for small-object detec
 - **Compute Engine VM, single GPU (L4 or better), spot/preemptible.** No need to economize on GPU tier given budget -- pick whatever's available and cost-effective at spot pricing.
 - Persistent disk to hold `ml/data/combined` (avoids re-uploading on every VM restart).
 - Startup script: clone repo, mount dataset disk, kick off training, auto-shutdown on completion to avoid idle billing.
-- Checkpointing via `save_period` (already configured in `ml/configs/thermal.yaml`) so spot preemption doesn't lose more than a few epochs of progress.
+- Checkpointing via `save_period` (already configured in `ml/thermal/configs/thermal.yaml`) so spot preemption doesn't lose more than a few epochs of progress.
 - Budget comfortably covers three training runs (YOLO11x, RT-DETR-x, Co-DETR) plus one hyperparameter follow-up run on the eventual winner.
 
 ## Risks

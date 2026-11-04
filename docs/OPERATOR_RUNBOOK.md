@@ -5,7 +5,7 @@ The 10-minute walk through a real local inspection from zero.
 ## Prereqs
 
 - `./run.sh setup` has completed once
-- `ml/checkpoints/best.pt` exists (~22 MB)
+- `ml/thermal/checkpoints/best.pt` exists (~22 MB)
 - Optional: WeasyPrint system libs (for PDF reports). See `docs/INSTALLATION.md`.
 
 ## 1. Generate the sample mission
@@ -103,7 +103,7 @@ GitHub Actions runs two independent parallel jobs on every push and PR to `main`
 | Job | Command | What it covers |
 |-----|---------|----------------|
 | `backend-tests` | `pytest tests/backend/ -ra --strict-markers` | API contract, DB models, orchestrator, park-grid aggregator |
-| `frontend-unit` | `cd website/nextjs && npm test` | `api.ts` client, Toast hook, all vitest unit tests |
+| `frontend-unit` | `cd legacy/axalon-nextjs && npm test` | `api.ts` client, Toast hook, all vitest unit tests |
 
 Playwright e2e is **intentionally excluded** from CI — it requires live services (API + DB) and belongs in `scripts/test_all.sh` for local pre-push runs.
 
@@ -132,8 +132,8 @@ Phase 2 added an automated suite covering API contract, pipeline units, frontend
 What it does:
 
 - **Backend pytest** (`tests/backend/`) — every API endpoint + the orchestrator + the panel-grid aggregator.
-- **Frontend vitest** (`website/nextjs/tests/unit/`) — the `api.ts` client + the Toast hook.
-- **Frontend playwright** (`website/nextjs/tests/e2e/`) — drives a headless Chromium through every tab including a real batch run.
+- **Frontend vitest** (`legacy/axalon-nextjs/tests/unit/`) — the `api.ts` client + the Toast hook.
+- **Frontend playwright** (`legacy/axalon-nextjs/tests/e2e/`) — drives a headless Chromium through every tab including a real batch run.
 
 The script starts the platform services itself if they're not already up, and stops them after. Pass-through exit code: zero on success, non-zero on the first failing suite.
 

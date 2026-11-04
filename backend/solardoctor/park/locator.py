@@ -39,7 +39,7 @@ import math
 from dataclasses import dataclass
 from typing import Literal
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 from solardoctor.park.geometry import (
     distance_to_polygon_edge,

@@ -4,7 +4,7 @@
 
 **Goal:** Add a 5th "Park Map" tab showing the panel-grid view with click-to-drill-down, and lay down a four-layer automated test suite (backend pytest API contract + unit, frontend vitest unit, frontend playwright e2e) so future changes have a safety net.
 
-**Architecture:** A new pure-function grid aggregator in `platform/park/grid.py` powers a new `GET /park/{id}/grid` endpoint. The frontend tab is two presentational components (`ParkMapGrid`, `ParkPanelDetail`) wired through `page.tsx` state and one new `api.parkGrid()` method. Tests sit in `tests/backend/` (pytest) and `website/nextjs/tests/{unit,e2e}/` (vitest + playwright), with a shared `scripts/test_all.sh` runner.
+**Architecture:** A new pure-function grid aggregator in `platform/park/grid.py` powers a new `GET /park/{id}/grid` endpoint. The frontend tab is two presentational components (`ParkMapGrid`, `ParkPanelDetail`) wired through `page.tsx` state and one new `api.parkGrid()` method. Tests sit in `tests/backend/` (pytest) and `legacy/axalon-nextjs/tests/{unit,e2e}/` (vitest + playwright), with a shared `scripts/test_all.sh` runner.
 
 **Tech Stack:** Python 3.11+, FastAPI, SQLAlchemy 2.x, pytest, Next.js 14 (App Router, client components), TypeScript, Vitest, @testing-library/react, jsdom, @playwright/test.
 
@@ -18,20 +18,20 @@
 |---|---|---|
 | `platform/park/grid.py` | Pure function `build_grid(detections, park)` → grid payload | Create |
 | `platform/api/app.py` | Add `GET /park/{park_id}/grid` handler | Modify |
-| `website/nextjs/lib/api.ts` | Add `api.parkGrid()` + `ParkGrid`/`Panel` types | Modify |
-| `website/nextjs/components/Platform/ParkMapGrid.tsx` | Presentational grid (rows×cols of cells, colored, click handler) | Create |
-| `website/nextjs/components/Platform/ParkPanelDetail.tsx` | Side panel: detection list + thumbnail + GPS | Create |
-| `website/nextjs/app/platform/page.tsx` | Add 5th tab; park + inspection state; render grid + detail | Modify |
+| `legacy/axalon-nextjs/lib/api.ts` | Add `api.parkGrid()` + `ParkGrid`/`Panel` types | Modify |
+| `legacy/axalon-nextjs/components/Platform/ParkMapGrid.tsx` | Presentational grid (rows×cols of cells, colored, click handler) | Create |
+| `legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx` | Side panel: detection list + thumbnail + GPS | Create |
+| `legacy/axalon-nextjs/app/platform/page.tsx` | Add 5th tab; park + inspection state; render grid + detail | Modify |
 | `tests/backend/conftest.py` | Shared fixtures: temp SQLite, FastAPI TestClient, batch_fixture | Create |
 | `tests/backend/test_api_contract.py` | ≥1 test per endpoint | Create |
 | `tests/backend/test_pipeline_unit.py` | Orchestrator + layout detector + grid aggregator unit tests | Create |
 | `pytest.ini` | testpaths, addopts | Create |
-| `website/nextjs/tests/unit/api.test.ts` | `request()` + `ApiError` happy and error paths | Create |
-| `website/nextjs/tests/unit/Toast.test.tsx` | `useToast()` push + auto-dismiss | Create |
-| `website/nextjs/vitest.config.ts` | vitest config (jsdom, alias `@/`) | Create |
-| `website/nextjs/tests/e2e/golden_path.spec.ts` | Playwright walk of all 5 tabs | Create |
-| `website/nextjs/playwright.config.ts` | Playwright config (baseURL, single project) | Create |
-| `website/nextjs/package.json` | Add `test`, `test:e2e` scripts + devDeps | Modify |
+| `legacy/axalon-nextjs/tests/unit/api.test.ts` | `request()` + `ApiError` happy and error paths | Create |
+| `legacy/axalon-nextjs/tests/unit/Toast.test.tsx` | `useToast()` push + auto-dismiss | Create |
+| `legacy/axalon-nextjs/vitest.config.ts` | vitest config (jsdom, alias `@/`) | Create |
+| `legacy/axalon-nextjs/tests/e2e/golden_path.spec.ts` | Playwright walk of all 5 tabs | Create |
+| `legacy/axalon-nextjs/playwright.config.ts` | Playwright config (baseURL, single project) | Create |
+| `legacy/axalon-nextjs/package.json` | Add `test`, `test:e2e` scripts + devDeps | Modify |
 | `scripts/test_all.sh` | Run pytest → vitest → playwright sequentially | Create |
 
 ---
@@ -767,11 +767,11 @@ git commit -m "test(pipeline): unit tests for orchestrator + layout detector + g
 ## Task 6: Add `api.parkGrid()` + types
 
 **Files:**
-- Modify: `website/nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
 
 - [ ] **Step 1: Add types + method**
 
-In `website/nextjs/lib/api.ts`, locate the type exports near the top and add:
+In `legacy/axalon-nextjs/lib/api.ts`, locate the type exports near the top and add:
 
 ```ts
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
@@ -815,7 +815,7 @@ Then in the `export const api = { ... }` block, add (alphabetically near `park`)
 - [ ] **Step 2: Typecheck**
 
 ```
-cd website/nextjs && npx tsc --noEmit
+cd legacy/axalon-nextjs && npx tsc --noEmit
 ```
 Expected: zero errors.
 
@@ -829,7 +829,7 @@ Confirm the shape matches the `ParkGrid` type you just added.
 - [ ] **Step 4: Commit**
 
 ```
-git add website/nextjs/lib/api.ts
+git add legacy/axalon-nextjs/lib/api.ts
 git commit -m "feat(api-client): add api.parkGrid + ParkGrid types"
 ```
 
@@ -838,7 +838,7 @@ git commit -m "feat(api-client): add api.parkGrid + ParkGrid types"
 ## Task 7: ParkMapGrid component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/ParkMapGrid.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/ParkMapGrid.tsx`
 
 - [ ] **Step 1: Write the component**
 
@@ -956,14 +956,14 @@ function Legend() {
 - [ ] **Step 2: Typecheck**
 
 ```
-cd website/nextjs && npx tsc --noEmit 2>&1 | grep -E "(ParkMapGrid|api\.ts)" | head -10
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | grep -E "(ParkMapGrid|api\.ts)" | head -10
 ```
 Expected: empty (no errors in these files).
 
 - [ ] **Step 3: Commit**
 
 ```
-git add website/nextjs/components/Platform/ParkMapGrid.tsx
+git add legacy/axalon-nextjs/components/Platform/ParkMapGrid.tsx
 git commit -m "feat(platform): ParkMapGrid presentational component"
 ```
 
@@ -972,7 +972,7 @@ git commit -m "feat(platform): ParkMapGrid presentational component"
 ## Task 8: ParkPanelDetail side-panel component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/ParkPanelDetail.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx`
 
 - [ ] **Step 1: Write the component**
 
@@ -1137,14 +1137,14 @@ function DetectionRow({ d }: { d: GridPanelDetection }) {
 - [ ] **Step 2: Typecheck**
 
 ```
-cd website/nextjs && npx tsc --noEmit 2>&1 | grep -E "ParkPanelDetail" | head -5
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | grep -E "ParkPanelDetail" | head -5
 ```
 Expected: empty.
 
 - [ ] **Step 3: Commit**
 
 ```
-git add website/nextjs/components/Platform/ParkPanelDetail.tsx
+git add legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx
 git commit -m "feat(platform): ParkPanelDetail side-panel component"
 ```
 
@@ -1153,7 +1153,7 @@ git commit -m "feat(platform): ParkPanelDetail side-panel component"
 ## Task 9: Wire Park Map tab into page.tsx
 
 **Files:**
-- Modify: `website/nextjs/app/platform/page.tsx`
+- Modify: `legacy/axalon-nextjs/app/platform/page.tsx`
 
 - [ ] **Step 1: Add imports**
 
@@ -1351,7 +1351,7 @@ Find the place where `tab === 'settings' ? (...) : null` (or similar conditional
 - [ ] **Step 8: Typecheck**
 
 ```
-cd website/nextjs && npx tsc --noEmit 2>&1 | tail -20
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | tail -20
 ```
 Expected: no new errors.
 
@@ -1372,7 +1372,7 @@ Drive Playwright:
 - [ ] **Step 10: Commit**
 
 ```
-git add website/nextjs/app/platform/page.tsx
+git add legacy/axalon-nextjs/app/platform/page.tsx
 git commit -m "feat(platform): Park Map tab with grid + side detail"
 ```
 
@@ -1381,14 +1381,14 @@ git commit -m "feat(platform): Park Map tab with grid + side detail"
 ## Task 10: Vitest setup + lib/api unit tests
 
 **Files:**
-- Modify: `website/nextjs/package.json`
-- Create: `website/nextjs/vitest.config.ts`
-- Create: `website/nextjs/tests/unit/api.test.ts`
+- Modify: `legacy/axalon-nextjs/package.json`
+- Create: `legacy/axalon-nextjs/vitest.config.ts`
+- Create: `legacy/axalon-nextjs/tests/unit/api.test.ts`
 
 - [ ] **Step 1: Install vitest + react testing deps**
 
 ```
-cd website/nextjs && npm install --save-dev vitest @vitejs/plugin-react @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @types/react @types/react-dom
+cd legacy/axalon-nextjs && npm install --save-dev vitest @vitejs/plugin-react @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom @types/react @types/react-dom
 ```
 (Most of these may already be present — npm will no-op.)
 
@@ -1416,7 +1416,7 @@ export default defineConfig({
 
 - [ ] **Step 3: Add `test` script to `package.json`**
 
-In `website/nextjs/package.json`, in the `"scripts"` block, add (alongside `dev`/`build`/`start`/`lint`):
+In `legacy/axalon-nextjs/package.json`, in the `"scripts"` block, add (alongside `dev`/`build`/`start`/`lint`):
 
 ```json
 "test": "vitest run",
@@ -1425,7 +1425,7 @@ In `website/nextjs/package.json`, in the `"scripts"` block, add (alongside `dev`
 
 - [ ] **Step 4: Write the API client tests**
 
-`website/nextjs/tests/unit/api.test.ts`:
+`legacy/axalon-nextjs/tests/unit/api.test.ts`:
 
 ```ts
 import { afterEach, describe, expect, test, vi } from 'vitest'
@@ -1497,14 +1497,14 @@ describe('api client', () => {
 - [ ] **Step 5: Run the tests**
 
 ```
-cd website/nextjs && npm test
+cd legacy/axalon-nextjs && npm test
 ```
 Expected: 5 passed.
 
 - [ ] **Step 6: Commit**
 
 ```
-git add website/nextjs/package.json website/nextjs/package-lock.json website/nextjs/vitest.config.ts website/nextjs/tests/unit/api.test.ts
+git add legacy/axalon-nextjs/package.json legacy/axalon-nextjs/package-lock.json legacy/axalon-nextjs/vitest.config.ts legacy/axalon-nextjs/tests/unit/api.test.ts
 git commit -m "test(api-client): vitest setup + lib/api.ts unit tests"
 ```
 
@@ -1513,7 +1513,7 @@ git commit -m "test(api-client): vitest setup + lib/api.ts unit tests"
 ## Task 11: Toast component tests
 
 **Files:**
-- Create: `website/nextjs/tests/unit/Toast.test.tsx`
+- Create: `legacy/axalon-nextjs/tests/unit/Toast.test.tsx`
 
 - [ ] **Step 1: Write the test**
 
@@ -1578,14 +1578,14 @@ describe('Toast', () => {
 - [ ] **Step 2: Run**
 
 ```
-cd website/nextjs && npm test
+cd legacy/axalon-nextjs && npm test
 ```
 Expected: 8 tests passed total (5 from api + 3 from Toast).
 
 - [ ] **Step 3: Commit**
 
 ```
-git add website/nextjs/tests/unit/Toast.test.tsx
+git add legacy/axalon-nextjs/tests/unit/Toast.test.tsx
 git commit -m "test(toast): vitest coverage for Toast provider + auto-dismiss"
 ```
 
@@ -1594,14 +1594,14 @@ git commit -m "test(toast): vitest coverage for Toast provider + auto-dismiss"
 ## Task 12: Playwright setup + golden path e2e
 
 **Files:**
-- Modify: `website/nextjs/package.json`
-- Create: `website/nextjs/playwright.config.ts`
-- Create: `website/nextjs/tests/e2e/golden_path.spec.ts`
+- Modify: `legacy/axalon-nextjs/package.json`
+- Create: `legacy/axalon-nextjs/playwright.config.ts`
+- Create: `legacy/axalon-nextjs/tests/e2e/golden_path.spec.ts`
 
 - [ ] **Step 1: Install playwright**
 
 ```
-cd website/nextjs && npm install --save-dev @playwright/test
+cd legacy/axalon-nextjs && npm install --save-dev @playwright/test
 npx playwright install chromium
 ```
 
@@ -1634,7 +1634,7 @@ export default defineConfig({
 
 - [ ] **Step 4: Write the golden-path test**
 
-`website/nextjs/tests/e2e/golden_path.spec.ts`:
+`legacy/axalon-nextjs/tests/e2e/golden_path.spec.ts`:
 
 ```ts
 import { expect, test } from '@playwright/test'
@@ -1715,7 +1715,7 @@ ls tests/fixtures/sample_mission.zip || (cd tests/fixtures && zip -rq sample_mis
 Services must be running (`./run.sh all` from Phase 1). Then:
 
 ```
-cd website/nextjs && npm run test:e2e
+cd legacy/axalon-nextjs && npm run test:e2e
 ```
 Expected: 1 passed (may take 3-5 minutes).
 
@@ -1724,7 +1724,7 @@ If a locator misses (e.g. the park-id input has a different placeholder), use `m
 - [ ] **Step 7: Commit**
 
 ```
-git add website/nextjs/package.json website/nextjs/package-lock.json website/nextjs/playwright.config.ts website/nextjs/tests/e2e/golden_path.spec.ts
+git add legacy/axalon-nextjs/package.json legacy/axalon-nextjs/package-lock.json legacy/axalon-nextjs/playwright.config.ts legacy/axalon-nextjs/tests/e2e/golden_path.spec.ts
 git commit -m "test(e2e): playwright golden-path test across all 5 tabs"
 ```
 
@@ -1795,12 +1795,12 @@ info "▶ Backend pytest"
 (cd /tmp && PYTHONSAFEPATH=1 python -m pytest "$REPO_ROOT" -v)
 
 info "▶ Frontend vitest"
-(cd "$REPO_ROOT/website/nextjs" && npm test --silent)
+(cd "$REPO_ROOT/legacy/axalon-nextjs" && npm test --silent)
 
 ensure_services
 
 info "▶ Frontend playwright"
-(cd "$REPO_ROOT/website/nextjs" && npm run test:e2e --silent)
+(cd "$REPO_ROOT/legacy/axalon-nextjs" && npm run test:e2e --silent)
 
 success "All suites passed."
 ```
@@ -1837,8 +1837,8 @@ Phase 2 added an automated suite covering API contract, pipeline units, frontend
 What it does:
 
 - **Backend pytest** (`tests/backend/`) — every API endpoint + the orchestrator + the panel-grid aggregator.
-- **Frontend vitest** (`website/nextjs/tests/unit/`) — the `api.ts` client + the Toast hook.
-- **Frontend playwright** (`website/nextjs/tests/e2e/`) — drives a headless Chromium through every tab including a real batch run.
+- **Frontend vitest** (`legacy/axalon-nextjs/tests/unit/`) — the `api.ts` client + the Toast hook.
+- **Frontend playwright** (`legacy/axalon-nextjs/tests/e2e/`) — drives a headless Chromium through every tab including a real batch run.
 
 The script starts the platform services itself if they're not already up, and stops them after. Pass-through exit code: zero on success, non-zero on the first failing suite.
 ```
@@ -1853,8 +1853,8 @@ Run through the spec's acceptance list manually:
 - [ ] Inspection dropdown lists inspections (covered indirectly — defaults to most recent).
 - [ ] Empty state renders for a park with no inspections.
 - [ ] `pytest tests/backend/` passes.
-- [ ] `cd website/nextjs && npm test` passes.
-- [ ] `cd website/nextjs && npm run test:e2e` passes.
+- [ ] `cd legacy/axalon-nextjs && npm test` passes.
+- [ ] `cd legacy/axalon-nextjs && npm run test:e2e` passes.
 - [ ] `scripts/test_all.sh` exits 0.
 - [ ] Phase 1 regression check passed (the golden-path test exercises Phase 1's full flow).
 

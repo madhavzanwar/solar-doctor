@@ -18,15 +18,15 @@
 |---|---|---|
 | `platform/db/models.py` | Add `Job` ORM model with state machine columns | Modify |
 | `platform/api/app.py` | Replace in-memory job dict with DB; add `require_auth` dependency | Modify |
-| `website/nextjs/app/platform/platform.css` | Add `@media (max-width: 767px)` rules for all tabs | Modify |
-| `website/nextjs/components/Platform/AuthGate.tsx` | Unlock screen: key input + sessionStorage | Create |
-| `website/nextjs/lib/api.ts` | Intercept 401 → emit `axalon:unauthorized` event | Modify |
-| `website/nextjs/app/platform/layout.tsx` | Wrap children in `<AuthGate>` | Modify |
+| `legacy/axalon-nextjs/app/platform/platform.css` | Add `@media (max-width: 767px)` rules for all tabs | Modify |
+| `legacy/axalon-nextjs/components/Platform/AuthGate.tsx` | Unlock screen: key input + sessionStorage | Create |
+| `legacy/axalon-nextjs/lib/api.ts` | Intercept 401 → emit `axalon:unauthorized` event | Modify |
+| `legacy/axalon-nextjs/app/platform/layout.tsx` | Wrap children in `<AuthGate>` | Modify |
 | `Dockerfile` | Multi-stage Python API image | Create |
 | `Dockerfile.nextjs` | Next.js production image | Create |
 | `docker-compose.yml` | API + Next.js + shared volume (DB + weights) | Create |
 | `.dockerignore` | Exclude `.git`, `node_modules`, `__pycache__`, etc. | Create |
-| `website/nextjs/.dockerignore` | Frontend-specific excludes | Create |
+| `legacy/axalon-nextjs/.dockerignore` | Frontend-specific excludes | Create |
 | `.github/workflows/ci.yml` | Add `e2e` job: docker-compose up → playwright | Modify |
 | `docs/DEPLOYMENT.md` | Docker and Render.com deployment runbook | Create |
 | `tests/backend/test_job_persistence.py` | Verify job state survives API restart | Create |
@@ -199,9 +199,9 @@ git commit -m "feat(jobs): persist batch job state to SQLite; survives API resta
 
 **Files:**
 - Modify: `platform/api/app.py`
-- Create: `website/nextjs/components/Platform/AuthGate.tsx`
-- Modify: `website/nextjs/lib/api.ts`
-- Modify: `website/nextjs/app/platform/layout.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/AuthGate.tsx`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/app/platform/layout.tsx`
 
 When `SOLARDOCTOR_API_KEY` env var is set, every non-health endpoint requires `Authorization: Bearer <key>`. The frontend intercepts 401s and shows an unlock screen.
 
@@ -390,7 +390,7 @@ if (res.status === 401 && typeof window !== 'undefined') {
 
 - [ ] **Step 6: Wrap `layout.tsx` with `<AuthGate>`**
 
-In `website/nextjs/app/platform/layout.tsx`, add:
+In `legacy/axalon-nextjs/app/platform/layout.tsx`, add:
 
 ```tsx
 import { AuthGate } from '@/components/Platform/AuthGate'
@@ -415,9 +415,9 @@ Clear `sessionStorage` via DevTools → Storage → Session Storage → delete `
 
 ```bash
 git add platform/api/app.py \
-        website/nextjs/components/Platform/AuthGate.tsx \
-        website/nextjs/lib/api.ts \
-        website/nextjs/app/platform/layout.tsx
+        legacy/axalon-nextjs/components/Platform/AuthGate.tsx \
+        legacy/axalon-nextjs/lib/api.ts \
+        legacy/axalon-nextjs/app/platform/layout.tsx
 git commit -m "feat(auth): API key gate — backend dependency + AuthGate unlock screen"
 ```
 
@@ -426,13 +426,13 @@ git commit -m "feat(auth): API key gate — backend dependency + AuthGate unlock
 ## Task 3: Phone viewport (<768px)
 
 **Files:**
-- Modify: `website/nextjs/app/platform/platform.css`
+- Modify: `legacy/axalon-nextjs/app/platform/platform.css`
 
 Phase 3 added `@media (max-width: 768px)` rules for the 768px tablet breakpoint. This task extends `platform.css` with phone-specific overrides at `≤767px` so operators can use the platform in the field on a phone.
 
 - [ ] **Step 1: Read the current `platform.css` breakpoint section**
 
-Open `website/nextjs/app/platform/platform.css`. Locate the `@media (max-width: 768px)` block and note what it already covers. The task must not regress those rules.
+Open `legacy/axalon-nextjs/app/platform/platform.css`. Locate the `@media (max-width: 768px)` block and note what it already covers. The task must not regress those rules.
 
 - [ ] **Step 2: Add the phone breakpoint block**
 
@@ -555,7 +555,7 @@ For each issue, fix the CSS (or missing class) and re-verify. Do not write new J
 - [ ] **Step 5: Typecheck and run unit tests**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit && npm test
+cd legacy/axalon-nextjs && npx tsc --noEmit && npm test
 ```
 
 Expected: no TS errors, all unit tests pass.
@@ -563,9 +563,9 @@ Expected: no TS errors, all unit tests pass.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add website/nextjs/app/platform/platform.css \
-        website/nextjs/components/Platform/*.tsx \
-        website/nextjs/app/platform/page.tsx
+git add legacy/axalon-nextjs/app/platform/platform.css \
+        legacy/axalon-nextjs/components/Platform/*.tsx \
+        legacy/axalon-nextjs/app/platform/page.tsx
 git commit -m "feat(mobile): phone viewport (<768px) — CSS-only responsive layout"
 ```
 
@@ -578,7 +578,7 @@ git commit -m "feat(mobile): phone viewport (<768px) — CSS-only responsive lay
 - Create: `Dockerfile.nextjs`
 - Create: `docker-compose.yml`
 - Create: `.dockerignore`
-- Create: `website/nextjs/.dockerignore`
+- Create: `legacy/axalon-nextjs/.dockerignore`
 
 - [ ] **Step 1: Write `.dockerignore` (repo root)**
 
@@ -591,12 +591,12 @@ __pycache__
 .pytest_cache
 .mypy_cache
 node_modules
-website/nextjs/.next
-website/nextjs/node_modules
-website/nextjs/test-results
+legacy/axalon-nextjs/.next
+legacy/axalon-nextjs/node_modules
+legacy/axalon-nextjs/test-results
 ml/data
-ml/runs
-ml/notebooks
+ml/thermal/runs
+ml/thermal/notebooks
 docs
 tests/fixtures/sample_mission
 *.log
@@ -605,7 +605,7 @@ tests/fixtures/sample_mission
 .env.*
 ```
 
-- [ ] **Step 2: Write `website/nextjs/.dockerignore`**
+- [ ] **Step 2: Write `legacy/axalon-nextjs/.dockerignore`**
 
 ```
 .next
@@ -623,11 +623,11 @@ playwright-report
 # Stage 1: build deps (wheel cache)
 FROM python:3.13-slim AS builder
 WORKDIR /build
-COPY requirements_platform.txt ml/requirements.txt ./
+COPY requirements_platform.txt ml/thermal/requirements.txt ./
 RUN pip install --upgrade pip \
  && pip wheel --no-cache-dir --wheel-dir /wheels \
     -r requirements_platform.txt \
-    -r ml/requirements.txt
+    -r ml/thermal/requirements.txt
 
 # Stage 2: runtime
 FROM python:3.13-slim
@@ -663,12 +663,12 @@ CMD ["uvicorn", "platform.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
 ```dockerfile
 FROM node:20-slim AS deps
 WORKDIR /app
-COPY website/nextjs/package.json website/nextjs/package-lock.json ./
+COPY legacy/axalon-nextjs/package.json legacy/axalon-nextjs/package-lock.json ./
 RUN npm ci --omit=dev
 
 FROM node:20-slim AS builder
 WORKDIR /app
-COPY website/nextjs/ .
+COPY legacy/axalon-nextjs/ .
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
@@ -686,7 +686,7 @@ CMD ["node", "server.js"]
 
 - [ ] **Step 5: Check `next.config.js` for standalone output**
 
-Read `website/nextjs/next.config.js`. If `output: 'standalone'` is absent, add it:
+Read `legacy/axalon-nextjs/next.config.js`. If `output: 'standalone'` is absent, add it:
 
 ```js
 const nextConfig = {
@@ -777,7 +777,7 @@ Expected: `"state": "succeeded"` after restart.
 ```bash
 docker compose down
 git add Dockerfile Dockerfile.nextjs docker-compose.yml .dockerignore \
-        website/nextjs/.dockerignore website/nextjs/next.config.js
+        legacy/axalon-nextjs/.dockerignore legacy/axalon-nextjs/next.config.js
 git commit -m "feat(docker): multi-stage Dockerfile + docker-compose for API and Next.js"
 ```
 
@@ -810,10 +810,10 @@ Locate the end of the existing `frontend-unit` job and the closing `jobs:` block
           # 1. Git LFS (preferred if weights are in LFS)
           # 2. Download from a private release asset
           # 3. Skip YOLO inference by using a tiny stub — see note below
-          if [ ! -f ml/checkpoints/best.pt ]; then
+          if [ ! -f ml/thermal/checkpoints/best.pt ]; then
             echo "WARNING: best.pt missing — creating a 0-byte stub for UI smoke test"
-            mkdir -p ml/checkpoints
-            touch ml/checkpoints/best.pt
+            mkdir -p ml/thermal/checkpoints
+            touch ml/thermal/checkpoints/best.pt
           fi
 
       - name: Set up sample mission fixture
@@ -840,25 +840,25 @@ Locate the end of the existing `frontend-unit` job and the closing `jobs:` block
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: website/nextjs/package-lock.json
+          cache-dependency-path: legacy/axalon-nextjs/package-lock.json
 
       - name: Install npm deps + Playwright
         run: |
-          cd website/nextjs
+          cd legacy/axalon-nextjs
           npm ci
           npx playwright install --with-deps chromium
 
       - name: Run Playwright e2e
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
-        run: cd website/nextjs && npm run test:e2e
+        run: cd legacy/axalon-nextjs && npm run test:e2e
 
       - name: Upload Playwright trace on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-trace
-          path: website/nextjs/test-results/
+          path: legacy/axalon-nextjs/test-results/
 
       - name: Stop docker-compose stack
         if: always()
@@ -897,7 +897,7 @@ git commit -m "ci: add e2e job to GitHub Actions — docker-compose + playwright
 
 ## Prerequisites
 
-- `ml/checkpoints/best.pt` present (22 MB, YOLOv8s weights)
+- `ml/thermal/checkpoints/best.pt` present (22 MB, YOLOv8s weights)
 - Docker Engine ≥ 24 and Docker Compose v2 (`docker compose` not `docker-compose`)
 - Ports 3000 and 8000 free
 
@@ -941,18 +941,18 @@ The `website/render.yaml` already configures a Web Service for the API. To updat
 2. Set build context to repo root, Dockerfile to `Dockerfile`.
 3. Set environment variables: `SOLARDOCTOR_API_KEY`, `SOLARDOCTOR_DB_URL` (use Render's managed disk for SQLite or switch to PostgreSQL).
 4. Add a **Static Site** for Next.js:
-   - Build command: `cd website/nextjs && npm ci && npm run build`
-   - Publish directory: `website/nextjs/.next`
+   - Build command: `cd legacy/axalon-nextjs && npm ci && npm run build`
+   - Publish directory: `legacy/axalon-nextjs/.next`
    - Set `NEXT_PUBLIC_SOLARDOCTOR_API_URL` to the Render API service URL.
 
 ## Model weights in CI
 
-The `e2e` GitHub Actions job needs `ml/checkpoints/best.pt`. Two options:
+The `e2e` GitHub Actions job needs `ml/thermal/checkpoints/best.pt`. Two options:
 
 **Option A — Git LFS (recommended):**
 ```bash
-git lfs track "ml/checkpoints/*.pt"
-git add .gitattributes ml/checkpoints/best.pt
+git lfs track "ml/thermal/checkpoints/*.pt"
+git add .gitattributes ml/thermal/checkpoints/best.pt
 git commit -m "chore: track model weights in Git LFS"
 ```
 Add `git lfs pull` as the first step in the `e2e` CI job.

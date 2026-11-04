@@ -6,12 +6,12 @@ A fast orientation to where things live and how data flows. Pair this with `AGEN
 
 ```
 AxalonSystems/
-├── website/nextjs/     Next.js 14 site + /platform UI   → Vercel (axalonsystems.com)
+├── legacy/axalon-nextjs/     Next.js 14 site + /platform UI   → Vercel (axalonsystems.com)
 ├── ml/                 YOLO11m thermal model + utils     → bundled into backend image
 └── platform/           FastAPI backend (pkg name: axalon)→ HF Space + Supabase
 ```
 
-`website` ↔ `platform` never cross-import. `platform` imports `ml.src.utils`. The directory `platform/` is the Python package **`axalon`** (see `pyproject.toml [tool.setuptools.package-dir]`).
+`website` ↔ `platform` never cross-import. `platform` imports `ml.thermal.src.utils`. The directory `platform/` is the Python package **`axalon`** (see `pyproject.toml [tool.setuptools.package-dir]`).
 
 ## platform/ (Python package `axalon`)
 
@@ -34,7 +34,7 @@ AxalonSystems/
 | `src/dataset.py`, `src/augmentation.py` | training-only (do not edit unless retraining) |
 | `thermal_dataset.yaml`, `configs/thermal.yaml` | class names + training config |
 
-## website/nextjs/
+## legacy/axalon-nextjs/
 
 | Path | Responsibility | Skill |
 |------|----------------|-------|
@@ -56,7 +56,7 @@ thermal images ──▶ pipeline/ingest ──▶ core/detector (YOLO11m) ─�
 ## Deploy flow
 
 ```
-git push main ──▶ Vercel builds website/nextjs ──▶ axalonsystems.com
+git push main ──▶ Vercel builds legacy/axalon-nextjs ──▶ axalonsystems.com
 HF Space (parakh20/axalon-api) ◀── huggingface_hub.upload_file (per changed backend file)
 Supabase Postgres ◀── SOLARDOCTOR_DB_URL secret on the Space (session pooler, aws-1-ap-south-1)
 ```

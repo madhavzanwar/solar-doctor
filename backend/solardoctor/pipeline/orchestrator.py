@@ -11,7 +11,7 @@ import json
 from datetime import datetime, date
 from pathlib import Path
 
-from ml.src.utils import draw_detections_severity, load_bgr, get_logger
+from ml.thermal.src.utils import draw_detections_severity, load_bgr, get_logger
 
 from solardoctor.core.detector import SolarDetector
 from solardoctor.core.fusion import ImageFusion

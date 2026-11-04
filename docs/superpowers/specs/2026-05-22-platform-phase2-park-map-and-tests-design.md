@@ -41,11 +41,11 @@
    - `test_api_contract.py` — at least 1 test per endpoint, asserting status code + response shape.
    - `test_pipeline_unit.py` — orchestrator (batch end-to-end), `ParkLayoutDetector`, grid aggregator.
    - `pytest.ini` at repo root: `testpaths = tests/backend`, `addopts = -ra --strict-markers`.
-2. **Frontend Vitest** in `website/nextjs/tests/unit/`:
+2. **Frontend Vitest** in `legacy/axalon-nextjs/tests/unit/`:
    - `api.test.ts` — `request()` happy-path + `ApiError` thrown on 4xx/5xx with body preserved.
    - `Toast.test.tsx` — `useToast()` push + auto-dismiss after 6s (fake timers).
    - `vitest.config.ts` + npm script `"test": "vitest run"`.
-3. **Frontend Playwright** in `website/nextjs/tests/e2e/`:
+3. **Frontend Playwright** in `legacy/axalon-nextjs/tests/e2e/`:
    - `golden_path.spec.ts` — walks the full operator runbook (Operations batch → reports → Inspect → History → Settings → Park Map). Assumes API + Next.js dev server already running at `http://localhost:8000` / `http://localhost:3000`.
    - `playwright.config.ts` + npm script `"test:e2e": "playwright test"`.
 4. **Shared runner** `scripts/test_all.sh` — runs pytest, then vitest, then playwright. Exits non-zero on any failure. No CI wiring yet.
@@ -64,20 +64,20 @@
 |---|---|---|
 | Backend | `platform/park/grid.py` | New: `build_grid(detections, park)` pure function |
 | Backend | `platform/api/app.py` | Modify: add `@app.get("/park/{park_id}/grid")` handler |
-| Frontend API | `website/nextjs/lib/api.ts` | Modify: add `api.parkGrid(parkId, inspectionId?)` + `ParkGrid`/`Panel` types |
-| Frontend UI | `website/nextjs/components/Platform/ParkMapGrid.tsx` | New: presentational grid renderer |
-| Frontend UI | `website/nextjs/components/Platform/ParkPanelDetail.tsx` | New: side-panel detail view |
-| Frontend page | `website/nextjs/app/platform/page.tsx` | Modify: add 5th tab + state for park/inspection selection + selected panel |
+| Frontend API | `legacy/axalon-nextjs/lib/api.ts` | Modify: add `api.parkGrid(parkId, inspectionId?)` + `ParkGrid`/`Panel` types |
+| Frontend UI | `legacy/axalon-nextjs/components/Platform/ParkMapGrid.tsx` | New: presentational grid renderer |
+| Frontend UI | `legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx` | New: side-panel detail view |
+| Frontend page | `legacy/axalon-nextjs/app/platform/page.tsx` | Modify: add 5th tab + state for park/inspection selection + selected panel |
 | Tests | `tests/backend/conftest.py` | New: shared fixtures |
 | Tests | `tests/backend/test_api_contract.py` | New: per-endpoint contract tests |
 | Tests | `tests/backend/test_pipeline_unit.py` | New: orchestrator + grid unit tests |
 | Tests | `pytest.ini` | New: pytest config |
-| Tests | `website/nextjs/tests/unit/api.test.ts` | New: api client tests |
-| Tests | `website/nextjs/tests/unit/Toast.test.tsx` | New: toast tests |
-| Tests | `website/nextjs/vitest.config.ts` | New |
-| Tests | `website/nextjs/tests/e2e/golden_path.spec.ts` | New: full operator walk |
-| Tests | `website/nextjs/playwright.config.ts` | New |
-| Tests | `website/nextjs/package.json` | Modify: add `test`, `test:e2e` scripts + devDeps `vitest`, `@vitejs/plugin-react`, `@testing-library/react`, `jsdom`, `@playwright/test` |
+| Tests | `legacy/axalon-nextjs/tests/unit/api.test.ts` | New: api client tests |
+| Tests | `legacy/axalon-nextjs/tests/unit/Toast.test.tsx` | New: toast tests |
+| Tests | `legacy/axalon-nextjs/vitest.config.ts` | New |
+| Tests | `legacy/axalon-nextjs/tests/e2e/golden_path.spec.ts` | New: full operator walk |
+| Tests | `legacy/axalon-nextjs/playwright.config.ts` | New |
+| Tests | `legacy/axalon-nextjs/package.json` | Modify: add `test`, `test:e2e` scripts + devDeps `vitest`, `@vitejs/plugin-react`, `@testing-library/react`, `jsdom`, `@playwright/test` |
 | Runner | `scripts/test_all.sh` | New |
 
 ## API contract
@@ -203,8 +203,8 @@ test('golden path', async ({ page }) => {
 - [ ] Inspection dropdown lists all inspections for the selected park; defaults to the most recent.
 - [ ] Empty state renders when a selected park has no inspections.
 - [ ] `pytest tests/backend/` passes with ≥1 test per FastAPI endpoint and ≥1 unit test for each of: orchestrator (batch flow), `ParkLayoutDetector.assign_grid_ids`, `build_grid`.
-- [ ] `cd website/nextjs && npm test` (vitest) passes — `api.test.ts` and `Toast.test.tsx`.
-- [ ] `cd website/nextjs && npm run test:e2e` (playwright) passes the golden path assuming services running.
+- [ ] `cd legacy/axalon-nextjs && npm test` (vitest) passes — `api.test.ts` and `Toast.test.tsx`.
+- [ ] `cd legacy/axalon-nextjs && npm run test:e2e` (playwright) passes the golden path assuming services running.
 - [ ] `scripts/test_all.sh` runs all three suites sequentially and exits 0 on a clean repo.
 - [ ] No regression in the Phase 1 acceptance list (verified by re-running the playwright golden path).
 

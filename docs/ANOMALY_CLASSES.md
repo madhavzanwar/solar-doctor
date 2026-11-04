@@ -48,7 +48,7 @@ All reported ΔT values are normalized to **1 000 W/m²** using:
 | Point | 1.5 (PV modules) | bypass-diode |
 | Extended area | 1.0 (linear) | all others |
 
-Use `ml.src.utils.normalize_delta_t()` for all temperature normalization.
+Use `ml.thermal.src.utils.normalize_delta_t()` for all temperature normalization.
 
 ## Inspection Conditions (IEC §5.3)
 

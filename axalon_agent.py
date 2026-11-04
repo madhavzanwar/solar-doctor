@@ -102,7 +102,7 @@ RULES:
 - Always read_file before str_replace (need exact text).
 - Run tests after changes: run_bash {"command": "python3 -m pytest tests/backend/ -ra -x --tb=short"}
 - Never hardcode secrets. Never cross-import website/ ↔ ml/ ↔ platform/.
-- Severity/class constants come ONLY from ml/src/utils.py.
+- Severity/class constants come ONLY from ml/thermal/src/utils.py.
 - Never git push without ask_user first.
 - DO NOT use ask_user to ask "which module" or "what next" — just complete the task end-to-end autonomously.
 - Only use ask_user if you genuinely cannot proceed (e.g. missing a secret or destructive action).

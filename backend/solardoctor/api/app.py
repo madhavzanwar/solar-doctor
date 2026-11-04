@@ -110,7 +110,7 @@ app = FastAPI(
     lifespan=lifespan,
     description=(
         "Solar anomaly detection and panel localization for drone-captured "
-        "thermal IR + RGB imagery. Model: ml/checkpoints/best.pt (GET /health "
+        "thermal IR + RGB imagery. Model: ml/thermal/checkpoints/best.pt (GET /health "
         "reports its architecture)."
     ),
 )

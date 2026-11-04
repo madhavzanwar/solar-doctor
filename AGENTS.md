@@ -8,7 +8,7 @@ Axalon is a solar-farm thermal-inspection product with three independent parts:
 
 | Part | Path | Stack | Deploys to |
 |------|------|-------|-----------|
-| **Website** | `website/nextjs/` | Next.js 14, React Three Fiber | Vercel → `axalonsystems.com` |
+| **Website** | `legacy/axalon-nextjs/` | Next.js 14, React Three Fiber | Vercel → `axalonsystems.com` |
 | **ML model** | `ml/` | Ultralytics YOLO11m (thermal IR) | bundled into the backend image |
 | **Platform** | `platform/` | FastAPI + SQLAlchemy | HF Space + Supabase Postgres |
 
@@ -34,9 +34,9 @@ Architecture map: `docs/CODEMAP.md`. Full platform spec: `docs/AXALON_PLATFORM_S
 
 ```bash
 # Website (dev)
-cd website/nextjs && npm run dev
+cd legacy/axalon-nextjs && npm run dev
 # Website tests
-cd website/nextjs && npm test            # vitest
+cd legacy/axalon-nextjs && npm test            # vitest
 
 # Platform API (local) — NOTE the platform/ shadow gotcha below
 PYTHONSAFEPATH=1 uvicorn solardoctor.api.app:app --port 8000   # run from /tmp or repo root with safe path
@@ -46,16 +46,16 @@ PYTHONSAFEPATH=1 uvicorn solardoctor.api.app:app --port 8000   # run from /tmp o
 PYTHONSAFEPATH=1 python -m pytest        # pytest.ini, --import-mode=importlib
 
 # Quick model smoke test
-python -c "from ultralytics import YOLO; print(len(YOLO('ml/checkpoints/best.pt')('ml/data/images/test/', conf=0.25)))"
+python -c "from ultralytics import YOLO; print(len(YOLO('ml/thermal/checkpoints/best.pt')('ml/data/images/test/', conf=0.25)))"
 ```
 
 ## Non-negotiable rules (see CLAUDE.md for the full list)
 
-1. **Single source of truth for classes/severity:** import from `ml/src/utils.py` (`CANONICAL_CLASSES`, `CLASS2ID`, `SEVERITY_MAP`, …). Never redefine the 11 classes or severities anywhere else. In code the package is imported as `from ml.src.utils import ...`.
-2. **`platform/` shadows the stdlib `platform` module.** The repo maps the directory `platform/` → Python package **`axalon`** (`pyproject.toml`), and anything running with the repo root on `sys.path` must use `PYTHONSAFEPATH=1` (and ideally cwd `/tmp`) or SQLAlchemy/uvicorn crash. App code imports as `from solardoctor.api… / solardoctor.core…`; ML utils as `from ml.src.utils …`.
+1. **Single source of truth for classes/severity:** import from `ml/thermal/src/utils.py` (`CANONICAL_CLASSES`, `CLASS2ID`, `SEVERITY_MAP`, …). Never redefine the 11 classes or severities anywhere else. In code the package is imported as `from ml.thermal.src.utils import ...`.
+2. **`platform/` shadows the stdlib `platform` module.** The repo maps the directory `platform/` → Python package **`axalon`** (`pyproject.toml`), and anything running with the repo root on `sys.path` must use `PYTHONSAFEPATH=1` (and ideally cwd `/tmp`) or SQLAlchemy/uvicorn crash. App code imports as `from solardoctor.api… / solardoctor.core…`; ML utils as `from ml.thermal.src.utils …`.
 3. **Module boundaries:** website ↔ platform never cross-import. Platform may import ML utils. Website is pure frontend.
-4. **Primary model:** `ml/checkpoints/best.pt` (YOLO11m, 640×640, conf 0.25, thermal IR only — never RGB).
-5. **Don't touch training code** (`ml/src/augmentation.py`, `ml/src/dataset.py`, notebooks) unless explicitly retraining.
+4. **Primary model:** `ml/thermal/checkpoints/best.pt` (YOLO11m, 640×640, conf 0.25, thermal IR only — never RGB).
+5. **Don't touch training code** (`ml/thermal/src/augmentation.py`, `ml/thermal/src/dataset.py`, notebooks) unless explicitly retraining.
 6. **Deploy:** push to `main` → Vercel auto-deploys the website. The HF backend has its **own** file snapshot — update it with `huggingface_hub.upload_file(repo_type='space')` per changed file, not via git push. Details in the `cloud-deployment` skill.
 
 ## Conventions

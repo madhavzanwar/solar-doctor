@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-03
 **Status:** Approved (brainstorm). Closes the most visible gap vs Hammer Missions for solar inspection.
-**Scope:** frontend-only (`website/nextjs`), low compute. Terrain/AGL follow is **deferred to phase 2**.
+**Scope:** frontend-only (`legacy/axalon-nextjs`), low compute. Terrain/AGL follow is **deferred to phase 2**.
 
 ## Problem
 

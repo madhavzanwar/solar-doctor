@@ -7,7 +7,7 @@ import io
 
 import pytest
 
-from ml.src.utils import SEVERITY_MAP
+from ml.thermal.src.utils import SEVERITY_MAP
 
 # Smallest valid file signatures — the upload endpoint sniffs magic bytes.
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64

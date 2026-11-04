@@ -8,7 +8,7 @@ description: Use when deploying or debugging the live stack — Vercel (website 
 Live stack: **Vercel** serves `axalonsystems.com` (+ `/platform`) → **HF Space** runs the FastAPI backend → **Supabase Postgres** stores data. All free-tier.
 
 ## Frontend — Vercel
-- Production project: **`axalon-systems`** (rootDir `website/nextjs`), GitHub-integrated.
+- Production project: **`axalon-systems`** (rootDir `legacy/axalon-nextjs`), GitHub-integrated.
 - **Deploy by `git push origin main`** → auto-build. Do **NOT** run `vercel --prod` from the repo root — it uploads the whole repo incl. `ml/Datasets` (~529 MB) and aborts ("Upload aborted").
 - Env: `NEXT_PUBLIC_SOLARDOCTOR_API_URL` = the HF backend URL. It's a `NEXT_PUBLIC_` var → **baked at build time**, so set it *before* the build and redeploy after changing it.
 - Verify: `vercel ls axalon-systems` (newest = Ready), then `curl -I https://axalonsystems.com/platform`.
@@ -21,7 +21,7 @@ Live stack: **Vercel** serves `axalonsystems.com` (+ `/platform`) → **HF Space
   ```
   Uploading a file triggers a rebuild.
 - Config: var `PORT=7860`; secrets `SOLARDOCTOR_API_KEY` (Bearer password), `SOLARDOCTOR_DB_URL` (Supabase). Changing a secret restarts the Space.
-- Dockerfile gotcha: a multi-source `COPY a b ./` flattens basenames — copy `ml/requirements.txt` with its own `COPY` line or `pip install -r ml/requirements.txt` fails. `psycopg2-binary` must be installed for Postgres.
+- Dockerfile gotcha: a multi-source `COPY a b ./` flattens basenames — copy `ml/thermal/requirements.txt` with its own `COPY` line or `pip install -r ml/thermal/requirements.txt` fails. `psycopg2-binary` must be installed for Postgres.
 - Tooling: `huggingface_hub` + `pg8000` in `~/.cloudtools/bin` (run from `/tmp` with `PYTHONSAFEPATH=1`). HF write token rotates per session.
 
 ## Database — Supabase

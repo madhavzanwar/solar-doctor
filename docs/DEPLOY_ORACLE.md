@@ -87,10 +87,10 @@ PYTHONSAFEPATH=1 alembic upgrade head
 
 ## 5. Get the model weights onto the VM
 
-`ml/checkpoints/best.pt` is tracked in git, so the clone already includes it.
+`ml/thermal/checkpoints/best.pt` is tracked in git, so the clone already includes it.
 Verify:
 ```bash
-ls -lh ml/checkpoints/best.pt     # ~21 MB
+ls -lh ml/thermal/checkpoints/best.pt     # ~21 MB
 ```
 
 ## 6. Run it as a service (24/7, auto-restart)

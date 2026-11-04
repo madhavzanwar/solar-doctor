@@ -6,7 +6,7 @@
 
 ## Why
 
-The current state: inference works (`ml/checkpoints/best.pt`), but there is no repeatable way to:
+The current state: inference works (`ml/thermal/checkpoints/best.pt`), but there is no repeatable way to:
 - Measure mAP@0.5 on the test set
 - Compare a new checkpoint to the current best
 - Detect per-class regression (e.g., "hot-spot-high recall dropped")
@@ -30,22 +30,22 @@ ml/
 
 ## Implementation
 
-### `ml/eval/evaluate.py`
+### `ml/thermal/eval/evaluate.py`
 
 ```python
 #!/usr/bin/env python3
 """
 Usage:
     python -m ml.eval.evaluate \
-        --model ml/checkpoints/best.pt \
-        --data ml/thermal_dataset.yaml \
+        --model ml/thermal/checkpoints/best.pt \
+        --data ml/thermal/thermal_dataset.yaml \
         --split test \
-        --output ml/eval/results/
+        --output ml/thermal/eval/results/
 
 Saves:
-    ml/eval/results/<timestamp>/metrics.json
-    ml/eval/results/<timestamp>/confusion_matrix.png
-    ml/eval/results/<timestamp>/PR_curve.png
+    ml/thermal/eval/results/<timestamp>/metrics.json
+    ml/thermal/eval/results/<timestamp>/confusion_matrix.png
+    ml/thermal/eval/results/<timestamp>/PR_curve.png
 """
 import argparse
 import json
@@ -81,16 +81,16 @@ def run_eval(model_path: str, data_yaml: str, split: str, output_dir: str) -> di
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="ml/checkpoints/best.pt")
-    parser.add_argument("--data", default="ml/thermal_dataset.yaml")
+    parser.add_argument("--model", default="ml/thermal/checkpoints/best.pt")
+    parser.add_argument("--data", default="ml/thermal/thermal_dataset.yaml")
     parser.add_argument("--split", default="test")
-    parser.add_argument("--output", default="ml/eval/results/")
+    parser.add_argument("--output", default="ml/thermal/eval/results/")
     args = parser.parse_args()
     result = run_eval(args.model, args.data, args.split, args.output)
     print(f"mAP@0.5: {result['map50']:.4f}")
 ```
 
-### `ml/eval/compare.py`
+### `ml/thermal/eval/compare.py`
 
 ```python
 """
@@ -142,10 +142,10 @@ In `.github/workflows/ci.yml`, add a step after tests:
   if: github.event_name == 'pull_request'
   run: |
     python -m ml.eval.evaluate --output /tmp/new_eval/
-    python -m ml.eval.compare ml/eval/baseline/metrics.json /tmp/new_eval/*/metrics.json
+    python -m ml.eval.compare ml/thermal/eval/baseline/metrics.json /tmp/new_eval/*/metrics.json
 ```
 
-Store a committed `ml/eval/baseline/metrics.json` as the reference point.
+Store a committed `ml/thermal/eval/baseline/metrics.json` as the reference point.
 
 ---
 
@@ -155,4 +155,4 @@ Store a committed `ml/eval/baseline/metrics.json` as the reference point.
 - [ ] Produces `metrics.json` with mAP50, mAP50-95, per-class AP50
 - [ ] `python -m ml.eval.compare baseline.json new.json` prints delta table
 - [ ] Exits 1 if a CRITICAL class regresses >5%
-- [ ] `ml/eval/baseline/metrics.json` committed with current model's scores
+- [ ] `ml/thermal/eval/baseline/metrics.json` committed with current model's scores

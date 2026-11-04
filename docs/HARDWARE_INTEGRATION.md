@@ -598,9 +598,9 @@ No specific IEC certification is required to operate the Axalon software platfor
 | §5.4.1 | Imaging procedure, angle | §4.3 viewing angle calculation |
 | §5.4.2 | Drone-based inspection, smearing | §4.2 speed limits |
 | §5.4.3 | Emissivity | `site_meta["emissivity"]`; §2.3 |
-| §7.3.2 / Table 4 | Classes of Abnormality | `IEC_COA_MAP` in `ml/src/utils.py` |
-| §7.4 | Temperature normalization | `normalize_delta_t()` in `ml/src/utils.py` |
-| §7.4.1 | Point vs extended area | `IEC_ABNORMALITY_TYPE` in `ml/src/utils.py` |
+| §7.3.2 / Table 4 | Classes of Abnormality | `IEC_COA_MAP` in `ml/thermal/src/utils.py` |
+| §7.4 | Temperature normalization | `normalize_delta_t()` in `ml/thermal/src/utils.py` |
+| §7.4.1 | Point vs extended area | `IEC_ABNORMALITY_TYPE` in `ml/thermal/src/utils.py` |
 | §8 | Inspection report contents | `generate_pdf_report()` context fields |
 | Annex A.1 | Geometric resolution | §2.2 altitude table |
 | Annex A.2 | Angle of view | §4.3 |

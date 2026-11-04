@@ -1,0 +1,39 @@
+# ── YOLO11m Thermal Solar Training Config ────────────────────────────────────
+# Dataset
+dataset_yaml: ml/thermal/thermal_dataset.yaml
+imgsz: 640
+
+# Model — YOLO11m, auto-downloads COCO pretrained weights on first run
+model: yolo11m.pt
+
+# Training
+epochs: 150
+batch: 16                  # reduce to 8 if GPU OOM
+device: 0                  # GPU; 'cpu' as fallback
+lr0: 0.001                 # lower than YOLO default — YOLO11m is larger
+lrf: 0.0001                # final LR = lr0 × lrf
+cos_lr: true
+warmup_epochs: 5
+warmup_momentum: 0.8
+patience: 20               # early stopping — more generous for larger model
+optimizer: AdamW           # AdamW outperforms SGD for YOLO11m fine-tuning
+weight_decay: 0.0005
+
+# Augmentation — thermal-specific
+hsv_h: 0.0                 # no hue — thermal is not RGB
+hsv_s: 0.0                 # no saturation
+hsv_v: 0.4                 # brightness jitter simulates emissivity variation
+degrees: 5.0               # small rotation (drone roll at 20m)
+scale: 0.3                 # ±30% scale jitter → simulates 15-25m altitude range
+fliplr: 0.5                # horizontal flip — solar rows are symmetric
+flipud: 0.0                # no vertical flip
+mosaic: 1.0                # critical for creating full-scene context from crops
+mixup: 0.15
+copy_paste: 0.1
+close_mosaic: 15           # disable mosaic in last 15 epochs for stable convergence
+
+# Output
+project: ml/thermal/runs/thermal
+name: yolo11m_solar
+save_period: 10
+plots: true                # save precision/recall/confusion matrix plots

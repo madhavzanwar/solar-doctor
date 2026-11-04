@@ -21,14 +21,14 @@
 | `platform/core/map_renderer.py` | **Create** | Pillow grid PNG renderer |
 | `tests/backend/test_api_contract.py` | Modify | Test `rgb_filename` in inspect response; test PNG endpoint |
 | `tests/backend/test_map_renderer.py` | **Create** | Unit tests for `render_grid_png()` |
-| `website/nextjs/lib/api.ts` | Modify | Fix `OrthoMeta.bounds` type; add `parkGridPng()` method; type `InspectResult` |
-| `website/nextjs/components/Platform/InspectTab.tsx` | Modify | Add RGB file input; show fused image |
-| `website/nextjs/components/Platform/OrthoMap.tsx` | **Create** | Leaflet map: ortho tile layer + detection markers |
-| `website/nextjs/components/Platform/DynamicOrthoMap.tsx` | **Create** | SSR-safe wrapper (`dynamic(..., {ssr:false})`) |
-| `website/nextjs/components/Platform/ParkMapTab.tsx` | Modify | Fetch ortho list; add upload section; Grid/Map toggle |
-| `website/nextjs/app/platform/layout.tsx` | Modify | Import leaflet CSS |
-| `website/nextjs/tests/unit/OrthoMap.test.tsx` | **Create** | Vitest unit test for OrthoMap |
-| `website/nextjs/tests/e2e/golden_path.spec.ts` | Modify | Add PNG download assertion to golden path |
+| `legacy/axalon-nextjs/lib/api.ts` | Modify | Fix `OrthoMeta.bounds` type; add `parkGridPng()` method; type `InspectResult` |
+| `legacy/axalon-nextjs/components/Platform/InspectTab.tsx` | Modify | Add RGB file input; show fused image |
+| `legacy/axalon-nextjs/components/Platform/OrthoMap.tsx` | **Create** | Leaflet map: ortho tile layer + detection markers |
+| `legacy/axalon-nextjs/components/Platform/DynamicOrthoMap.tsx` | **Create** | SSR-safe wrapper (`dynamic(..., {ssr:false})`) |
+| `legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx` | Modify | Fetch ortho list; add upload section; Grid/Map toggle |
+| `legacy/axalon-nextjs/app/platform/layout.tsx` | Modify | Import leaflet CSS |
+| `legacy/axalon-nextjs/tests/unit/OrthoMap.test.tsx` | **Create** | Vitest unit test for OrthoMap |
+| `legacy/axalon-nextjs/tests/e2e/golden_path.spec.ts` | Modify | Add PNG download assertion to golden path |
 
 ---
 
@@ -144,12 +144,12 @@ git commit -m "feat(inspect): expose rgb_filename in /inspect response"
 ## Task 2 — RGB Upload Input & Fused Image Display in InspectTab
 
 **Files:**
-- Modify: `website/nextjs/lib/api.ts`
-- Modify: `website/nextjs/components/Platform/InspectTab.tsx`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/components/Platform/InspectTab.tsx`
 
 - [ ] **Step 1: Fix `InspectResult` type and add `rgb_filename`**
 
-In `website/nextjs/lib/api.ts`, replace:
+In `legacy/axalon-nextjs/lib/api.ts`, replace:
 
 ```typescript
 export type InspectResult = Record<string, unknown>
@@ -186,7 +186,7 @@ export type InspectResult = {
 
 - [ ] **Step 2: Add RGB state and input to InspectTab**
 
-In `website/nextjs/components/Platform/InspectTab.tsx`, add a second file state alongside `inspectFile`:
+In `legacy/axalon-nextjs/components/Platform/InspectTab.tsx`, add a second file state alongside `inspectFile`:
 
 After `const [inspectFile, setInspectFile] = useState<File | null>(null)` (or similar), add:
 
@@ -277,7 +277,7 @@ After the `AnnotationCanvas` block in the JSX (around line 274), add:
 - [ ] **Step 5: Verify the UI compiles — check TypeScript**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npx tsc --noEmit 2>&1 | head -30
 ```
 
@@ -286,7 +286,7 @@ Expected: zero errors.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add website/nextjs/lib/api.ts website/nextjs/components/Platform/InspectTab.tsx
+git add legacy/axalon-nextjs/lib/api.ts legacy/axalon-nextjs/components/Platform/InspectTab.tsx
 git commit -m "feat(inspect): RGB upload input + fused image display"
 ```
 
@@ -295,16 +295,16 @@ git commit -m "feat(inspect): RGB upload input + fused image display"
 ## Task 3 — Install react-leaflet & Create SSR Wrapper
 
 **Files:**
-- Modify: `website/nextjs/package.json` (via npm install)
-- Create: `website/nextjs/components/Platform/DynamicOrthoMap.tsx`
-- Modify: `website/nextjs/app/platform/layout.tsx`
+- Modify: `legacy/axalon-nextjs/package.json` (via npm install)
+- Create: `legacy/axalon-nextjs/components/Platform/DynamicOrthoMap.tsx`
+- Modify: `legacy/axalon-nextjs/app/platform/layout.tsx`
 
 Leaflet mutates `window` and `document` at import time — it cannot run in SSR. The fix is `dynamic(() => import('./OrthoMap'), { ssr: false })`.
 
 - [ ] **Step 1: Install packages**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npm install leaflet react-leaflet @types/leaflet
 ```
 
@@ -312,7 +312,7 @@ Expected: packages added to `node_modules/` and `package.json` updated.
 
 - [ ] **Step 2: Import Leaflet CSS in platform layout**
 
-In `website/nextjs/app/platform/layout.tsx`, add at the top (after any existing imports):
+In `legacy/axalon-nextjs/app/platform/layout.tsx`, add at the top (after any existing imports):
 
 ```typescript
 import 'leaflet/dist/leaflet.css'
@@ -320,7 +320,7 @@ import 'leaflet/dist/leaflet.css'
 
 - [ ] **Step 3: Create DynamicOrthoMap.tsx**
 
-Create `website/nextjs/components/Platform/DynamicOrthoMap.tsx`:
+Create `legacy/axalon-nextjs/components/Platform/DynamicOrthoMap.tsx`:
 
 ```typescript
 'use client'
@@ -343,7 +343,7 @@ export { OrthoMap as DynamicOrthoMap }
 - [ ] **Step 4: Verify Next.js still compiles**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npx tsc --noEmit 2>&1 | head -20
 ```
 
@@ -352,7 +352,7 @@ Expected: zero errors (OrthoMap.tsx doesn't exist yet so there may be one import
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/app/platform/layout.tsx website/nextjs/components/Platform/DynamicOrthoMap.tsx website/nextjs/package.json website/nextjs/package-lock.json
+git add legacy/axalon-nextjs/app/platform/layout.tsx legacy/axalon-nextjs/components/Platform/DynamicOrthoMap.tsx legacy/axalon-nextjs/package.json legacy/axalon-nextjs/package-lock.json
 git commit -m "feat(ortho): install react-leaflet, add SSR-safe DynamicOrthoMap wrapper"
 ```
 
@@ -361,14 +361,14 @@ git commit -m "feat(ortho): install react-leaflet, add SSR-safe DynamicOrthoMap 
 ## Task 4 — OrthoMap Component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/OrthoMap.tsx`
-- Create: `website/nextjs/tests/unit/OrthoMap.test.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/OrthoMap.tsx`
+- Create: `legacy/axalon-nextjs/tests/unit/OrthoMap.test.tsx`
 
 The map shows the ortho as a tile base layer and overlays a `CircleMarker` for each park panel that has GPS coordinates. Clicking a marker shows a popup with the panel ID and worst severity.
 
 - [ ] **Step 1: Write the failing vitest unit test**
 
-Create `website/nextjs/tests/unit/OrthoMap.test.tsx`:
+Create `legacy/axalon-nextjs/tests/unit/OrthoMap.test.tsx`:
 
 ```typescript
 import '@testing-library/jest-dom/vitest'
@@ -441,7 +441,7 @@ describe('OrthoMap', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npm test -- --run tests/unit/OrthoMap.test.tsx 2>&1 | tail -15
 ```
 
@@ -449,7 +449,7 @@ Expected: FAIL — `Cannot find module '@/components/Platform/OrthoMap'`.
 
 - [ ] **Step 3: Create OrthoMap.tsx**
 
-Create `website/nextjs/components/Platform/OrthoMap.tsx`:
+Create `legacy/axalon-nextjs/components/Platform/OrthoMap.tsx`:
 
 ```typescript
 'use client'
@@ -530,7 +530,7 @@ export function OrthoMap({ parkId, orthoName, bounds, center, panels }: OrthoMap
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npm test -- --run tests/unit/OrthoMap.test.tsx 2>&1 | tail -10
 ```
 
@@ -547,7 +547,7 @@ Expected: zero errors.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/OrthoMap.tsx website/nextjs/tests/unit/OrthoMap.test.tsx
+git add legacy/axalon-nextjs/components/Platform/OrthoMap.tsx legacy/axalon-nextjs/tests/unit/OrthoMap.test.tsx
 git commit -m "feat(ortho): OrthoMap component — Leaflet tile layer + detection markers"
 ```
 
@@ -556,14 +556,14 @@ git commit -m "feat(ortho): OrthoMap component — Leaflet tile layer + detectio
 ## Task 5 — Wire Ortho Upload & Map Toggle into ParkMapTab
 
 **Files:**
-- Modify: `website/nextjs/lib/api.ts`
-- Modify: `website/nextjs/components/Platform/ParkMapTab.tsx`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx`
 
 When a park is selected, the tab fetches ortho list. If orthos exist, a "Map" button appears alongside the existing "Grid" view. Selecting "Map" shows `DynamicOrthoMap`; "Grid" shows `ParkMapGrid` as before. An upload button lets operators add a new GeoTIFF.
 
 - [ ] **Step 1: Fix OrthoMeta.bounds type in api.ts**
 
-In `website/nextjs/lib/api.ts`, replace:
+In `legacy/axalon-nextjs/lib/api.ts`, replace:
 
 ```typescript
 export type OrthoMeta = {
@@ -604,7 +604,7 @@ The `api.orthos()` call already returns `OrthoMeta[]`. Verify its definition in 
 
 - [ ] **Step 3: Add ortho state + fetch to ParkMapTab**
 
-In `website/nextjs/components/Platform/ParkMapTab.tsx`, add imports at top:
+In `legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx`, add imports at top:
 
 ```typescript
 import { DynamicOrthoMap } from '@/components/Platform/DynamicOrthoMap'
@@ -741,7 +741,7 @@ Replace the `<div className="park-map-layout"...>` block with a conditional:
 - [ ] **Step 7: TypeScript check**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npx tsc --noEmit 2>&1 | head -20
 ```
 
@@ -750,7 +750,7 @@ Expected: zero errors.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add website/nextjs/lib/api.ts website/nextjs/components/Platform/ParkMapTab.tsx
+git add legacy/axalon-nextjs/lib/api.ts legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx
 git commit -m "feat(ortho): ortho upload panel + Grid/Map toggle in ParkMapTab"
 ```
 
@@ -1053,12 +1053,12 @@ git commit -m "feat(export): GET /park/{id}/grid/png endpoint"
 ## Task 8 — PNG Download Button in ParkMapTab
 
 **Files:**
-- Modify: `website/nextjs/lib/api.ts`
-- Modify: `website/nextjs/components/Platform/ParkMapTab.tsx`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx`
 
 - [ ] **Step 1: Add `parkGridPng` to api.ts**
 
-In `website/nextjs/lib/api.ts`, add inside the `api` object (near other park methods):
+In `legacy/axalon-nextjs/lib/api.ts`, add inside the `api` object (near other park methods):
 
 ```typescript
   parkGridPng: (parkId: string, inspectionId?: string) => {
@@ -1114,7 +1114,7 @@ In the ortho toolbar section added in Task 5 (the `<div>` with Grid/Map buttons)
 - [ ] **Step 3: TypeScript check**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npx tsc --noEmit 2>&1 | head -20
 ```
 
@@ -1123,7 +1123,7 @@ Expected: zero errors.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/lib/api.ts website/nextjs/components/Platform/ParkMapTab.tsx
+git add legacy/axalon-nextjs/lib/api.ts legacy/axalon-nextjs/components/Platform/ParkMapTab.tsx
 git commit -m "feat(export): park grid PNG download button in ParkMapTab"
 ```
 
@@ -1141,7 +1141,7 @@ Run every test suite and verify the golden-path Playwright test still exercises 
 pkill -f "uvicorn\|next dev" 2>/dev/null || true
 sleep 2
 PYTHONSAFEPATH=1 .venv/bin/uvicorn solardoctor.api.app:app --host 0.0.0.0 --port 8000 > /tmp/axalon-api.log 2>&1 &
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs && npm run dev > /tmp/nextjs.log 2>&1 &
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs && npm run dev > /tmp/nextjs.log 2>&1 &
 ```
 
 Wait ~15 s for both to be ready:
@@ -1162,7 +1162,7 @@ Expected: all pass (≥52 tests).
 - [ ] **Step 3: Frontend unit tests**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npm test -- --run
 ```
 
@@ -1171,7 +1171,7 @@ Expected: all pass (≥26 tests including new OrthoMap tests).
 - [ ] **Step 4: Playwright e2e**
 
 ```bash
-cd /home/parakh/Desktop/AxalonSystems/website/nextjs
+cd /home/parakh/Desktop/AxalonSystems/legacy/axalon-nextjs
 npx playwright test --reporter=line
 ```
 

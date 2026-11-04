@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-02 / 2026-07-03
 **Test set:** `ml/data/combined/test` — 2,834 images, held-out split of the merged 3-dataset combined corpus (28,339 total samples across train/val/test)
-**Eval command:** `python3 -m ml.eval.evaluate --model <checkpoint> --data ml/thermal_dataset.yaml --split test` (Co-DETR used MMDetection's `tools/test.py` with an equivalent `CocoMetric` config — see Sources)
+**Eval command:** `python3 -m ml.eval.evaluate --model <checkpoint> --data ml/thermal/thermal_dataset.yaml --split test` (Co-DETR used MMDetection's `tools/test.py` with an equivalent `CocoMetric` config — see Sources)
 
 ## TL;DR
 
@@ -17,7 +17,7 @@
 
 ## Important caveat: not an apples-to-apples training comparison
 
-`ml/checkpoints/best.pt` (YOLOv8s) was trained on the original single-source 20,000-image thermal dataset (`AxalonPIPE`-era). The three bake-off candidates were trained on the newly merged **combined** dataset (`ml/scripts/prepare_dataset.py`), which folds in two additional source datasets and substantially increases sample counts for previously rare classes (e.g. `short-circuit` went from near-absent to 124 samples).
+`ml/thermal/checkpoints/best.pt` (YOLOv8s) was trained on the original single-source 20,000-image thermal dataset (`AxalonPIPE`-era). The three bake-off candidates were trained on the newly merged **combined** dataset (`ml/thermal/scripts/prepare_dataset.py`), which folds in two additional source datasets and substantially increases sample counts for previously rare classes (e.g. `short-circuit` went from near-absent to 124 samples).
 
 All models were evaluated against the **same** current combined test split, which is the correct comparison for a forward-looking model-selection decision, but it means YOLOv8s is being tested on classes it essentially never saw in training — visible directly below where `string` and `short-circuit` show 0.0 AP50 for YOLOv8s specifically.
 
@@ -55,7 +55,7 @@ YOLO11x and RT-DETR-x track each other closely across almost every class (within
 | hot-spot-low | 0.727 / 0.103 | 0.792 / 0.737 | 0.813 / 0.738 |
 | hot-spot-high | 0.516 / 0.024 | 0.741 / 0.754 | 0.848 / 0.776 |
 
-Co-DETR precision/recall are not reported here — MMDetection's `CocoMetric` doesn't emit them in the same per-class form as Ultralytics; see `ml/eval/results/codetr_test_metrics.json` for its raw AP breakdown.
+Co-DETR precision/recall are not reported here — MMDetection's `CocoMetric` doesn't emit them in the same per-class form as Ultralytics; see `ml/thermal/eval/results/codetr_test_metrics.json` for its raw AP breakdown.
 
 Note `soiling`: RT-DETR-x's recall (0.600) sits between YOLOv8s (0.599) and YOLO11x (0.350) — YOLO11x is uniquely conservative on this one class regardless of architecture generation, worth investigating (likely a data/label-imbalance issue rather than an architecture issue, since both newer models trained on identical data).
 
@@ -69,13 +69,13 @@ YOLO11x and RT-DETR-x both close nearly all of YOLOv8s's gap on CRITICAL/HIGH cl
 
 ## Sources
 
-- YOLOv8s eval: `ml/eval/results/20260702_123605/metrics.json`
-- YOLO11x eval: `ml/eval/results/20260702_122435/metrics.json`
-- RT-DETR-x eval: `ml/eval/results/20260702_223709/metrics.json`
-- Co-DETR eval: `ml/eval/results/codetr_test_metrics.json` (raw log: `ml/eval/results/codetr_eval_raw.log`)
-- Checkpoints: `ml/checkpoints/candidates/{yolo11x_best.pt, rtdetr_x_best.pt, codetr_epoch12.pth}`
+- YOLOv8s eval: `ml/thermal/eval/results/20260702_123605/metrics.json`
+- YOLO11x eval: `ml/thermal/eval/results/20260702_122435/metrics.json`
+- RT-DETR-x eval: `ml/thermal/eval/results/20260702_223709/metrics.json`
+- Co-DETR eval: `ml/thermal/eval/results/codetr_test_metrics.json` (raw log: `ml/thermal/eval/results/codetr_eval_raw.log`)
+- Checkpoints: `ml/thermal/checkpoints/candidates/{yolo11x_best.pt, rtdetr_x_best.pt, codetr_epoch12.pth}`
 - Design spec: `docs/superpowers/specs/2026-07-01-thermal-model-retraining-bakeoff-design.md`
 
 ## Status
 
-Bake-off complete. YOLO11x is the leading candidate for production; RT-DETR-x is a close second on mAP@0.5 but clearly behind on the stricter metric. Next step: run `ml/eval/select_winner.py` for the formal CRITICAL-weighted score, then get user confirmation before overwriting `ml/checkpoints/best.pt`.
+Bake-off complete. YOLO11x is the leading candidate for production; RT-DETR-x is a close second on mAP@0.5 but clearly behind on the stricter metric. Next step: run `ml/thermal/eval/select_winner.py` for the formal CRITICAL-weighted score, then get user confirmation before overwriting `ml/thermal/checkpoints/best.pt`.

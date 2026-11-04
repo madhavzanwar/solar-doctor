@@ -13,8 +13,8 @@
 ## Context — What is Already Done
 
 These changes were made before this plan and do NOT need to be redone:
-- `ml/requirements.txt` — `ultralytics>=8.3.0`
-- `ml/configs/thermal.yaml` — `model: yolo11m.pt`
+- `ml/thermal/requirements.txt` — `ultralytics>=8.3.0`
+- `ml/thermal/configs/thermal.yaml` — `model: yolo11m.pt`
 - `platform/core/detector.py` — docstrings updated to YOLO11m
 - `platform/api/app.py` — health endpoint and description updated to YOLO11m
 - `platform/reporting/templates/report.html` — footer updated to YOLO11m
@@ -1388,7 +1388,7 @@ with open('platform/config/settings.yaml') as f:
     s = yaml.safe_load(f)
 assert s['drone']['default_altitude_m'] == 20
 assert s['drone']['thermal_sensor_width_mm'] == 7.68
-assert s['model']['weights'] == 'ml/checkpoints/best.pt'
+assert s['model']['weights'] == 'ml/thermal/checkpoints/best.pt'
 assert 'economics' in s
 print('settings.yaml OK')
 "
@@ -1410,8 +1410,8 @@ git commit -m "chore: final verification pass — all tests green, API starts cl
 
 **Files:**
 - Create: `ml/data/combined/` — merged dataset root
-- Modify: `ml/thermal_dataset.yaml` — point to combined dataset
-- Create: `ml/scripts/prepare_dataset.py` — download + remap + merge script
+- Modify: `ml/thermal/thermal_dataset.yaml` — point to combined dataset
+- Create: `ml/thermal/scripts/prepare_dataset.py` — download + remap + merge script
 
 ### Background
 
@@ -1423,7 +1423,7 @@ Three dataset sources are combined:
 | **PV-Hawk** | GitHub: LukasBommes/PV-Hawk | Drone-captured thermal at altitude, needs class remapping |
 | **Roboflow Solar Thermal** | roboflow.com/universe | Search "solar thermal defect", YOLO format available |
 
-**Class remapping** is needed because PV-Hawk and Roboflow datasets use different label names. The canonical 11-class schema in `ml/src/utils.py` is the target.
+**Class remapping** is needed because PV-Hawk and Roboflow datasets use different label names. The canonical 11-class schema in `ml/thermal/src/utils.py` is the target.
 
 PV-Hawk → canonical mapping:
 ```
@@ -1475,12 +1475,12 @@ Expected: `ml/data/roboflow_solar/train/`, `ml/data/roboflow_solar/valid/`, `ml/
 - [ ] **Step 4: Create the dataset preparation script**
 
 ```python
-# ml/scripts/prepare_dataset.py
+# ml/thermal/scripts/prepare_dataset.py
 """
 Merge InfraredSolarModules + PV-Hawk + Roboflow into a single YOLO dataset.
 
 Usage:
-    python ml/scripts/prepare_dataset.py \
+    python ml/thermal/scripts/prepare_dataset.py \
         --infrared  ml/Datasets/InfraredSolarModules \
         --pvhawk    /tmp/pv-hawk/data \
         --roboflow  ml/data/roboflow_solar \
@@ -1499,7 +1499,7 @@ import shutil
 import random
 from pathlib import Path
 
-# Canonical class IDs from ml/src/utils.py
+# Canonical class IDs from ml/thermal/src/utils.py
 CLASS2ID = {
     "cell": 0, "cell-multi": 1, "module": 2, "string": 3,
     "bypass-diode": 4, "offline-module": 5, "vegetation-shading": 6,
@@ -1641,7 +1641,7 @@ if __name__ == "__main__":
 
 ```bash
 cd /home/parakh/Desktop/AxalonSystems
-python ml/scripts/prepare_dataset.py \
+python ml/thermal/scripts/prepare_dataset.py \
     --infrared ml/Datasets/InfraredSolarModules \
     --pvhawk   /tmp/pv-hawk/data \
     --roboflow ml/data/roboflow_solar \
@@ -1682,7 +1682,7 @@ Any class with fewer than 200 instances in train may not train well — note whi
 - [ ] **Step 7: Update thermal_dataset.yaml**
 
 ```yaml
-# ml/thermal_dataset.yaml
+# ml/thermal/thermal_dataset.yaml
 path: ml/data/combined
 train: train/images
 val:   val/images
@@ -1705,7 +1705,7 @@ names:
 - [ ] **Step 8: Commit**
 
 ```bash
-git add ml/scripts/prepare_dataset.py ml/thermal_dataset.yaml
+git add ml/thermal/scripts/prepare_dataset.py ml/thermal/thermal_dataset.yaml
 git commit -m "feat(ml): dataset preparation script + update thermal_dataset.yaml for combined dataset"
 ```
 
@@ -1714,7 +1714,7 @@ git commit -m "feat(ml): dataset preparation script + update thermal_dataset.yam
 ## Task 10: Configure and Run YOLO11m Training
 
 **Files:**
-- Modify: `ml/configs/thermal.yaml`
+- Modify: `ml/thermal/configs/thermal.yaml`
 
 ### Key parameters for YOLO11m on thermal solar data
 
@@ -1739,12 +1739,12 @@ git commit -m "feat(ml): dataset preparation script + update thermal_dataset.yam
 
 - [ ] **Step 1: Update thermal.yaml with YOLO11m parameters**
 
-Replace the full contents of `ml/configs/thermal.yaml`:
+Replace the full contents of `ml/thermal/configs/thermal.yaml`:
 
 ```yaml
 # ── YOLO11m Thermal Solar Training Config ────────────────────────────────────
 # Dataset
-dataset_yaml: ml/thermal_dataset.yaml
+dataset_yaml: ml/thermal/thermal_dataset.yaml
 imgsz: 640
 
 # Model — YOLO11m, auto-downloads COCO pretrained weights on first run
@@ -1777,7 +1777,7 @@ copy_paste: 0.1
 close_mosaic: 15           # disable mosaic in last 15 epochs for stable convergence
 
 # Output
-project: ml/runs/thermal
+project: ml/thermal/runs/thermal
 name: yolo11m_solar
 save_period: 10
 plots: true                # save precision/recall/confusion matrix plots
@@ -1788,7 +1788,7 @@ plots: true                # save precision/recall/confusion matrix plots
 ```bash
 python -c "
 import yaml
-cfg = yaml.safe_load(open('ml/thermal_dataset.yaml'))
+cfg = yaml.safe_load(open('ml/thermal/thermal_dataset.yaml'))
 from pathlib import Path
 root = Path(cfg['path'])
 for split in ('train', 'val', 'test'):
@@ -1803,10 +1803,10 @@ Expected: all three paths exist with image counts
 
 ```bash
 cd /home/parakh/Desktop/AxalonSystems
-yolo train cfg=ml/configs/thermal.yaml
+yolo train cfg=ml/thermal/configs/thermal.yaml
 ```
 
-Training logs appear in `ml/runs/thermal/yolo11m_solar/`. Monitor:
+Training logs appear in `ml/thermal/runs/thermal/yolo11m_solar/`. Monitor:
 - `mAP50` should exceed 0.70 by epoch 50
 - `mAP50-95` is the harder metric — aim for > 0.45 after full training
 - Watch per-class AP in the final summary — flag any class < 0.30
@@ -1820,8 +1820,8 @@ Training logs appear in `ml/runs/thermal/yolo11m_solar/`. Monitor:
 - [ ] **Step 4: Evaluate on test set**
 
 ```bash
-yolo val model=ml/runs/thermal/yolo11m_solar/weights/best.pt \
-          data=ml/thermal_dataset.yaml \
+yolo val model=ml/thermal/runs/thermal/yolo11m_solar/weights/best.pt \
+          data=ml/thermal/thermal_dataset.yaml \
           split=test \
           device=0
 ```
@@ -1831,7 +1831,7 @@ Expected output includes per-class AP table. Save this output — it's your base
 - [ ] **Step 5: Copy best weights to canonical location**
 
 ```bash
-cp ml/runs/thermal/yolo11m_solar/weights/best.pt ml/checkpoints/best.pt
+cp ml/thermal/runs/thermal/yolo11m_solar/weights/best.pt ml/thermal/checkpoints/best.pt
 ```
 
 - [ ] **Step 6: Quick inference sanity check**
@@ -1839,7 +1839,7 @@ cp ml/runs/thermal/yolo11m_solar/weights/best.pt ml/checkpoints/best.pt
 ```bash
 python -c "
 from ultralytics import YOLO
-model = YOLO('ml/checkpoints/best.pt')
+model = YOLO('ml/thermal/checkpoints/best.pt')
 # Use any thermal test image you have
 results = model('ml/data/combined/test/images/', conf=0.25, save=True)
 total = sum(len(r.boxes) for r in results)
@@ -1851,7 +1851,7 @@ print('Results saved to runs/detect/')
 - [ ] **Step 7: Commit**
 
 ```bash
-git add ml/configs/thermal.yaml
+git add ml/thermal/configs/thermal.yaml
 git commit -m "feat(ml): YOLO11m training config — combined dataset, AdamW, altitude-aware augmentation"
 ```
 
@@ -1860,7 +1860,7 @@ git commit -m "feat(ml): YOLO11m training config — combined dataset, AdamW, al
 ## Task 11: Export YOLO11m to TensorRT for Jetson Orin Nano
 
 **Files:**
-- Create: `ml/scripts/export_tensorrt.py`
+- Create: `ml/thermal/scripts/export_tensorrt.py`
 - Modify: `platform/config/settings.yaml`
 
 ### Why TensorRT
@@ -1883,15 +1883,15 @@ If not installed: `sudo apt-get install tensorrt` (JetPack 6.x includes it)
 - [ ] **Step 2: Create the export script**
 
 ```python
-# ml/scripts/export_tensorrt.py
+# ml/thermal/scripts/export_tensorrt.py
 """
 Export YOLO11m to TensorRT engine for Jetson Orin Nano.
 
 Run this ON THE JETSON, not on a desktop GPU.
 Usage:
-    python ml/scripts/export_tensorrt.py \
-        --weights ml/checkpoints/best.pt \
-        --out     ml/checkpoints/best.engine
+    python ml/thermal/scripts/export_tensorrt.py \
+        --weights ml/thermal/checkpoints/best.pt \
+        --out     ml/thermal/checkpoints/best.engine
 """
 import argparse
 from pathlib import Path
@@ -1899,8 +1899,8 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--weights", default="ml/checkpoints/best.pt")
-    parser.add_argument("--out", default="ml/checkpoints/best.engine")
+    parser.add_argument("--weights", default="ml/thermal/checkpoints/best.pt")
+    parser.add_argument("--out", default="ml/thermal/checkpoints/best.engine")
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--half", action="store_true", default=True,
                         help="FP16 — halves memory, 2x speed on Jetson")
@@ -1938,13 +1938,13 @@ Transfer `best.pt` to the Jetson, then:
 
 ```bash
 cd /path/to/AxalonSystems
-python ml/scripts/export_tensorrt.py \
-    --weights ml/checkpoints/best.pt \
-    --out     ml/checkpoints/best.engine \
+python ml/thermal/scripts/export_tensorrt.py \
+    --weights ml/thermal/checkpoints/best.pt \
+    --out     ml/thermal/checkpoints/best.engine \
     --half    --batch 1
 ```
 
-Expected: `TensorRT engine saved: ml/checkpoints/best.engine` (~15-25 MB)
+Expected: `TensorRT engine saved: ml/thermal/checkpoints/best.engine` (~15-25 MB)
 
 - [ ] **Step 4: Benchmark engine vs PyTorch on Jetson**
 
@@ -1954,7 +1954,7 @@ import time
 from ultralytics import YOLO
 
 # Benchmark PyTorch
-pt = YOLO('ml/checkpoints/best.pt')
+pt = YOLO('ml/thermal/checkpoints/best.pt')
 t0 = time.perf_counter()
 for _ in range(50):
     pt('ml/data/combined/test/images/', conf=0.25, verbose=False)
@@ -1962,7 +1962,7 @@ pt_ms = (time.perf_counter() - t0) / 50 * 1000
 print(f'PyTorch: {pt_ms:.1f} ms/image')
 
 # Benchmark TensorRT
-trt = YOLO('ml/checkpoints/best.engine')
+trt = YOLO('ml/thermal/checkpoints/best.engine')
 t0 = time.perf_counter()
 for _ in range(50):
     trt('ml/data/combined/test/images/', conf=0.25, verbose=False)
@@ -1980,8 +1980,8 @@ Add to the `model` section:
 
 ```yaml
 model:
-  weights: ml/checkpoints/best.pt        # PyTorch — for training and desktop use
-  engine: ml/checkpoints/best.engine     # TensorRT — for Jetson deployment
+  weights: ml/thermal/checkpoints/best.pt        # PyTorch — for training and desktop use
+  engine: ml/thermal/checkpoints/best.engine     # TensorRT — for Jetson deployment
   use_engine: false                       # set true on Jetson after export
   confidence: 0.25
   iou_threshold: 0.45
@@ -2040,7 +2040,7 @@ On the Jetson, set `export SOLARDOCTOR_USE_ENGINE=true` before starting the API.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add ml/scripts/export_tensorrt.py platform/core/detector.py platform/config/settings.yaml
+git add ml/thermal/scripts/export_tensorrt.py platform/core/detector.py platform/config/settings.yaml
 git commit -m "feat(ml): TensorRT export script + SOLARDOCTOR_USE_ENGINE env flag for Jetson"
 ```
 
@@ -2050,10 +2050,10 @@ git commit -m "feat(ml): TensorRT export script + SOLARDOCTOR_USE_ENGINE env fla
 
 | Area | What was built |
 |---|---|
-| **ML — Dataset** | `ml/scripts/prepare_dataset.py` merges InfraredSolarModules + PV-Hawk + Roboflow into 11-class canonical schema |
-| **ML — Training** | `ml/configs/thermal.yaml` tuned for YOLO11m — AdamW, scale jitter for 15-25m altitude, 150 epochs |
-| **ML — Export** | `ml/scripts/export_tensorrt.py` compiles TensorRT engine for Jetson; `SOLARDOCTOR_USE_ENGINE` env flag |
-| **ML — Weights** | `ml/checkpoints/best.pt` (PyTorch) + `best.engine` (Jetson TensorRT) |
+| **ML — Dataset** | `ml/thermal/scripts/prepare_dataset.py` merges InfraredSolarModules + PV-Hawk + Roboflow into 11-class canonical schema |
+| **ML — Training** | `ml/thermal/configs/thermal.yaml` tuned for YOLO11m — AdamW, scale jitter for 15-25m altitude, 150 epochs |
+| **ML — Export** | `ml/thermal/scripts/export_tensorrt.py` compiles TensorRT engine for Jetson; `SOLARDOCTOR_USE_ENGINE` env flag |
+| **ML — Weights** | `ml/thermal/checkpoints/best.pt` (PyTorch) + `best.engine` (Jetson TensorRT) |
 | `platform/core/temp_extractor.py` | RAW16 → °C matrix loader, per-bbox min/max/delta_T, IEC normalization |
 | `platform/pipeline/ingest.py` | Auto-discovers `_temp.raw` companions per image |
 | `platform/pipeline/orchestrator.py` | Temperature enrichment per detection, site_meta persistence |

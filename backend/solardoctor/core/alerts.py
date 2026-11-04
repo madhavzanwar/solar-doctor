@@ -26,12 +26,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from ml.src.utils import SEVERITY_COLOR_BGR
+from ml.thermal.src.utils import SEVERITY_COLOR_BGR
 
 logger = logging.getLogger("axalon.alerts")
 
 # Worst → least severe. SEVERITY_COLOR_BGR is keyed by the canonical severity
-# levels in that order; deriving from it keeps the vocabulary in ml.src.utils.
+# levels in that order; deriving from it keeps the vocabulary in ml.thermal.src.utils.
 SEVERITY_LEVELS: tuple[str, ...] = tuple(SEVERITY_COLOR_BGR)
 _RANK = {sev: i for i, sev in enumerate(SEVERITY_LEVELS)}  # lower = worse
 DEFAULT_MIN_SEVERITY = SEVERITY_LEVELS[0]

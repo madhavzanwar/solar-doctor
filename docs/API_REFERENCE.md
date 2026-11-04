@@ -196,7 +196,7 @@ Response `200`:
 {
   "status": "ok",
   "model": "YOLOv8s",
-  "weights": "ml/checkpoints/best.pt",
+  "weights": "ml/thermal/checkpoints/best.pt",
   "version": "1.0.0",
   "db": "ok",
   "parks_in_db": 1

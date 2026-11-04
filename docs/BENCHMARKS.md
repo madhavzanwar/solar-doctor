@@ -33,7 +33,7 @@ How it measures:
 
 Host: laptop, 13th Gen Intel Core i5-13500H, NVIDIA GeForce RTX 3050 4GB Laptop GPU.
 Python 3.12.3, torch 2.11.0+cu130, Ultralytics 8.4.52, EasyOCR 1.7.2, WeasyPrint 68.1.
-Weights: `ml/checkpoints/best.pt`: YOLO11x, 109.1 MB, sha256 prefix `fabb41c88f9d`.
+Weights: `ml/thermal/checkpoints/best.pt`: YOLO11x, 109.1 MB, sha256 prefix `fabb41c88f9d`.
 
 ### GPU (CUDA:0 RTX 3050 Laptop) — warmup 5, runs 20, batch runs 2
 

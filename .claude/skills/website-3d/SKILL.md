@@ -1,6 +1,6 @@
 ---
 name: website-3d
-description: Use when working on the marketing site's scroll-driven 3D scene in website/nextjs — the single React Three Fiber Canvas, the zero-rerender scrollStore pattern, the 6 scenes, CameraRig, and the 700vh scroll layout. Read before adding scenes or scroll behavior.
+description: Use when working on the marketing site's scroll-driven 3D scene in legacy/axalon-nextjs — the single React Three Fiber Canvas, the zero-rerender scrollStore pattern, the 6 scenes, CameraRig, and the 700vh scroll layout. Read before adding scenes or scroll behavior.
 ---
 
 # Website 3D Scene (React Three Fiber, scroll-driven)

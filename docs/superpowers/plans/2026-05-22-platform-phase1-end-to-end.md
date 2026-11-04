@@ -19,11 +19,11 @@
 | `scripts/make_sample_mission.py` | One-shot script: generates N synthetic thermal + RGB pairs with EXIF GPS into `tests/fixtures/sample_mission/` | Create |
 | `tests/fixtures/sample_mission/thermal/` | 20× synthetic thermal JPEGs (640×512, planted hotspots) | Create (committed) |
 | `tests/fixtures/sample_mission/rgb/` | 20× synthetic RGB JPEGs (panel-grid render) | Create (committed) |
-| `website/nextjs/lib/api.ts` | Typed thin client: `api.health()`, `api.batch()`, `api.status()`, etc. Throws `ApiError(status, body)` | Create |
-| `website/nextjs/components/Platform/Toast.tsx` | `ToastProvider` + `useToast()` hook, dependency-free | Create |
-| `website/nextjs/app/platform/page.tsx` | Replace inline `fetch(${API_BASE}/...)` with `api.*` + `toast.error()` on failure; fix bugs found during walkthrough | Modify |
-| `website/nextjs/app/(site)/layout.tsx` / `website/nextjs/app/platform/layout.tsx` | Wrap children in `<ToastProvider>` | Modify (whichever owns /platform) |
-| `website/nextjs/components/Platform/AnomalyMap.tsx` | Fix real-data shape mismatches discovered during walkthrough | Modify |
+| `legacy/axalon-nextjs/lib/api.ts` | Typed thin client: `api.health()`, `api.batch()`, `api.status()`, etc. Throws `ApiError(status, body)` | Create |
+| `legacy/axalon-nextjs/components/Platform/Toast.tsx` | `ToastProvider` + `useToast()` hook, dependency-free | Create |
+| `legacy/axalon-nextjs/app/platform/page.tsx` | Replace inline `fetch(${API_BASE}/...)` with `api.*` + `toast.error()` on failure; fix bugs found during walkthrough | Modify |
+| `legacy/axalon-nextjs/app/(site)/layout.tsx` / `legacy/axalon-nextjs/app/platform/layout.tsx` | Wrap children in `<ToastProvider>` | Modify (whichever owns /platform) |
+| `legacy/axalon-nextjs/components/Platform/AnomalyMap.tsx` | Fix real-data shape mismatches discovered during walkthrough | Modify |
 | `platform/api/app.py` | Fix any endpoint bugs discovered during walkthrough; no new endpoints | Modify |
 | `docs/OPERATOR_RUNBOOK.md` | Click-by-click golden path walk-through | Create |
 
@@ -185,7 +185,7 @@ Run:
 ```bash
 python -c "
 from ultralytics import YOLO
-m = YOLO('ml/checkpoints/best.pt')
+m = YOLO('ml/thermal/checkpoints/best.pt')
 results = m('tests/fixtures/sample_mission/thermal/', conf=0.25, verbose=False)
 total = sum(len(r.boxes) for r in results)
 print(f'Total detections across 20 images: {total}')
@@ -224,7 +224,7 @@ Expected: API returns `{"status":"ok",...}` (or similar truthy JSON); platform r
 
 If API fails: read `logs/api.log`, fix the import/wiring issue in `platform/api/app.py` or `run.sh`. Commit each fix as its own change with message `fix(api): <what>`.
 
-If Next.js fails: read `logs/platform.log`. Most likely a stale `.next/` cache — run `rm -rf website/nextjs/.next` and retry.
+If Next.js fails: read `logs/platform.log`. Most likely a stale `.next/` cache — run `rm -rf legacy/axalon-nextjs/.next` and retry.
 
 - [ ] **Step 5: Leave the services running for the remainder of the plan**
 
@@ -235,8 +235,8 @@ Do not stop until Task 13.
 ## Task 3: Minimal Toast component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/Toast.tsx`
-- Modify: `website/nextjs/app/platform/page.tsx` (wrap `<PlatformPage>` body with `<ToastProvider>` OR add provider in nearest layout)
+- Create: `legacy/axalon-nextjs/components/Platform/Toast.tsx`
+- Modify: `legacy/axalon-nextjs/app/platform/page.tsx` (wrap `<PlatformPage>` body with `<ToastProvider>` OR add provider in nearest layout)
 
 - [ ] **Step 1: Write `Toast.tsx`**
 
@@ -322,7 +322,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 - [ ] **Step 2: Wrap the platform page with the provider**
 
-In `website/nextjs/app/platform/page.tsx`, locate the top-level component (likely `export default function PlatformPage()` or similar) and wrap its returned JSX so that `useToast()` is callable from all descendants. Add the import at top:
+In `legacy/axalon-nextjs/app/platform/page.tsx`, locate the top-level component (likely `export default function PlatformPage()` or similar) and wrap its returned JSX so that `useToast()` is callable from all descendants. Add the import at top:
 
 ```tsx
 import { ToastProvider, useToast } from '@/components/Platform/Toast'
@@ -356,7 +356,7 @@ Temporarily add `<button onClick={() => toast.error('hello')}>test</button>` at 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/Toast.tsx website/nextjs/app/platform/page.tsx
+git add legacy/axalon-nextjs/components/Platform/Toast.tsx legacy/axalon-nextjs/app/platform/page.tsx
 git commit -m "feat(platform): minimal toast surface for error visibility"
 ```
 
@@ -365,7 +365,7 @@ git commit -m "feat(platform): minimal toast surface for error visibility"
 ## Task 4: API client at `lib/api.ts`
 
 **Files:**
-- Create: `website/nextjs/lib/api.ts`
+- Create: `legacy/axalon-nextjs/lib/api.ts`
 
 - [ ] **Step 1: Write `api.ts`**
 
@@ -455,13 +455,13 @@ export const api = {
 
 - [ ] **Step 2: TypeScript sanity check**
 
-Run: `cd website/nextjs && npx tsc --noEmit`
+Run: `cd legacy/axalon-nextjs && npx tsc --noEmit`
 Expected: no new errors in `lib/api.ts`. (Pre-existing errors in other files are out of scope; record them if any but do not fix.)
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add website/nextjs/lib/api.ts
+git add legacy/axalon-nextjs/lib/api.ts
 git commit -m "feat(platform): typed API client with ApiError envelope"
 ```
 
@@ -470,7 +470,7 @@ git commit -m "feat(platform): typed API client with ApiError envelope"
 ## Task 5: Replace inline fetches in `page.tsx`
 
 **Files:**
-- Modify: `website/nextjs/app/platform/page.tsx`
+- Modify: `legacy/axalon-nextjs/app/platform/page.tsx`
 
 This task is mechanical but tedious. There are ~10 fetch sites identified at lines 266, 294, 325, 349, 403, 432, 446, 460, 472, 483, 506 (line numbers may have shifted after Task 3 — re-grep). Replace each one.
 
@@ -486,7 +486,7 @@ Then delete the local `const API_BASE = ...` line.
 
 - [ ] **Step 2: Get a fresh list of fetch sites**
 
-Run: `grep -nE "fetch\(\\\`?\\\$\\{?API_BASE" website/nextjs/app/platform/page.tsx`
+Run: `grep -nE "fetch\(\\\`?\\\$\\{?API_BASE" legacy/axalon-nextjs/app/platform/page.tsx`
 Use this list as the worksheet.
 
 - [ ] **Step 3: For each site, replace with `api.*`**
@@ -519,12 +519,12 @@ It must be inside the component, after other hooks.
 
 - [ ] **Step 5: Re-grep to confirm no inline `fetch(${API_BASE}` remain**
 
-Run: `grep -nE "fetch\\(\\\`\\\$\\{API_BASE\\}" website/nextjs/app/platform/page.tsx`
+Run: `grep -nE "fetch\\(\\\`\\\$\\{API_BASE\\}" legacy/axalon-nextjs/app/platform/page.tsx`
 Expected: empty (apart from the deleted line in the diff). Inline file-download `<a href={api.reportUrl(...)}>` is fine.
 
 - [ ] **Step 6: TypeScript check**
 
-Run: `cd website/nextjs && npx tsc --noEmit 2>&1 | grep -E "(app/platform/page|lib/api)"`
+Run: `cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | grep -E "(app/platform/page|lib/api)"`
 Expected: no new errors in these files.
 
 - [ ] **Step 7: Hard-reload `/platform` in the browser and confirm the page still mounts**
@@ -534,7 +534,7 @@ Open `http://localhost:3000/platform`. Check the browser console — should be n
 - [ ] **Step 8: Commit**
 
 ```bash
-git add website/nextjs/app/platform/page.tsx
+git add legacy/axalon-nextjs/app/platform/page.tsx
 git commit -m "refactor(platform): route page.tsx fetches through typed api client"
 ```
 
@@ -543,7 +543,7 @@ git commit -m "refactor(platform): route page.tsx fetches through typed api clie
 ## Task 6: Walk Operations tab + fix
 
 **Files:**
-- Modify (as needed): `website/nextjs/app/platform/page.tsx`, `website/nextjs/components/Platform/AnomalyMap.tsx`, `platform/api/app.py`
+- Modify (as needed): `legacy/axalon-nextjs/app/platform/page.tsx`, `legacy/axalon-nextjs/components/Platform/AnomalyMap.tsx`, `platform/api/app.py`
 
 Goal: full happy-path of the Operations tab works against the live API + synthetic fixture.
 
@@ -664,7 +664,7 @@ git commit -m "fix(platform): settings tab load + save round-trip" || true
 ## Task 10: AnomalyMap real-data check
 
 **Files:**
-- Modify: `website/nextjs/components/Platform/AnomalyMap.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/AnomalyMap.tsx`
 
 - [ ] **Step 1: Pull the live `/map/{job_id}` payload to a file for inspection**
 
@@ -675,7 +675,7 @@ curl -fsS "http://localhost:8000/map/<job_id>" | python -m json.tool | head -80
 
 - [ ] **Step 2: Compare its shape to what `AnomalyMap.tsx` expects**
 
-Open `website/nextjs/components/Platform/AnomalyMap.tsx`. Find the `Anomaly` type and the function that consumes `mapData`. Confirm field names match (e.g. `lat`/`lon` vs `latitude`/`longitude`, `severity` casing).
+Open `legacy/axalon-nextjs/components/Platform/AnomalyMap.tsx`. Find the `Anomaly` type and the function that consumes `mapData`. Confirm field names match (e.g. `lat`/`lon` vs `latitude`/`longitude`, `severity` casing).
 
 - [ ] **Step 3: If they diverge, fix in the component (preferred), not the API**
 
@@ -686,7 +686,7 @@ The API is the contract; UI bends.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/AnomalyMap.tsx
+git add legacy/axalon-nextjs/components/Platform/AnomalyMap.tsx
 git commit -m "fix(map): align AnomalyMap to live /map response shape" || true
 ```
 
@@ -735,7 +735,7 @@ The 10-minute walk through a real local inspection from zero.
 ## Prereqs
 
 - `./run.sh setup` has completed once
-- `ml/checkpoints/best.pt` exists (~22 MB)
+- `ml/thermal/checkpoints/best.pt` exists (~22 MB)
 - Optional: WeasyPrint system libs (for PDF reports). See `docs/INSTALLATION.md`.
 
 ## 1. Generate the sample mission
@@ -827,7 +827,7 @@ git commit -m "docs: operator runbook for platform Phase 1 golden path"
 
 ```bash
 ./run.sh stop
-rm -rf website/nextjs/.next
+rm -rf legacy/axalon-nextjs/.next
 ./run.sh all
 ```
 

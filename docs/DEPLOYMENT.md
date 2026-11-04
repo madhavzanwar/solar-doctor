@@ -19,7 +19,7 @@ Earlier deployment targets are no longer used. The Azure VM + Azure PostgreSQL d
 ### Frontend — Vercel `axalon-systems`
 
 - The project is linked to the GitHub repo. Its production branch is `main` and its
-  root directory is `website/nextjs`.
+  root directory is `legacy/axalon-nextjs`.
 - **To deploy, push to `main`.** Vercel builds and publishes the site automatically.
 - Do not run `vercel --prod` from the repo root. It uploads the whole repository, including
   datasets and weights, and the upload aborts.
@@ -45,10 +45,10 @@ Earlier deployment targets are no longer used. The Azure VM + Azure PostgreSQL d
   `drone`, `drone.relay`, `drone.common` and `drone.agent` packages explicitly. If
   `drone/` is missing from the Space, the Dockerfile's `pip install -e .` fails with
   `package directory 'drone' does not exist` and the build breaks.
-- Upload the model weights as well (`ml/checkpoints/best.pt`, 109 MB). Once the Space is up,
+- Upload the model weights as well (`ml/thermal/checkpoints/best.pt`, 109 MB). Once the Space is up,
   confirm it serves the weights you expect. `GET /health` reads `model` and
   `model_info.sha256` from the file inside the container, and the result should match
-  `sha256sum ml/checkpoints/best.pt` locally (first 12 hex characters).
+  `sha256sum ml/thermal/checkpoints/best.pt` locally (first 12 hex characters).
 - To verify:
   ```bash
   curl https://parakh20-axalon-api.hf.space/health
@@ -101,7 +101,7 @@ runs **without** a key (neither side is set).
 
 ## Local Docker Deployment
 
-Prerequisites: `ml/checkpoints/best.pt` present (Git LFS), Docker Engine 24+ with Compose v2,
+Prerequisites: `ml/thermal/checkpoints/best.pt` present (Git LFS), Docker Engine 24+ with Compose v2,
 ports `3000` and `8000` free.
 
 ```bash
@@ -220,7 +220,7 @@ Alerts are best-effort: they are sent after the job's success is committed, ever
 
 ## Model Weights In CI
 
-The e2e GitHub Actions job needs `ml/checkpoints/best.pt` for real inference. The weights are
+The e2e GitHub Actions job needs `ml/thermal/checkpoints/best.pt` for real inference. The weights are
 tracked in Git LFS, so run `git lfs pull` before the e2e job. If the weights are unavailable,
 CI creates a zero-byte placeholder and runs the Playwright flow with `PLAYWRIGHT_CI=1`. In that
 mode a failed batch counts as an acceptable end state for the UI smoke test.

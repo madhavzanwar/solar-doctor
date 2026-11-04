@@ -15,7 +15,7 @@ The repository holds the full stack:
 |---|---|---|
 | **ML model** | `ml/` | Ultralytics YOLO11x thermal anomaly detector (11 fault classes), training + evaluation tooling |
 | **Platform API** | `platform/` (Python package `axalon`) | FastAPI backend: ingest, detection, thermal/RGB fusion, panel localization, reporting, persistence |
-| **Operator dashboard** | `website/nextjs/` | Next.js 14 app: marketing site at `/` and the operator platform UI at `/platform` |
+| **Operator dashboard** | `legacy/axalon-nextjs/` | Next.js 14 app: marketing site at `/` and the operator platform UI at `/platform` |
 | Drone ops (optional) | `drone/` | On-drone agent (MAVLink, WebRTC video) and a WebSocket relay for live operations |
 
 ## How the layers connect
@@ -28,20 +28,20 @@ The repository holds the full stack:
  ┌──────────────────────────────────────────────────────────────────┐
  │ FastAPI  (platform/api, :8000)                                   │
  │   pipeline/  ingest → detect → fuse → localize → report          │
- │   core/      detector (loads ml/checkpoints/best.pt), fusion, geo│
+ │   core/      detector (loads ml/thermal/checkpoints/best.pt), fusion, geo│
  │   park/      panel numbering (OCR + auto-grid)                   │
  │   reporting/ JSON · Excel · GeoJSON · PDF  → output/{batch_id}/  │
  │   db/        SQLAlchemy + Alembic (SQLite locally, Postgres prod)│
  └──────────────────────────────────────────────────────────────────┘
             ▲
-            │ imports ml.src.utils (class list, severity map, drawing)
+            │ imports ml.thermal.src.utils (class list, severity map, drawing)
  ml/  YOLO11x weights + training/eval scripts
 ```
 
 - The **ML layer** owns the model and the canonical class/severity
-  definitions (`ml/src/utils.py`). The platform imports them and never
+  definitions (`ml/thermal/src/utils.py`). The platform imports them and never
   redefines them.
-- The **platform** loads `ml/checkpoints/best.pt` once, runs batch
+- The **platform** loads `ml/thermal/checkpoints/best.pt` once, runs batch
   inspections as background jobs, and stores parks, panels, detections and
   jobs in the database. `GET /health` reports the model actually on disk
   (architecture, size, sha256 prefix), the DB state and migration status.
@@ -50,7 +50,7 @@ The repository holds the full stack:
 
 ## Model
 
-`ml/checkpoints/best.pt` is a YOLO11x checkpoint (109 MB, tracked with
+`ml/thermal/checkpoints/best.pt` is a YOLO11x checkpoint (109 MB, tracked with
 Git LFS) trained with Ultralytics 8.4.84 on a merged corpus of three thermal
 PV datasets. It takes 640x640 thermal IR input (do not run it on RGB)
 with a default confidence threshold of 0.25.
@@ -111,23 +111,23 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build   # wi
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r ml/requirements.txt -e .
+pip install -r ml/thermal/requirements.txt -e .
 
-# Inference uses the bundled weights in ml/checkpoints/best.pt.
+# Inference uses the bundled weights in ml/thermal/checkpoints/best.pt.
 # Training and evaluation need the raw datasets under ml/Datasets/ (not in git):
-PYTHONSAFEPATH=1 python ml/scripts/prepare_dataset.py --help
-PYTHONSAFEPATH=1 python ml/scripts/train_ultralytics.py --help
+PYTHONSAFEPATH=1 python ml/thermal/scripts/prepare_dataset.py --help
+PYTHONSAFEPATH=1 python ml/thermal/scripts/train_ultralytics.py --help
 PYTHONSAFEPATH=1 python -m ml.eval.evaluate --help
 ```
 
-`ml/notebooks/solar_thermal_detection.ipynb` is the original training and
+`ml/thermal/notebooks/solar_thermal_detection.ipynb` is the original training and
 inference notebook. The stock COCO-pretrained base weights it starts from
 (`yolov8s.pt`) are downloaded by Ultralytics on first use.
 
 ### Layer 2: Platform API only
 
 ```bash
-pip install -r requirements_platform.txt -r ml/requirements.txt -e .
+pip install -r requirements_platform.txt -r ml/thermal/requirements.txt -e .
 ./run.sh api                        # or: cd /tmp && PYTHONSAFEPATH=1 python -m uvicorn solardoctor.api.app:app --port 8000
 curl http://localhost:8000/health
 ```
@@ -146,7 +146,7 @@ Schema migrations run automatically on API startup (Alembic, `alembic/`).
 ### Layer 3: Operator dashboard only
 
 ```bash
-cd website/nextjs
+cd legacy/axalon-nextjs
 cp .env.example .env.local      # optional: map tokens, API URL
 npm ci
 npm run dev                     # http://localhost:3000/platform
@@ -165,7 +165,7 @@ fill in only what you need:
 - [`.env.example`](.env.example): backend (`SOLARDOCTOR_DB_URL`,
   `SOLARDOCTOR_API_KEY`, `SOLARDOCTOR_USE_ENGINE`, CORS, output dir/TTL, alert
   webhook/SMTP, NodeODM orthomosaics, Sentry).
-- [`website/nextjs/.env.example`](website/nextjs/.env.example): dashboard
+- [`legacy/axalon-nextjs/.env.example`](legacy/axalon-nextjs/.env.example): dashboard
   (`NEXT_PUBLIC_SOLARDOCTOR_API_URL`, optional Mapbox / Google Maps keys).
 - [`deploy/env.relay.example`](deploy/env.relay.example): drone relay tokens.
 
@@ -190,7 +190,7 @@ AxalonSystems/
 │   ├── reporting/            PDF / Excel / GeoJSON writers
 │   └── db/                   SQLAlchemy models and sessions
 ├── alembic/                DB migrations
-├── website/nextjs/         Next.js marketing site + /platform operator UI
+├── legacy/axalon-nextjs/         Next.js marketing site + /platform operator UI
 ├── drone/                  drone agent + live-ops relay
 ├── scripts/                sample-mission generator, benchmarks, demo data
 ├── tests/                  backend (tests/backend), root-level and fixtures
@@ -216,8 +216,8 @@ done
 PYTHONSAFEPATH=1 python -m pytest drone/tests
 
 # Dashboard unit tests (Vitest) and end-to-end tests (Playwright, needs the stack running)
-cd website/nextjs && npm test
-cd website/nextjs && npm run test:e2e
+cd legacy/axalon-nextjs && npm test
+cd legacy/axalon-nextjs && npm run test:e2e
 ```
 
 Tests that need external resources are skipped with a reason: the raw-dataset

@@ -25,16 +25,16 @@
 | `platform/api/app.py` | Add: `/park/{id}/trend`, `/park/{id}/recurring`, `/results/{id}/{file}` (fix URL), TTL cleanup in lifespan, GPU note comment, corrections included in `/report/` for inspect jobs | Modify |
 | `platform/reporting/report.py` | Accept optional `corrections` list; include in JSON output | Modify |
 | `docker-compose.yml` | Add GPU device reservation to `api` service | Modify |
-| `website/nextjs/lib/api.ts` | Add `parkTrend()`, `parkRecurring()` methods + types | Modify |
-| `website/nextjs/components/Platform/TrendChart.tsx` | Pure-SVG line chart — CRITICAL/HIGH/MEDIUM/LOW over time | Create |
-| `website/nextjs/components/Platform/HistoryTab.tsx` | Render `<TrendChart>` + RecurringTable below existing park/inspection section | Modify |
-| `website/nextjs/components/Platform/ParkPanelDetail.tsx` | Fix image URL: `/image/` → `/results/` | Modify |
-| `website/nextjs/components/Platform/OperationsTab.tsx` | Add `park_mode` select (Auto / Numbered / Unnumbered) to batch form | Modify |
-| `website/nextjs/components/Platform/InspectTab.tsx` | Add "Download Report" button after inspection result appears | Modify |
+| `legacy/axalon-nextjs/lib/api.ts` | Add `parkTrend()`, `parkRecurring()` methods + types | Modify |
+| `legacy/axalon-nextjs/components/Platform/TrendChart.tsx` | Pure-SVG line chart — CRITICAL/HIGH/MEDIUM/LOW over time | Create |
+| `legacy/axalon-nextjs/components/Platform/HistoryTab.tsx` | Render `<TrendChart>` + RecurringTable below existing park/inspection section | Modify |
+| `legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx` | Fix image URL: `/image/` → `/results/` | Modify |
+| `legacy/axalon-nextjs/components/Platform/OperationsTab.tsx` | Add `park_mode` select (Auto / Numbered / Unnumbered) to batch form | Modify |
+| `legacy/axalon-nextjs/components/Platform/InspectTab.tsx` | Add "Download Report" button after inspection result appears | Modify |
 | `tests/backend/test_trend.py` | Unit tests for `build_trend` and `build_recurring` | Create |
 | `tests/backend/test_trend_endpoint.py` | API contract tests for `/trend` and `/recurring` | Create |
-| `website/nextjs/tests/unit/AuthGate.test.tsx` | Vitest coverage for lock screen, unlock flow, sessionStorage | Create |
-| `website/nextjs/tests/e2e/annotation.spec.ts` | Playwright: draw correction, assign class, save, delete | Create |
+| `legacy/axalon-nextjs/tests/unit/AuthGate.test.tsx` | Vitest coverage for lock screen, unlock flow, sessionStorage | Create |
+| `legacy/axalon-nextjs/tests/e2e/annotation.spec.ts` | Playwright: draw correction, assign class, save, delete | Create |
 
 ---
 
@@ -304,7 +304,7 @@ git commit -m "feat(db): Alembic migrations — production schema management"
 
 **Files:**
 - Modify: `platform/api/app.py` (add `/results/{job_id}/{filename}` endpoint + TTL cleanup)
-- Modify: `website/nextjs/components/Platform/ParkPanelDetail.tsx` (fix `/image/` → `/results/`)
+- Modify: `legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx` (fix `/image/` → `/results/`)
 - Modify: `docker-compose.yml` (GPU device reservation)
 
 ### 2a — Fix `/results/` image serving endpoint
@@ -312,7 +312,7 @@ git commit -m "feat(db): Alembic migrations — production schema management"
 - [ ] **Step 1: Find the URL in `ParkPanelDetail.tsx`**
 
 ```bash
-grep -n "API_BASE.*image\|/image/" website/nextjs/components/Platform/ParkPanelDetail.tsx
+grep -n "API_BASE.*image\|/image/" legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx
 ```
 
 Expected: a line like `${API_BASE}/image/${encodeURIComponent(jobId)}/${encodeURIComponent(firstFile)}`.
@@ -350,7 +350,7 @@ def serve_result_image(job_id: str, filename: str):
 
 - [ ] **Step 4: Update `ParkPanelDetail.tsx` to use `/results/`**
 
-In `website/nextjs/components/Platform/ParkPanelDetail.tsx`, change:
+In `legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx`, change:
 
 ```ts
 // old
@@ -436,7 +436,7 @@ Also update the `api` service's `environment:` block to pass through the CUDA de
 
 ```bash
 git add platform/api/app.py \
-        website/nextjs/components/Platform/ParkPanelDetail.tsx \
+        legacy/axalon-nextjs/components/Platform/ParkPanelDetail.tsx \
         docker-compose.yml
 git commit -m "fix: /results/ image endpoint, GPU Docker stanza, results TTL cleanup"
 ```
@@ -448,7 +448,7 @@ git commit -m "fix: /results/ image endpoint, GPU Docker stanza, results TTL cle
 **Files:**
 - Modify: `platform/reporting/report.py`
 - Modify: `platform/api/app.py`
-- Modify: `website/nextjs/components/Platform/InspectTab.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/InspectTab.tsx`
 
 When an operator draws corrections in the Inspect tab, those corrections are persisted to the DB under the inspect `job_id`. This task makes `GET /report/{job_id}?format=json` return those corrections, and adds a Download button to `InspectTab`.
 
@@ -566,7 +566,7 @@ Expected: PASS.
 
 - [ ] **Step 6: Add Download Report button to `InspectTab.tsx`**
 
-In `website/nextjs/components/Platform/InspectTab.tsx`, find where `inspectResult` is rendered (the section that shows detection list and annotated image). Add a download button immediately after the detection list:
+In `legacy/axalon-nextjs/components/Platform/InspectTab.tsx`, find where `inspectResult` is rendered (the section that shows detection list and annotated image). Add a download button immediately after the detection list:
 
 ```tsx
 {inspectResult && (
@@ -600,7 +600,7 @@ Start the stack. Go to the Inspect tab. Upload an image, submit. Draw a correcti
 
 ```bash
 git add platform/reporting/report.py platform/api/app.py \
-        website/nextjs/components/Platform/InspectTab.tsx \
+        legacy/axalon-nextjs/components/Platform/InspectTab.tsx \
         tests/backend/test_corrections_in_report.py
 git commit -m "feat(reports): include operator corrections in inspect-job JSON report"
 ```
@@ -613,9 +613,9 @@ git commit -m "feat(reports): include operator corrections in inspect-job JSON r
 - Create: `platform/park/trend.py`
 - Create: `tests/backend/test_trend.py`
 - Modify: `platform/api/app.py`
-- Create: `website/nextjs/components/Platform/TrendChart.tsx`
-- Modify: `website/nextjs/lib/api.ts`
-- Modify: `website/nextjs/components/Platform/HistoryTab.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/TrendChart.tsx`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/components/Platform/HistoryTab.tsx`
 
 ### 4a — Backend pure function + endpoint
 
@@ -924,7 +924,7 @@ function niceStep(max: number): number {
 
 - [ ] **Step 10: Render TrendChart in `HistoryTab.tsx`**
 
-In `website/nextjs/components/Platform/HistoryTab.tsx`, find where `historyParkId` is set and inspections are listed. Add state and effect for trend data:
+In `legacy/axalon-nextjs/components/Platform/HistoryTab.tsx`, find where `historyParkId` is set and inspections are listed. Add state and effect for trend data:
 
 ```tsx
 import { TrendChart } from '@/components/Platform/TrendChart'
@@ -966,7 +966,7 @@ Add the chart below the existing inspection list in the returned JSX:
 - [ ] **Step 11: Typecheck**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | grep -E "(TrendChart|HistoryTab|api\.ts)"
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | grep -E "(TrendChart|HistoryTab|api\.ts)"
 ```
 
 Expected: empty (no errors in these files).
@@ -978,9 +978,9 @@ Open the History tab, select `SOLAR_PARK_DEMO`. Confirm the trend chart renders 
 - [ ] **Step 13: Commit frontend**
 
 ```bash
-git add website/nextjs/lib/api.ts \
-        website/nextjs/components/Platform/TrendChart.tsx \
-        website/nextjs/components/Platform/HistoryTab.tsx
+git add legacy/axalon-nextjs/lib/api.ts \
+        legacy/axalon-nextjs/components/Platform/TrendChart.tsx \
+        legacy/axalon-nextjs/components/Platform/HistoryTab.tsx
 git commit -m "feat(history): anomaly trend chart (pure SVG, no deps)"
 ```
 
@@ -992,8 +992,8 @@ git commit -m "feat(history): anomaly trend chart (pure SVG, no deps)"
 - Create: `platform/park/recurring.py`
 - Test: `tests/backend/test_trend.py` (append)
 - Modify: `platform/api/app.py`
-- Modify: `website/nextjs/lib/api.ts`
-- Modify: `website/nextjs/components/Platform/HistoryTab.tsx`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/components/Platform/HistoryTab.tsx`
 
 ### 5a — Backend
 
@@ -1236,7 +1236,7 @@ Add the table below the TrendChart section:
 - [ ] **Step 9: Typecheck**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | grep -E "(HistoryTab|RecurringPanel|api\.ts)"
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | grep -E "(HistoryTab|RecurringPanel|api\.ts)"
 ```
 
 Expected: empty.
@@ -1244,8 +1244,8 @@ Expected: empty.
 - [ ] **Step 10: Commit frontend**
 
 ```bash
-git add website/nextjs/lib/api.ts \
-        website/nextjs/components/Platform/HistoryTab.tsx
+git add legacy/axalon-nextjs/lib/api.ts \
+        legacy/axalon-nextjs/components/Platform/HistoryTab.tsx
 git commit -m "feat(history): recurring faults table in History tab"
 ```
 
@@ -1254,13 +1254,13 @@ git commit -m "feat(history): recurring faults table in History tab"
 ## Task 6: Park mode UI
 
 **Files:**
-- Modify: `website/nextjs/components/Platform/OperationsTab.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/OperationsTab.tsx`
 
 The `/batch` endpoint accepts `park_mode: "auto" | "numbered" | "unnumbered"` but the UI never sends it, always defaulting to `"auto"`. This task adds a select to `OperationsTab`.
 
 - [ ] **Step 1: Add `parkMode` state and select to `OperationsTab.tsx`**
 
-In `website/nextjs/components/Platform/OperationsTab.tsx`, find the existing form state declarations (near `parkId`, `altitude` state). Add:
+In `legacy/axalon-nextjs/components/Platform/OperationsTab.tsx`, find the existing form state declarations (near `parkId`, `altitude` state). Add:
 
 ```tsx
 const [parkMode, setParkMode] = useState<'auto' | 'numbered' | 'unnumbered'>('auto')
@@ -1299,7 +1299,7 @@ Open Operations tab. Confirm the Park Mode dropdown appears. Select "Numbered (O
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/OperationsTab.tsx
+git add legacy/axalon-nextjs/components/Platform/OperationsTab.tsx
 git commit -m "feat(operations): park mode selector (auto/numbered/unnumbered)"
 ```
 
@@ -1308,7 +1308,7 @@ git commit -m "feat(operations): park mode selector (auto/numbered/unnumbered)"
 ## Task 7: AuthGate unit tests
 
 **Files:**
-- Create: `website/nextjs/tests/unit/AuthGate.test.tsx`
+- Create: `legacy/axalon-nextjs/tests/unit/AuthGate.test.tsx`
 
 - [ ] **Step 1: Write the test file**
 
@@ -1384,7 +1384,7 @@ describe('AuthGate', () => {
 - [ ] **Step 2: Run to confirm all pass**
 
 ```bash
-cd website/nextjs && npm test -- tests/unit/AuthGate.test.tsx
+cd legacy/axalon-nextjs && npm test -- tests/unit/AuthGate.test.tsx
 ```
 
 Expected: 7 passed.
@@ -1394,7 +1394,7 @@ If any test fails because `AuthGate` doesn't exist yet (Phase 4 not yet executed
 - [ ] **Step 3: Run full vitest suite to confirm no regressions**
 
 ```bash
-cd website/nextjs && npm test
+cd legacy/axalon-nextjs && npm test
 ```
 
 Expected: all existing tests pass + 7 new AuthGate tests.
@@ -1402,7 +1402,7 @@ Expected: all existing tests pass + 7 new AuthGate tests.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/tests/unit/AuthGate.test.tsx
+git add legacy/axalon-nextjs/tests/unit/AuthGate.test.tsx
 git commit -m "test(auth): vitest coverage for AuthGate lock/unlock flow"
 ```
 
@@ -1411,7 +1411,7 @@ git commit -m "test(auth): vitest coverage for AuthGate lock/unlock flow"
 ## Task 8: Annotation editor e2e test
 
 **Files:**
-- Create: `website/nextjs/tests/e2e/annotation.spec.ts`
+- Create: `legacy/axalon-nextjs/tests/e2e/annotation.spec.ts`
 
 - [ ] **Step 1: Write the Playwright test**
 
@@ -1526,7 +1526,7 @@ Expected: file present. If not, run `python3 scripts/make_sample_mission.py` fir
 ```bash
 ./run.sh all &   # or docker compose up -d
 sleep 15
-cd website/nextjs && npm run test:e2e -- tests/e2e/annotation.spec.ts
+cd legacy/axalon-nextjs && npm run test:e2e -- tests/e2e/annotation.spec.ts
 ```
 
 Expected: 2 passed.
@@ -1536,7 +1536,7 @@ If the canvas drag doesn't register because of a pointer event issue, use `page.
 - [ ] **Step 4: Run full e2e suite to confirm no golden-path regressions**
 
 ```bash
-cd website/nextjs && npm run test:e2e
+cd legacy/axalon-nextjs && npm run test:e2e
 ```
 
 Expected: all e2e tests pass (golden-path + 2 annotation tests).
@@ -1544,7 +1544,7 @@ Expected: all e2e tests pass (golden-path + 2 annotation tests).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/tests/e2e/annotation.spec.ts
+git add legacy/axalon-nextjs/tests/e2e/annotation.spec.ts
 git commit -m "test(e2e): playwright coverage for annotation editor draw/save/delete"
 ```
 

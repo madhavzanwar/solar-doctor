@@ -48,7 +48,7 @@ from typing import Any
 import cv2
 import numpy as np
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 logger = get_logger("axalon.fusion_calibration")
 

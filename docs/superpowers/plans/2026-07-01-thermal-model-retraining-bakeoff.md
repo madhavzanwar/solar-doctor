@@ -2,35 +2,35 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a real, honestly-labeled combined training dataset from the three raw sources in `ml/Datasets/`, then train and compare YOLO11x, RT-DETR-x, and Co-DETR on it to pick the best model for `ml/checkpoints/best.pt`.
+**Goal:** Build a real, honestly-labeled combined training dataset from the three raw sources in `ml/Datasets/`, then train and compare YOLO11x, RT-DETR-x, and Co-DETR on it to pick the best model for `ml/thermal/checkpoints/best.pt`.
 
-**Architecture:** Extend the existing (already tested) `ml/src/dataset.py` merge pipeline with a third data source (PVMD) and a directory-layout fix, wire it into an end-to-end script producing `ml/data/combined/`, then run three independent training pipelines (two via Ultralytics, one via MMDetection) on GCP Compute Engine, and select a winner via a CRITICAL-class-weighted comparison script.
+**Architecture:** Extend the existing (already tested) `ml/thermal/src/dataset.py` merge pipeline with a third data source (PVMD) and a directory-layout fix, wire it into an end-to-end script producing `ml/data/combined/`, then run three independent training pipelines (two via Ultralytics, one via MMDetection) on GCP Compute Engine, and select a winner via a CRITICAL-class-weighted comparison script.
 
 **Tech Stack:** Python 3.12, Ultralytics 8.4 (YOLO11x, RT-DETR-x), MMDetection (Co-DETR), scikit-learn (stratified split, already a dependency), GCP Compute Engine (spot GPU VM).
 
 ## Global Constraints
 
-- Canonical class list, IDs, and severity map live ONLY in `ml/src/utils.py` — never redefine `CANONICAL_CLASSES`, `CLASS2ID`, or `SEVERITY_MAP` elsewhere.
-- `ml/thermal_dataset.yaml` defines the on-disk dataset contract: `ml/data/combined/{train,val,test}/{images,labels}` — the pipeline output must match this exactly (split-then-modality nesting).
+- Canonical class list, IDs, and severity map live ONLY in `ml/thermal/src/utils.py` — never redefine `CANONICAL_CLASSES`, `CLASS2ID`, or `SEVERITY_MAP` elsewhere.
+- `ml/thermal/thermal_dataset.yaml` defines the on-disk dataset contract: `ml/data/combined/{train,val,test}/{images,labels}` — the pipeline output must match this exactly (split-then-modality nesting).
 - Tests for `ml/` code follow the existing repo convention: a plain script with a `@test(name)` decorator and `sys.exit(0 if failed==0 else 1)` at the bottom (see `tests/test_ml_dataset.py`), run directly via `PYTHONSAFEPATH=1 python3 tests/test_ml_dataset.py` — NOT pytest (the file isn't pytest-collectible; it calls `sys.exit()` at import time). Extend that file; do not create a parallel pytest suite for ML code.
 - `PYTHONSAFEPATH=1` (or the existing `--import-mode=importlib` pytest config) is required for any Python invocation from the repo root, because `platform/` (this repo's directory) shadows the stdlib `platform` module otherwise.
-- Heavy ML dependencies (`ultralytics`, `torch`, `mmdet`) must be imported lazily inside functions, never at module top-level, so scripts remain importable/testable without GPU/heavy deps installed (see `ml/eval/evaluate.py` for the existing pattern).
-- No CRITICAL-class (`string`, `bypass-diode`, `hot-spot-high` per `SEVERITY_MAP`) regression beyond 0.05 absolute AP50 drop is acceptable when promoting a new model (reuse `ml/eval/compare.py`'s `REGRESSION_THRESHOLD`).
+- Heavy ML dependencies (`ultralytics`, `torch`, `mmdet`) must be imported lazily inside functions, never at module top-level, so scripts remain importable/testable without GPU/heavy deps installed (see `ml/thermal/eval/evaluate.py` for the existing pattern).
+- No CRITICAL-class (`string`, `bypass-diode`, `hot-spot-high` per `SEVERITY_MAP`) regression beyond 0.05 absolute AP50 drop is acceptable when promoting a new model (reuse `ml/thermal/eval/compare.py`'s `REGRESSION_THRESHOLD`).
 
 ---
 
 ## Context: what already exists (read this before starting)
 
-`ml/src/dataset.py` is a **working, tested** dataset-merge module (35/35 tests passing in `tests/test_ml_dataset.py`) that already handles two of the three sources:
+`ml/thermal/src/dataset.py` is a **working, tested** dataset-merge module (35/35 tests passing in `tests/test_ml_dataset.py`) that already handles two of the three sources:
 
 - `ISM_CLASSES_MAP` + `collect_ism_pairs()` — InfraredSolarModules (20k classification crops) → weak whole-image YOLO boxes, remapped to canonical classes. Note: `"No-Anomaly"` is mapped to `"module"` (kept as a positive nominal-module detection target, not discarded) and `"Cracking"` is mapped to `"hot-spot-low"` (physical cracking manifests thermally as a localized low-severity hot spot) — these are deliberate existing choices; do not change them without discussing with the user first.
 - `PV_CLASSES_MAP` + `collect_pv_pairs()` — the Roboflow `archive.zip` / `ImageSet` dataset (8 classes, real bboxes) → remapped to canonical classes. Note this mapping already routes `"StringReversedPolarity"` → `"short-circuit"` (30 examples) and `"StringOpenCircuit"` → `"string"` (717 examples) — **`short-circuit` is NOT a zero-coverage class**, contrary to what the design spec's dataset table says. The spec's coverage table is superseded by this existing code; treat `short-circuit` as thin-but-present coverage (~30 images), not absent.
 - `stratified_split()` and `collect_all_pairs()` — generic merge/split helpers, source-agnostic.
-- `write_merged_dataset()` — **has a directory-layout bug**: it writes to `out_root/images/<split>/` and `out_root/labels/<split>/`, but `ml/thermal_dataset.yaml` expects `out_root/<split>/images/` and `out_root/<split>/labels/`. This must be fixed (Task 2) before the pipeline can produce a dataset `ml/thermal_dataset.yaml` can actually read.
+- `write_merged_dataset()` — **has a directory-layout bug**: it writes to `out_root/images/<split>/` and `out_root/labels/<split>/`, but `ml/thermal/thermal_dataset.yaml` expects `out_root/<split>/images/` and `out_root/<split>/labels/`. This must be fixed (Task 2) before the pipeline can produce a dataset `ml/thermal/thermal_dataset.yaml` can actually read.
 
 What's still missing, in build order:
 1. Extraction helpers for `archive.zip` and the PVMD `.rar` (InfraredSolarModules is already pre-extracted on disk).
-2. PVMD support in `ml/src/dataset.py` (third class-mapping + collector) and the directory-layout fix.
+2. PVMD support in `ml/thermal/src/dataset.py` (third class-mapping + collector) and the directory-layout fix.
 3. An end-to-end runner script producing `ml/data/combined/` + a class-distribution report.
 4. Ultralytics configs/trainer for YOLO11x and RT-DETR-x.
 5. MMDetection YOLO→COCO conversion + Co-DETR config.
@@ -42,7 +42,7 @@ What's still missing, in build order:
 ### Task 1: Dataset extraction helpers
 
 **Files:**
-- Create: `ml/src/extract.py`
+- Create: `ml/thermal/src/extract.py`
 - Test: extend `tests/test_ml_dataset.py` (new "Section 6: extraction" block, appended before the SUMMARY section)
 
 **Interfaces:**
@@ -60,7 +60,7 @@ Append to `tests/test_ml_dataset.py`, just before the `# SUMMARY` section:
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 6: extract.py ────────────────────────────────────────────")
 
-from ml.src.extract import extract_archive_zip, extract_pvmd
+from ml.thermal.src.extract import extract_archive_zip, extract_pvmd
 
 ARCHIVE_ZIP = ROOT / "ml/Datasets/archive.zip"
 PVMD_ZIP = ROOT / (
@@ -110,11 +110,11 @@ def _():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `PYTHONSAFEPATH=1 python3 tests/test_ml_dataset.py 2>&1 | tail -20`
-Expected: `ModuleNotFoundError: No module named 'ml.src.extract'` (or FAIL entries for the new Section 6 tests), while all pre-existing Section 1-5 tests still show PASS.
+Expected: `ModuleNotFoundError: No module named 'ml.thermal.src.extract'` (or FAIL entries for the new Section 6 tests), while all pre-existing Section 1-5 tests still show PASS.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `ml/src/extract.py`:
+Create `ml/thermal/src/extract.py`:
 
 ```python
 """
@@ -124,7 +124,7 @@ ml/Datasets/.
 InfraredSolarModules is already pre-extracted on disk (see
 ml/Datasets/InfraredSolarModules/2020-02-14_InfraredSolarModules/) so it needs
 no helper here. archive.zip and the PVMD dataset (a .zip containing a .rar)
-still need extraction before ml.src.dataset can scan them.
+still need extraction before ml.thermal.src.dataset can scan them.
 """
 
 from __future__ import annotations
@@ -133,7 +133,7 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -206,16 +206,16 @@ Expected: all Section 6 tests PASS, total count increases from 35 to 39, 0 faile
 - [ ] **Step 5: Commit**
 
 ```bash
-git add ml/src/extract.py tests/test_ml_dataset.py
+git add ml/thermal/src/extract.py tests/test_ml_dataset.py
 git commit -m "feat(ml): add idempotent extraction helpers for archive.zip and PVMD dataset"
 ```
 
 ---
 
-### Task 2: PVMD dataset support + directory-layout fix in `ml/src/dataset.py`
+### Task 2: PVMD dataset support + directory-layout fix in `ml/thermal/src/dataset.py`
 
 **Files:**
-- Modify: `ml/src/dataset.py`
+- Modify: `ml/thermal/src/dataset.py`
 - Test: extend `tests/test_ml_dataset.py` ("Section 7: PVMD + merge fixes")
 
 **Interfaces:**
@@ -234,7 +234,7 @@ Append to `tests/test_ml_dataset.py` after the Section 6 block added in Task 1:
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 7: PVMD support + layout fix ─────────────────────────────")
 
-from ml.src.dataset import (
+from ml.thermal.src.dataset import (
     PVMD_CLASSES_MAP, collect_pvmd_pairs, write_merged_dataset,
 )
 
@@ -298,7 +298,7 @@ Expected: `ImportError: cannot import name 'PVMD_CLASSES_MAP'` and/or the layout
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `ml/src/dataset.py`, add after `PV_CLASSES_MAP`:
+In `ml/thermal/src/dataset.py`, add after `PV_CLASSES_MAP`:
 
 ```python
 # ── PVMD class name → canonical class name ──────────────────────────────────
@@ -396,7 +396,7 @@ Expected: all Section 7 tests PASS, total count increases to 44, 0 failed.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add ml/src/dataset.py tests/test_ml_dataset.py
+git add ml/thermal/src/dataset.py tests/test_ml_dataset.py
 git commit -m "feat(ml): add PVMD dataset support and fix write_merged_dataset directory layout"
 ```
 
@@ -405,7 +405,7 @@ git commit -m "feat(ml): add PVMD dataset support and fix write_merged_dataset d
 ### Task 3: End-to-end combined-dataset builder + class-distribution report
 
 **Files:**
-- Modify: `ml/scripts/prepare_dataset.py` (full rewrite — the existing content references a nonexistent PV-Hawk dataset and a Roboflow path/class-name scheme that doesn't match any real source; replace it entirely)
+- Modify: `ml/thermal/scripts/prepare_dataset.py` (full rewrite — the existing content references a nonexistent PV-Hawk dataset and a Roboflow path/class-name scheme that doesn't match any real source; replace it entirely)
 - Test: extend `tests/test_ml_dataset.py` ("Section 8: end-to-end build")
 
 **Interfaces:**
@@ -466,12 +466,12 @@ Expected: `ImportError: cannot import name 'build_combined_dataset'` (the curren
 
 - [ ] **Step 3: Write minimal implementation**
 
-Replace the entire contents of `ml/scripts/prepare_dataset.py`:
+Replace the entire contents of `ml/thermal/scripts/prepare_dataset.py`:
 
 ```python
 """
 prepare_dataset.py — build ml/data/combined/ from the three raw datasets in
-ml/Datasets/, matching the layout ml/thermal_dataset.yaml expects
+ml/Datasets/, matching the layout ml/thermal/thermal_dataset.yaml expects
 (<split>/images/, <split>/labels/).
 
 Usage:
@@ -479,7 +479,7 @@ Usage:
         --out ml/data/combined \
         --staging ml/data/_staging
 
-Sources merged (see ml/src/dataset.py for class-mapping tables):
+Sources merged (see ml/thermal/src/dataset.py for class-mapping tables):
     - InfraredSolarModules (already extracted on disk, classification -> weak bbox)
     - archive.zip / ImageSet (Roboflow, real bboxes)
     - PVMD dataset (.zip containing a .rar, classification -> weak bbox)
@@ -491,7 +491,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from ml.src.dataset import (
+from ml.thermal.src.dataset import (
     PV_CLASSES_MAP,
     collect_all_pairs,
     collect_ism_pairs,
@@ -500,8 +500,8 @@ from ml.src.dataset import (
     stratified_split,
     write_merged_dataset,
 )
-from ml.src.extract import extract_archive_zip, extract_pvmd
-from ml.src.utils import CANONICAL_CLASSES, ID2CLASS, get_logger, read_yolo_label
+from ml.thermal.src.extract import extract_archive_zip, extract_pvmd
+from ml.thermal.src.utils import CANONICAL_CLASSES, ID2CLASS, get_logger, read_yolo_label
 
 logger = get_logger(__name__)
 
@@ -604,7 +604,7 @@ Expected: all Section 8 tests PASS, total count increases to 46, 0 failed. (This
 - [ ] **Step 5: Commit**
 
 ```bash
-git add ml/scripts/prepare_dataset.py tests/test_ml_dataset.py
+git add ml/thermal/scripts/prepare_dataset.py tests/test_ml_dataset.py
 git commit -m "feat(ml): rewrite prepare_dataset.py as end-to-end 3-source dataset builder"
 ```
 
@@ -618,13 +618,13 @@ Expected: `ml/data/combined/{train,val,test}/{images,labels}` populated, plus `m
 ### Task 4: Ultralytics bake-off candidates (YOLO11x, RT-DETR-x)
 
 **Files:**
-- Create: `ml/configs/thermal_yolo11x.yaml`
-- Create: `ml/configs/thermal_rtdetr_x.yaml`
-- Create: `ml/scripts/train_ultralytics.py`
+- Create: `ml/thermal/configs/thermal_yolo11x.yaml`
+- Create: `ml/thermal/configs/thermal_rtdetr_x.yaml`
+- Create: `ml/thermal/scripts/train_ultralytics.py`
 - Test: `tests/test_train_ultralytics.py` (new file — this one mocks a heavy dependency and is import-light, so it's fine as a small standalone script following the same `@test` convention)
 
 **Interfaces:**
-- Consumes: `ml/thermal_dataset.yaml` (dataset), the two new config YAMLs.
+- Consumes: `ml/thermal/thermal_dataset.yaml` (dataset), the two new config YAMLs.
 - Produces: `load_training_config(path: Path) -> dict`, `build_model(architecture: str)` (lazy-imports `ultralytics.YOLO` or `ultralytics.RTDETR` based on `architecture in {"yolo11x", "rtdetr-x"}`), `run_training(config_path: Path) -> None`.
 
 - [ ] **Step 1: Write the failing test**
@@ -676,14 +676,14 @@ ROOT = Path(_ROOT)
 
 @test("load_training_config reads yolo11x config")
 def _():
-    cfg = load_training_config(ROOT / "ml/configs/thermal_yolo11x.yaml")
+    cfg = load_training_config(ROOT / "ml/thermal/configs/thermal_yolo11x.yaml")
     assert cfg["model"] == "yolo11x.pt"
-    assert cfg["dataset_yaml"] == "ml/thermal_dataset.yaml"
+    assert cfg["dataset_yaml"] == "ml/thermal/thermal_dataset.yaml"
 
 
 @test("load_training_config reads rtdetr config")
 def _():
-    cfg = load_training_config(ROOT / "ml/configs/thermal_rtdetr_x.yaml")
+    cfg = load_training_config(ROOT / "ml/thermal/configs/thermal_rtdetr_x.yaml")
     assert cfg["model"] == "rtdetr-x.pt"
 
 
@@ -705,7 +705,7 @@ def _():
 
 @test("run_training calls model.train() with config's hyperparameters")
 def _():
-    cfg_path = ROOT / "ml/configs/thermal_yolo11x.yaml"
+    cfg_path = ROOT / "ml/thermal/configs/thermal_yolo11x.yaml"
     cfg = yaml.safe_load(cfg_path.read_text())
     with patch("ml.scripts.train_ultralytics.build_model") as mock_build:
         mock_model = MagicMock()
@@ -736,11 +736,11 @@ Expected: `ModuleNotFoundError: No module named 'ml.scripts.train_ultralytics'` 
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `ml/configs/thermal_yolo11x.yaml` (copy of `ml/configs/thermal.yaml` with the model swapped):
+Create `ml/thermal/configs/thermal_yolo11x.yaml` (copy of `ml/thermal/configs/thermal.yaml` with the model swapped):
 
 ```yaml
 # ── YOLO11x Thermal Solar Training Config (bake-off candidate 1) ────────────
-dataset_yaml: ml/thermal_dataset.yaml
+dataset_yaml: ml/thermal/thermal_dataset.yaml
 imgsz: 640
 
 model: yolo11x.pt
@@ -769,17 +769,17 @@ mixup: 0.15
 copy_paste: 0.1
 close_mosaic: 15
 
-project: ml/runs/thermal
+project: ml/thermal/runs/thermal
 name: yolo11x_solar
 save_period: 10
 plots: true
 ```
 
-Create `ml/configs/thermal_rtdetr_x.yaml` (same hyperparameters, RT-DETR doesn't use YOLO-style mosaic/copy-paste augmentation the same way, so those are dropped):
+Create `ml/thermal/configs/thermal_rtdetr_x.yaml` (same hyperparameters, RT-DETR doesn't use YOLO-style mosaic/copy-paste augmentation the same way, so those are dropped):
 
 ```yaml
 # ── RT-DETR-x Thermal Solar Training Config (bake-off candidate 2) ──────────
-dataset_yaml: ml/thermal_dataset.yaml
+dataset_yaml: ml/thermal/thermal_dataset.yaml
 imgsz: 640
 
 model: rtdetr-x.pt
@@ -804,13 +804,13 @@ scale: 0.3
 fliplr: 0.5
 flipud: 0.0
 
-project: ml/runs/thermal
+project: ml/thermal/runs/thermal
 name: rtdetr_x_solar
 save_period: 10
 plots: true
 ```
 
-Create `ml/scripts/train_ultralytics.py`:
+Create `ml/thermal/scripts/train_ultralytics.py`:
 
 ```python
 """
@@ -818,8 +818,8 @@ train_ultralytics.py — shared Ultralytics trainer for the YOLO11x and RT-DETR-
 bake-off candidates.
 
 Usage:
-    python3 -m ml.scripts.train_ultralytics --config ml/configs/thermal_yolo11x.yaml
-    python3 -m ml.scripts.train_ultralytics --config ml/configs/thermal_rtdetr_x.yaml
+    python3 -m ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_yolo11x.yaml
+    python3 -m ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_rtdetr_x.yaml
 """
 from __future__ import annotations
 
@@ -828,7 +828,7 @@ from pathlib import Path
 
 import yaml
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -880,7 +880,7 @@ Expected: 5 passed, 0 failed.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add ml/configs/thermal_yolo11x.yaml ml/configs/thermal_rtdetr_x.yaml ml/scripts/train_ultralytics.py tests/test_train_ultralytics.py
+git add ml/thermal/configs/thermal_yolo11x.yaml ml/thermal/configs/thermal_rtdetr_x.yaml ml/thermal/scripts/train_ultralytics.py tests/test_train_ultralytics.py
 git commit -m "feat(ml): add YOLO11x and RT-DETR-x bake-off training configs and shared trainer"
 ```
 
@@ -889,12 +889,12 @@ git commit -m "feat(ml): add YOLO11x and RT-DETR-x bake-off training configs and
 ### Task 5: Co-DETR candidate — YOLO-to-COCO conversion + MMDetection config
 
 **Files:**
-- Create: `ml/scripts/yolo_to_coco.py`
-- Create: `ml/configs/co_detr_thermal.py`
+- Create: `ml/thermal/scripts/yolo_to_coco.py`
+- Create: `ml/thermal/configs/co_detr_thermal.py`
 - Test: `tests/test_yolo_to_coco.py`
 
 **Interfaces:**
-- Consumes: `ml/data/combined/{split}/{images,labels}` (Task 3 output), `CANONICAL_CLASSES` from `ml.src.utils`.
+- Consumes: `ml/data/combined/{split}/{images,labels}` (Task 3 output), `CANONICAL_CLASSES` from `ml.thermal.src.utils`.
 - Produces: `yolo_split_to_coco(images_dir: Path, labels_dir: Path, class_names: list[str]) -> dict` (an in-memory COCO-format dict), `convert_all_splits(combined_root: Path, out_root: Path) -> None`.
 
 - [ ] **Step 1: Write the failing test**
@@ -941,7 +941,7 @@ def test(name: str):
 
 
 from ml.scripts.yolo_to_coco import yolo_split_to_coco
-from ml.src.utils import CANONICAL_CLASSES
+from ml.thermal.src.utils import CANONICAL_CLASSES
 
 
 def _make_fixture_split(tmpdir: Path) -> tuple[Path, Path]:
@@ -1027,7 +1027,7 @@ Expected: `ModuleNotFoundError: No module named 'ml.scripts.yolo_to_coco'`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `ml/scripts/yolo_to_coco.py`:
+Create `ml/thermal/scripts/yolo_to_coco.py`:
 
 ```python
 """
@@ -1045,7 +1045,7 @@ from pathlib import Path
 
 import cv2
 
-from ml.src.utils import CANONICAL_CLASSES, get_logger, read_yolo_label, yolo_to_pixel
+from ml.thermal.src.utils import CANONICAL_CLASSES, get_logger, read_yolo_label, yolo_to_pixel
 
 logger = get_logger(__name__)
 
@@ -1112,14 +1112,14 @@ if __name__ == "__main__":
     main()
 ```
 
-Create `ml/configs/co_detr_thermal.py` (MMDetection config; references the converted COCO data and does not import mmdet at plan-write time, just describes the config the way MMDetection expects to load it):
+Create `ml/thermal/configs/co_detr_thermal.py` (MMDetection config; references the converted COCO data and does not import mmdet at plan-write time, just describes the config the way MMDetection expects to load it):
 
 ```python
 """
 co_detr_thermal.py — MMDetection config for the Co-DETR bake-off candidate.
 
 Usage (on the GCP training VM, inside an MMDetection checkout):
-    python tools/train.py ml/configs/co_detr_thermal.py
+    python tools/train.py ml/thermal/configs/co_detr_thermal.py
 
 Falls back to DINO (base = 'dino/dino-4scale_r50_8xb2-12e_coco.py') if Co-DETR
 training proves unstable — see the "Risks" section of the design spec at
@@ -1163,7 +1163,7 @@ test_dataloader = val_dataloader
 val_evaluator = dict(ann_file=data_root + "val.json")
 test_evaluator = val_evaluator
 
-work_dir = "ml/runs/thermal/codetr_solar"
+work_dir = "ml/thermal/runs/thermal/codetr_solar"
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1174,7 +1174,7 @@ Expected: 5 passed, 0 failed.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add ml/scripts/yolo_to_coco.py ml/configs/co_detr_thermal.py tests/test_yolo_to_coco.py
+git add ml/thermal/scripts/yolo_to_coco.py ml/thermal/configs/co_detr_thermal.py tests/test_yolo_to_coco.py
 git commit -m "feat(ml): add YOLO-to-COCO converter and Co-DETR MMDetection config"
 ```
 
@@ -1188,7 +1188,7 @@ git commit -m "feat(ml): add YOLO-to-COCO converter and Co-DETR MMDetection conf
 - Create: `deploy/gcp/README.md`
 
 **Interfaces:**
-- Consumes: `ml/scripts/train_ultralytics.py` + `ml/configs/thermal_yolo11x.yaml` / `thermal_rtdetr_x.yaml` (Task 4), `ml/scripts/yolo_to_coco.py` + `ml/configs/co_detr_thermal.py` (Task 5), `ml/data/combined` (Task 3).
+- Consumes: `ml/thermal/scripts/train_ultralytics.py` + `ml/thermal/configs/thermal_yolo11x.yaml` / `thermal_rtdetr_x.yaml` (Task 4), `ml/thermal/scripts/yolo_to_coco.py` + `ml/thermal/configs/co_detr_thermal.py` (Task 5), `ml/data/combined` (Task 3).
 - Produces: no Python interfaces — this is operator-facing shell tooling, verified by syntax check and manual review, not pytest.
 
 - [ ] **Step 1: Write the provisioning script**
@@ -1271,14 +1271,14 @@ cd repo
 ln -s "$MOUNT_POINT"/combined ml/data/combined
 [ -d "$MOUNT_POINT/combined_coco" ] && ln -s "$MOUNT_POINT"/combined_coco ml/data/combined_coco
 
-pip install -r ml/requirements.txt
+pip install -r ml/thermal/requirements.txt
 
 case "$CANDIDATE" in
   yolo11x)
-    python3 -m ml.scripts.train_ultralytics --config ml/configs/thermal_yolo11x.yaml
+    python3 -m ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_yolo11x.yaml
     ;;
   rtdetr-x)
-    python3 -m ml.scripts.train_ultralytics --config ml/configs/thermal_rtdetr_x.yaml
+    python3 -m ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_rtdetr_x.yaml
     ;;
   codetr)
     git clone --depth 1 https://github.com/Sense-X/Co-DETR.git /opt/co-detr
@@ -1311,7 +1311,7 @@ Per-candidate run:
 ./deploy/gcp/provision-training-vm.sh codetr    axalon-ml-training us-central1-a
 ```
 
-Each VM auto-shuts-down when training completes (see `train-vm-startup.sh`'s final `shutdown -h now`) so spot billing stops without manual intervention. Checkpoints land under `ml/runs/thermal/<name>/weights/` (Ultralytics candidates) or `ml/runs/thermal/codetr_solar/` (Co-DETR) — copy these back locally (`gcloud compute scp`) before deleting the VM.
+Each VM auto-shuts-down when training completes (see `train-vm-startup.sh`'s final `shutdown -h now`) so spot billing stops without manual intervention. Checkpoints land under `ml/thermal/runs/thermal/<name>/weights/` (Ultralytics candidates) or `ml/thermal/runs/thermal/codetr_solar/` (Co-DETR) — copy these back locally (`gcloud compute scp`) before deleting the VM.
 
 Budget: three candidate runs plus one hyperparameter follow-up on the winner, within the $300 GCP credit, using spot L4 pricing.
 ```
@@ -1334,12 +1334,12 @@ git commit -m "feat(deploy): add GCP spot-GPU provisioning scripts for the model
 ### Task 7: Bake-off winner selection
 
 **Files:**
-- Create: `ml/eval/select_winner.py`
+- Create: `ml/thermal/eval/select_winner.py`
 - Test: `tests/test_select_winner.py`
 
 **Interfaces:**
-- Consumes: metrics JSONs in the shape produced by `ml/eval/evaluate.py`'s `run_eval()` (keys: `model`, `map50`, `map50_95`, `per_class: {name: {precision, recall, ap50}}`); `SEVERITY_MAP` from `ml.src.utils`.
-- Produces: `score_candidate(metrics: dict, critical_weight: float = 2.0) -> float`, `select_winner(baseline_path: str, candidate_paths: dict[str, str], critical_weight: float = 2.0) -> dict` (returns `{"ranking": [...], "winner": str, "winner_metrics_path": str}`, and writes the same dict to `ml/eval/results/selection_report.json`).
+- Consumes: metrics JSONs in the shape produced by `ml/thermal/eval/evaluate.py`'s `run_eval()` (keys: `model`, `map50`, `map50_95`, `per_class: {name: {precision, recall, ap50}}`); `SEVERITY_MAP` from `ml.thermal.src.utils`.
+- Produces: `score_candidate(metrics: dict, critical_weight: float = 2.0) -> float`, `select_winner(baseline_path: str, candidate_paths: dict[str, str], critical_weight: float = 2.0) -> dict` (returns `{"ranking": [...], "winner": str, "winner_metrics_path": str}`, and writes the same dict to `ml/thermal/eval/results/selection_report.json`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1469,7 +1469,7 @@ Expected: `ModuleNotFoundError: No module named 'ml.eval.select_winner'`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `ml/eval/select_winner.py`:
+Create `ml/thermal/eval/select_winner.py`:
 
 ```python
 #!/usr/bin/env python3
@@ -1477,13 +1477,13 @@ Create `ml/eval/select_winner.py`:
 
 Usage:
     python3 -m ml.eval.select_winner \
-        --baseline ml/eval/results/baseline/metrics.json \
-        --candidate yolo11x=ml/eval/results/yolo11x/metrics.json \
-        --candidate rtdetr-x=ml/eval/results/rtdetr-x/metrics.json \
-        --candidate codetr=ml/eval/results/codetr/metrics.json \
-        --report-dir ml/eval/results
+        --baseline ml/thermal/eval/results/baseline/metrics.json \
+        --candidate yolo11x=ml/thermal/eval/results/yolo11x/metrics.json \
+        --candidate rtdetr-x=ml/thermal/eval/results/rtdetr-x/metrics.json \
+        --candidate codetr=ml/thermal/eval/results/codetr/metrics.json \
+        --report-dir ml/thermal/eval/results
 
-Weights CRITICAL-severity classes (per ml.src.utils.SEVERITY_MAP) more heavily
+Weights CRITICAL-severity classes (per ml.thermal.src.utils.SEVERITY_MAP) more heavily
 than the flat mAP@0.5, since those drive real remediation priority.
 """
 from __future__ import annotations
@@ -1492,7 +1492,7 @@ import argparse
 import json
 from pathlib import Path
 
-from ml.src.utils import SEVERITY_MAP
+from ml.thermal.src.utils import SEVERITY_MAP
 
 CRITICAL_CLASSES = {cls for cls, sev in SEVERITY_MAP.items() if sev == "CRITICAL"}
 
@@ -1515,7 +1515,7 @@ def select_winner(
     baseline_path: str,
     candidate_paths: dict[str, str],
     critical_weight: float = 2.0,
-    report_dir: Path | str = "ml/eval/results",
+    report_dir: Path | str = "ml/thermal/eval/results",
 ) -> dict:
     """Rank candidates by weighted score, pick a winner, persist the report."""
     baseline = _load(baseline_path)
@@ -1550,7 +1550,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", required=True)
     parser.add_argument("--candidate", action="append", required=True, help="name=path, repeatable")
-    parser.add_argument("--report-dir", default="ml/eval/results")
+    parser.add_argument("--report-dir", default="ml/thermal/eval/results")
     parser.add_argument("--critical-weight", type=float, default=2.0)
     args = parser.parse_args()
 
@@ -1576,7 +1576,7 @@ Expected: 4 passed, 0 failed.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add ml/eval/select_winner.py tests/test_select_winner.py
+git add ml/thermal/eval/select_winner.py tests/test_select_winner.py
 git commit -m "feat(ml): add CRITICAL-weighted bake-off winner selection script"
 ```
 
@@ -1588,6 +1588,6 @@ This plan produces the tooling; running the three real training jobs is an opera
 
 1. `PYTHONSAFEPATH=1 python3 -m ml.scripts.prepare_dataset` locally to build `ml/data/combined/`.
 2. Follow `deploy/gcp/README.md` to run all three candidate trainings on GCP.
-3. Copy each candidate's best weights + run `python3 -m ml.eval.evaluate --model <weights> --data ml/thermal_dataset.yaml --split test --output ml/eval/results/<candidate>/` for baseline and all three candidates.
+3. Copy each candidate's best weights + run `python3 -m ml.eval.evaluate --model <weights> --data ml/thermal/thermal_dataset.yaml --split test --output ml/thermal/eval/results/<candidate>/` for baseline and all three candidates.
 4. Run `python3 -m ml.eval.select_winner --baseline <baseline metrics.json> --candidate yolo11x=<...> --candidate rtdetr-x=<...> --candidate codetr=<...>` to get the ranked report and winner.
-5. Copy the winning weights to `ml/checkpoints/best.pt` (manual step — confirm with the user before overwriting production weights).
+5. Copy the winning weights to `ml/thermal/checkpoints/best.pt` (manual step — confirm with the user before overwriting production weights).

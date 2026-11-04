@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from solardoctor.core import alerts
-from ml.src.utils import SEVERITY_MAP
+from ml.thermal.src.utils import SEVERITY_MAP
 
 
 _ALERT_ENV = (

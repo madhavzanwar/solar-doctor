@@ -210,7 +210,7 @@ class Bench:
 
         if importlib.util.find_spec("easyocr") is None:
             return {"skipped": "easyocr not installed"}
-        from ml.src.utils import load_bgr
+        from ml.thermal.src.utils import load_bgr
         from solardoctor.park.numbering import PanelNumberOCR
 
         try:

@@ -16,7 +16,7 @@
 
 - All new Python lives under `drone/`. Run tests with `python -m pytest drone/tests -v` from repo root.
 - Add `drone/requirements.txt`; install with `pip install -r drone/requirements.txt`.
-- Frontend tests: `cd website/nextjs && npx vitest run <file>`.
+- Frontend tests: `cd legacy/axalon-nextjs && npx vitest run <file>`.
 - Commit after every green step.
 
 ---
@@ -1198,13 +1198,13 @@ git commit -m "test(drone): opt-in SITL e2e + deploy runbook"
 ## Task 9: Frontend live-ops WS client + types
 
 **Files:**
-- Create: `website/nextjs/lib/liveOps.ts`
-- Test: `website/nextjs/tests/unit/liveOps.test.ts`
+- Create: `legacy/axalon-nextjs/lib/liveOps.ts`
+- Test: `legacy/axalon-nextjs/tests/unit/liveOps.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// website/nextjs/tests/unit/liveOps.test.ts
+// legacy/axalon-nextjs/tests/unit/liveOps.test.ts
 import { describe, it, expect } from "vitest";
 import { parseTelemetryFrame, type Telemetry } from "@/lib/liveOps";
 
@@ -1239,13 +1239,13 @@ describe("parseTelemetryFrame", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/liveOps.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/liveOps.test.ts`
 Expected: FAIL — cannot resolve `@/lib/liveOps`
 
 - [ ] **Step 3: Write minimal implementation**
 
 ```ts
-// website/nextjs/lib/liveOps.ts
+// legacy/axalon-nextjs/lib/liveOps.ts
 // Browser-side live-ops client: parses telemetry frames and manages the ops
 // WebSocket subscription to the relay. Mirrors drone/common/telemetry.py.
 
@@ -1330,13 +1330,13 @@ export function connectLiveOps(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/liveOps.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/liveOps.test.ts`
 Expected: PASS (3 passed)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/liveOps.ts website/nextjs/tests/unit/liveOps.test.ts
+git add legacy/axalon-nextjs/lib/liveOps.ts legacy/axalon-nextjs/tests/unit/liveOps.test.ts
 git commit -m "feat(web): live-ops WS client + telemetry parsing"
 ```
 
@@ -1345,8 +1345,8 @@ git commit -m "feat(web): live-ops WS client + telemetry parsing"
 ## Task 10: Frontend Live Ops tab (map marker + HUD)
 
 **Files:**
-- Create: `website/nextjs/components/Platform/LiveOpsTab.tsx`
-- Modify: `website/nextjs/app/platform/page.tsx` (add `'liveops'` tab)
+- Create: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx`
+- Modify: `legacy/axalon-nextjs/app/platform/page.tsx` (add `'liveops'` tab)
 
 No new unit test (presentational + live socket); validated visually against SITL.
 Reuses the Leaflet setup already used by the mission planner — check
@@ -1354,13 +1354,13 @@ Reuses the Leaflet setup already used by the mission planner — check
 
 - [ ] **Step 1: Read the existing map + tab patterns**
 
-Read `website/nextjs/components/Platform/PlanMap.tsx` (Leaflet dynamic import, `ssr:false`)
-and `website/nextjs/app/platform/page.tsx` (how tabs are registered/switched). Match those patterns exactly.
+Read `legacy/axalon-nextjs/components/Platform/PlanMap.tsx` (Leaflet dynamic import, `ssr:false`)
+and `legacy/axalon-nextjs/app/platform/page.tsx` (how tabs are registered/switched). Match those patterns exactly.
 
 - [ ] **Step 2: Create `LiveOpsTab.tsx`**
 
 ```tsx
-// website/nextjs/components/Platform/LiveOpsTab.tsx
+// legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -1428,20 +1428,20 @@ Add a `'liveops'` entry to the existing tab list/switch (matching how `'overview
 
 - [ ] **Step 4: Verify build**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Expected: build succeeds, `/platform` compiles with the new tab.
 
 - [ ] **Step 5: Manual verification against SITL**
 
 With SITL + relay + agent running (Task 8) and `NEXT_PUBLIC_RELAY_WS_URL` /
-`NEXT_PUBLIC_OPS_TOKEN` set in `website/nextjs/.env.local`, run `npm run dev`,
+`NEXT_PUBLIC_OPS_TOKEN` set in `legacy/axalon-nextjs/.env.local`, run `npm run dev`,
 open `/platform` → Live Ops, and confirm the HUD updates and position moves as
 SITL flies.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/LiveOpsTab.tsx website/nextjs/app/platform/page.tsx
+git add legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx legacy/axalon-nextjs/app/platform/page.tsx
 git commit -m "feat(web): Live Ops tab with telemetry HUD + map marker"
 ```
 

@@ -37,7 +37,7 @@ def test(name: str):
 
 
 from ml.scripts.yolo_to_coco import yolo_split_to_coco
-from ml.src.utils import CANONICAL_CLASSES
+from ml.thermal.src.utils import CANONICAL_CLASSES
 
 
 def _make_fixture_split(tmpdir: Path) -> tuple[Path, Path]:

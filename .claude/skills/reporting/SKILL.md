@@ -13,7 +13,7 @@ Renders persisted inspection data into deliverables. Lives in `platform/reportin
 - **GeoJSON** — `geopandas`/`pyproj` for GPS-anchored fault layers.
 
 ## Conventions
-- Severity labels and colors come from `ml.src.utils` (`SEVERITY_MAP`, `SEVERITY_COLOR_BGR`) — never recompute.
+- Severity labels and colors come from `ml.thermal.src.utils` (`SEVERITY_MAP`, `SEVERITY_COLOR_BGR`) — never recompute.
 - Every fault row carries its panel ID (from `park-localization`) and GPS.
 - For **IEC 62446-3** compliance, include absolute temperature and **Delta_T** per anomaly. These come from the drone's MATRIX-TEMP per-pixel matrix (iTL612R Pro) when available — see project memory `drone-camera-specs`. If temperature data is absent, leave those columns blank rather than fabricating values.
 

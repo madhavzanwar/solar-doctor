@@ -1,6 +1,6 @@
 model:
-  weights: ml/checkpoints/best.pt
-  engine: ml/checkpoints/best.engine
+  weights: ml/thermal/checkpoints/best.pt
+  engine: ml/thermal/checkpoints/best.engine
   use_engine: false
   confidence: 0.25
   iou_threshold: 0.45

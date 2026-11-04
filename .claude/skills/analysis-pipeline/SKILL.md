@@ -26,7 +26,7 @@ ingest (unzip / list images)
 
 ## Key invariants
 - Every detection dict matches the contract in the `ml-detection` skill.
-- Severity/color come only from `ml.src.utils` — never recomputed here.
+- Severity/color come only from `ml.thermal.src.utils` — never recomputed here.
 - Every anomaly carries GPS (EXIF or orthomosaic). The custom drone has **no built-in GPS** — coordinates are injected by the companion computer (see hardware notes / `park-localization`).
 - Detection runs on **thermal** images only.
 

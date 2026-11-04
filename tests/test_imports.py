@@ -2,7 +2,7 @@
 
 
 def test_ml_utils_importable():
-    from ml.src.utils import (
+    from ml.thermal.src.utils import (
         CANONICAL_CLASSES, CLASS2ID, ID2CLASS,
         SEVERITY_MAP, SEVERITY_COLOR_BGR,
         draw_detections_severity, read_yolo_label, write_yolo_label,

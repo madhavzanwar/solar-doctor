@@ -17,12 +17,12 @@
 | `platform/db/models.py` | Modify | Add `Correction` ORM model |
 | `platform/db/migrate.py` | Modify | Ensure `corrections` table is created on startup |
 | `platform/api/app.py` | Modify | Add 4 CRUD endpoints + `_serialize_correction` helper |
-| `website/nextjs/lib/api.ts` | Modify | Add `Correction`, `CorrectionCreate` types + 3 API methods |
-| `website/nextjs/components/Platform/canvasCoords.ts` | Create | Pure `normalizeBox`, `yoloToCanvas`, `isTooSmall` utilities |
-| `website/nextjs/components/Platform/AnnotationCanvas.tsx` | Create | Canvas component: image + boxes + draw/select/delete/save |
-| `website/nextjs/components/Platform/InspectTab.tsx` | Modify | Add `natDims` state, pass `onNatSize` to InspectPreview, render AnnotationCanvas |
+| `legacy/axalon-nextjs/lib/api.ts` | Modify | Add `Correction`, `CorrectionCreate` types + 3 API methods |
+| `legacy/axalon-nextjs/components/Platform/canvasCoords.ts` | Create | Pure `normalizeBox`, `yoloToCanvas`, `isTooSmall` utilities |
+| `legacy/axalon-nextjs/components/Platform/AnnotationCanvas.tsx` | Create | Canvas component: image + boxes + draw/select/delete/save |
+| `legacy/axalon-nextjs/components/Platform/InspectTab.tsx` | Modify | Add `natDims` state, pass `onNatSize` to InspectPreview, render AnnotationCanvas |
 | `tests/backend/test_corrections.py` | Create | CRUD endpoint tests |
-| `website/nextjs/tests/unit/canvasCoords.test.ts` | Create | Coordinate utility unit tests |
+| `legacy/axalon-nextjs/tests/unit/canvasCoords.test.ts` | Create | Coordinate utility unit tests |
 
 ---
 
@@ -281,7 +281,7 @@ git commit -m "feat(api): CRUD endpoints for annotation corrections"
 ### Task 3: API client additions
 
 **Files:**
-- Modify: `website/nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
 
 - [ ] **Step 1: Add types after the `ParkDiff` type in api.ts**
 
@@ -324,7 +324,7 @@ export type CorrectionCreate = {
 - [ ] **Step 3: Verify TypeScript compiles**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1
 ```
 
 Expected: no output (zero errors)
@@ -332,7 +332,7 @@ Expected: no output (zero errors)
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/lib/api.ts
+git add legacy/axalon-nextjs/lib/api.ts
 git commit -m "feat(api-client): Correction types and correction methods"
 ```
 
@@ -341,13 +341,13 @@ git commit -m "feat(api-client): Correction types and correction methods"
 ### Task 4: Canvas coordinate utilities
 
 **Files:**
-- Create: `website/nextjs/components/Platform/canvasCoords.ts`
-- Create: `website/nextjs/tests/unit/canvasCoords.test.ts`
+- Create: `legacy/axalon-nextjs/components/Platform/canvasCoords.ts`
+- Create: `legacy/axalon-nextjs/tests/unit/canvasCoords.test.ts`
 
 - [ ] **Step 1: Write failing tests**
 
 ```typescript
-// website/nextjs/tests/unit/canvasCoords.test.ts
+// legacy/axalon-nextjs/tests/unit/canvasCoords.test.ts
 import { describe, it, expect } from 'vitest'
 import { normalizeBox, yoloToCanvas, isTooSmall } from '@/components/Platform/canvasCoords'
 
@@ -401,7 +401,7 @@ describe('isTooSmall', () => {
 - [ ] **Step 2: Run to confirm they fail**
 
 ```bash
-cd website/nextjs && npm test -- tests/unit/canvasCoords.test.ts
+cd legacy/axalon-nextjs && npm test -- tests/unit/canvasCoords.test.ts
 ```
 
 Expected: FAIL — cannot find module `@/components/Platform/canvasCoords`
@@ -409,7 +409,7 @@ Expected: FAIL — cannot find module `@/components/Platform/canvasCoords`
 - [ ] **Step 3: Create canvasCoords.ts**
 
 ```typescript
-// website/nextjs/components/Platform/canvasCoords.ts
+// legacy/axalon-nextjs/components/Platform/canvasCoords.ts
 
 export function normalizeBox(
   x0: number, y0: number,
@@ -442,7 +442,7 @@ export function isTooSmall(x1n: number, y1n: number, x2n: number, y2n: number): 
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-cd website/nextjs && npm test -- tests/unit/canvasCoords.test.ts
+cd legacy/axalon-nextjs && npm test -- tests/unit/canvasCoords.test.ts
 ```
 
 Expected: 7 PASSes
@@ -450,7 +450,7 @@ Expected: 7 PASSes
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/canvasCoords.ts website/nextjs/tests/unit/canvasCoords.test.ts
+git add legacy/axalon-nextjs/components/Platform/canvasCoords.ts legacy/axalon-nextjs/tests/unit/canvasCoords.test.ts
 git commit -m "feat(canvas): coordinate utilities + tests"
 ```
 
@@ -459,12 +459,12 @@ git commit -m "feat(canvas): coordinate utilities + tests"
 ### Task 5: AnnotationCanvas component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/AnnotationCanvas.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/AnnotationCanvas.tsx`
 
 - [ ] **Step 1: Create AnnotationCanvas.tsx**
 
 ```typescript
-// website/nextjs/components/Platform/AnnotationCanvas.tsx
+// legacy/axalon-nextjs/components/Platform/AnnotationCanvas.tsx
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -713,7 +713,7 @@ export function AnnotationCanvas({ jobId, imageFile, natW, natH, yoloBoxes }: Pr
 - [ ] **Step 2: Verify TypeScript compiles**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1
 ```
 
 Expected: no output
@@ -721,7 +721,7 @@ Expected: no output
 - [ ] **Step 3: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/AnnotationCanvas.tsx
+git add legacy/axalon-nextjs/components/Platform/AnnotationCanvas.tsx
 git commit -m "feat(ui): AnnotationCanvas component"
 ```
 
@@ -730,7 +730,7 @@ git commit -m "feat(ui): AnnotationCanvas component"
 ### Task 6: Wire AnnotationCanvas into InspectTab
 
 **Files:**
-- Modify: `website/nextjs/components/Platform/InspectTab.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/InspectTab.tsx`
 
 - [ ] **Step 1: Read InspectTab.tsx**
 
@@ -811,7 +811,7 @@ Immediately after InspectPreview (still inside the result panel section), add:
 - [ ] **Step 5: Verify TypeScript**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1
 ```
 
 Expected: no output
@@ -819,7 +819,7 @@ Expected: no output
 - [ ] **Step 6: Run full test suite**
 
 ```bash
-cd website/nextjs && npm test
+cd legacy/axalon-nextjs && npm test
 ```
 
 Expected: all tests pass
@@ -827,7 +827,7 @@ Expected: all tests pass
 - [ ] **Step 7: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/InspectTab.tsx
+git add legacy/axalon-nextjs/components/Platform/InspectTab.tsx
 git commit -m "feat(inspect): wire AnnotationCanvas for correction drawing"
 ```
 

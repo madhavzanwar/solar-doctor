@@ -2,7 +2,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-06-03-solar-rows-v2-design.md`
 **Goal:** Replace the wrong v1 solar mode. New flow: draw **area** (polygon) → set **Row Angle α / Drone Orientation / Gimbal Tilt** → **"Select solar rows"** click-mode → for each clicked row, a line at α clipped to the area, photo waypoints, serpentine-connected.
-**All frontend** (`website/nextjs`). Ship via `git push origin main` (Vercel auto-deploys). Tests = `cd website/nextjs && npm test`; typecheck = `npx tsc --noEmit`.
+**All frontend** (`legacy/axalon-nextjs`). Ship via `git push origin main` (Vercel auto-deploys). Tests = `cd legacy/axalon-nextjs && npm test`; typecheck = `npx tsc --noEmit`.
 
 > Session note: the repo's GateGuard hook fact-forces every Edit/Write + first Bash. Consider asking the user to disable `pre:edit-write:gateguard-fact-force` + `pre:bash:gateguard-fact-force` via `ECC_DISABLED_HOOKS` at session start.
 

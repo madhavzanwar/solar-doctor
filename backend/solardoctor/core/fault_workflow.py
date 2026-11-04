@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ml.src.utils import SEVERITY_MAP
+from ml.thermal.src.utils import SEVERITY_MAP
 
 from solardoctor.db.models import (
     FAULT_ASSIGNED,

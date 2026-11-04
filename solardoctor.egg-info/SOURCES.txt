@@ -74,11 +74,12 @@ drone/relay/manager.py
 drone/relay/server.py
 drone/relay/tier_policy.py
 drone/relay/turn.py
-ml/src/__init__.py
-ml/src/augmentation.py
-ml/src/dataset.py
-ml/src/extract.py
-ml/src/utils.py
+ml/__init__.py
+ml/thermal/src/__init__.py
+ml/thermal/src/augmentation.py
+ml/thermal/src/dataset.py
+ml/thermal/src/extract.py
+ml/thermal/src/utils.py
 solardoctor.egg-info/PKG-INFO
 solardoctor.egg-info/SOURCES.txt
 solardoctor.egg-info/dependency_links.txt

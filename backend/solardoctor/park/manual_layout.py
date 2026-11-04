@@ -51,7 +51,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from ml.src.utils import get_logger
+from ml.thermal.src.utils import get_logger
 
 from solardoctor.park.geometry import gps_to_local, local_to_gps, polygon_area_m2
 

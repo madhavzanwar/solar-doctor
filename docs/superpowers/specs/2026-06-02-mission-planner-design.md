@@ -31,23 +31,23 @@ Hammer Missions (hammermissions.com) is the UX reference. Key properties to matc
 
 | File | Responsibility |
 |---|---|
-| `website/nextjs/components/Platform/PlanTab.tsx` | Top-level tab component; wires PlanMap + PlanSidebar together; holds all shared state |
-| `website/nextjs/components/Platform/PlanMap.tsx` | Leaflet map with Leaflet.draw polygon/polyline tools; renders waypoint path overlay and footprint preview |
-| `website/nextjs/components/Platform/PlanSidebar.tsx` | Mission type selector, camera picker, param sliders, live stats, saved missions list, export/save actions |
-| `website/nextjs/lib/missionGeometry.ts` | Pure geometry functions: `generateGrid`, `generatePerimeter`, `generateCorridor`, `computeStats`, `computeFootprint` |
-| `website/nextjs/lib/waypointExport.ts` | Serialises a mission to Litchi CSV, KML, or QGC `.plan`; triggers browser download |
-| `website/nextjs/lib/cameras.ts` | Camera preset library (5 cameras + Custom) |
+| `legacy/axalon-nextjs/components/Platform/PlanTab.tsx` | Top-level tab component; wires PlanMap + PlanSidebar together; holds all shared state |
+| `legacy/axalon-nextjs/components/Platform/PlanMap.tsx` | Leaflet map with Leaflet.draw polygon/polyline tools; renders waypoint path overlay and footprint preview |
+| `legacy/axalon-nextjs/components/Platform/PlanSidebar.tsx` | Mission type selector, camera picker, param sliders, live stats, saved missions list, export/save actions |
+| `legacy/axalon-nextjs/lib/missionGeometry.ts` | Pure geometry functions: `generateGrid`, `generatePerimeter`, `generateCorridor`, `computeStats`, `computeFootprint` |
+| `legacy/axalon-nextjs/lib/waypointExport.ts` | Serialises a mission to Litchi CSV, KML, or QGC `.plan`; triggers browser download |
+| `legacy/axalon-nextjs/lib/cameras.ts` | Camera preset library (5 cameras + Custom) |
 | `alembic/versions/0004_missions.py` | DB migration: create `missions` table |
 
 ### Modified Files
 
 | File | Change |
 |---|---|
-| `website/nextjs/app/platform/page.tsx` | Add `'plan'` to `Tab` type; add `Navigation2` rail button; add `<PlanTab />` to tab switch |
-| `website/nextjs/app/platform/platform.css` | Add `.plan-layout`, `.plan-sidebar`, `.plan-param`, `.plan-stats-bar`, `.plan-camera-card` using existing CSS tokens |
+| `legacy/axalon-nextjs/app/platform/page.tsx` | Add `'plan'` to `Tab` type; add `Navigation2` rail button; add `<PlanTab />` to tab switch |
+| `legacy/axalon-nextjs/app/platform/platform.css` | Add `.plan-layout`, `.plan-sidebar`, `.plan-param`, `.plan-stats-bar`, `.plan-camera-card` using existing CSS tokens |
 | `platform/db/models.py` | Add `Mission` model |
 | `platform/api/app.py` | Add 4 mission CRUD endpoints |
-| `website/nextjs/package.json` | Add `leaflet-draw` and `@types/leaflet-draw` |
+| `legacy/axalon-nextjs/package.json` | Add `leaflet-draw` and `@types/leaflet-draw` |
 
 ---
 

@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from ml.src.utils import draw_detections_severity, get_logger
+from ml.thermal.src.utils import draw_detections_severity, get_logger
 
 from solardoctor.core.fusion_calibration import FusionCalibration
 

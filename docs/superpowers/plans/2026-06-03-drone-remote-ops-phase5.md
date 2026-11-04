@@ -491,13 +491,13 @@ git commit -m "feat(agent): wire manual control + hover-on-stale into main"
 ## Task 6: Frontend manual input (stick→velocity mapping)
 
 **Files:**
-- Create: `website/nextjs/lib/manualInput.ts`
-- Test: `website/nextjs/tests/unit/manualInput.test.ts`
+- Create: `legacy/axalon-nextjs/lib/manualInput.ts`
+- Test: `legacy/axalon-nextjs/tests/unit/manualInput.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// website/nextjs/tests/unit/manualInput.test.ts
+// legacy/axalon-nextjs/tests/unit/manualInput.test.ts
 import { describe, it, expect } from "vitest";
 import { sticksToVelocity, buildManualEnvelope } from "@/lib/manualInput";
 
@@ -534,13 +534,13 @@ describe("buildManualEnvelope", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/manualInput.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/manualInput.test.ts`
 Expected: FAIL — cannot resolve `@/lib/manualInput`
 
-- [ ] **Step 3: Write `website/nextjs/lib/manualInput.ts`**
+- [ ] **Step 3: Write `legacy/axalon-nextjs/lib/manualInput.ts`**
 
 ```ts
-// website/nextjs/lib/manualInput.ts
+// legacy/axalon-nextjs/lib/manualInput.ts
 // Maps two normalized sticks [-1..1] to body-frame velocity. Mirrors the limits
 // in drone/common/manual.py. Right stick = translate (pitch/roll), left stick =
 // throttle/yaw. A deadzone kills jitter near center.
@@ -573,13 +573,13 @@ export function buildManualEnvelope(operatorId: string, seq: number, v: Velocity
 
 - [ ] **Step 4: Run test**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/manualInput.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/manualInput.test.ts`
 Expected: PASS (4 passed)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/manualInput.ts website/nextjs/tests/unit/manualInput.test.ts
+git add legacy/axalon-nextjs/lib/manualInput.ts legacy/axalon-nextjs/tests/unit/manualInput.test.ts
 git commit -m "feat(web): stick-to-velocity mapping + manual envelope builder"
 ```
 
@@ -588,9 +588,9 @@ git commit -m "feat(web): stick-to-velocity mapping + manual envelope builder"
 ## Task 7: Frontend joystick widget (GREEN-only) + state indicator
 
 **Files:**
-- Create: `website/nextjs/components/Platform/ManualPad.tsx`
-- Modify: `website/nextjs/components/Platform/LiveOpsTab.tsx` (mount, GREEN-gated)
-- Modify: `website/nextjs/app/globals.css` (pad styles)
+- Create: `legacy/axalon-nextjs/components/Platform/ManualPad.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx` (mount, GREEN-gated)
+- Modify: `legacy/axalon-nextjs/app/globals.css` (pad styles)
 
 No unit test (pointer-driven DOM); validated against SITL. The pad sends at ~15 Hz
 only while a stick is held, and only when `tier === "GREEN"` and the operator holds
@@ -599,7 +599,7 @@ control.
 - [ ] **Step 1: Create `ManualPad.tsx`**
 
 ```tsx
-// website/nextjs/components/Platform/ManualPad.tsx
+// legacy/axalon-nextjs/components/Platform/ManualPad.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -695,7 +695,7 @@ import ManualPad from "@/components/Platform/ManualPad";
 
 - [ ] **Step 4: Verify build**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Expected: build succeeds.
 
 - [ ] **Step 5: Manual verification (SITL on a LAN / GREEN)**
@@ -708,7 +708,7 @@ second operator without the lock never sees an enabled pad.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/ManualPad.tsx website/nextjs/components/Platform/LiveOpsTab.tsx website/nextjs/app/globals.css
+git add legacy/axalon-nextjs/components/Platform/ManualPad.tsx legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx legacy/axalon-nextjs/app/globals.css
 git commit -m "feat(web): GREEN-only manual joystick pad"
 ```
 

@@ -27,7 +27,7 @@ packages = [
     "solardoctor.pipeline",
     "solardoctor.reporting",
     "ml",
-    "ml.src",
+    "ml.thermal.src",
     "drone",
     "drone.relay",
     "drone.common",

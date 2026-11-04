@@ -6,21 +6,21 @@ description: Use when running, calling, or modifying YOLO11m thermal anomaly det
 # ML Detection (YOLO11m, thermal IR)
 
 ## Model
-- Weights: `ml/checkpoints/best.pt` — Ultralytics **YOLO11m**.
+- Weights: `ml/thermal/checkpoints/best.pt` — Ultralytics **YOLO11m**.
 - Input: **640×640** (Ultralytics resizes automatically). Confidence threshold **0.25**.
 - **Thermal IR only.** Never run on RGB images directly.
 
-## Single source of truth — `ml/src/utils.py`
+## Single source of truth — `ml/thermal/src/utils.py`
 NEVER redefine classes, ids, or severities. Import them:
 ```python
-from ml.src.utils import (
+from ml.thermal.src.utils import (
     CANONICAL_CLASSES, CLASS2ID, ID2CLASS,
     SEVERITY_MAP, SEVERITY_COLOR_BGR,
     draw_detections_severity, read_yolo_label, write_yolo_label,
     yolo_to_pixel, load_bgr, get_logger,
 )
 ```
-(Legacy code used `solar_thermal_detection.src.utils` — the canonical path is now `ml.src.utils`.)
+(Legacy code used `solar_thermal_detection.src.utils` — the canonical path is now `ml.thermal.src.utils`.)
 
 ## The 11 classes (order fixed, ids 0–10)
 | id | class | severity |
@@ -54,10 +54,10 @@ from ml.src.utils import (
 The platform wraps the model in `platform/core/detector.py`. Quick standalone:
 ```python
 from ultralytics import YOLO
-results = YOLO('ml/checkpoints/best.pt')('ml/data/images/test/', conf=0.25)
+results = YOLO('ml/thermal/checkpoints/best.pt')('ml/data/images/test/', conf=0.25)
 ```
 
 ## Gotchas
-- Don't edit `ml/src/augmentation.py`, `ml/src/dataset.py`, or notebooks — training code, stable.
+- Don't edit `ml/thermal/src/augmentation.py`, `ml/thermal/src/dataset.py`, or notebooks — training code, stable.
 - Severity and color come ONLY from `utils.py`; never hardcode them in the API/reporting/frontend.
 - See also: `analysis-pipeline` (how detections flow to reports), `reporting` (rendering).

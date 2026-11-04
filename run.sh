@@ -29,7 +29,7 @@ DEVICE="${DEVICE:-0}"
 
 API_PID_FILE="/tmp/axalon-api.pid"
 PLATFORM_PID_FILE="/tmp/axalon-platform.pid"
-PLATFORM_DIR="${REPO_ROOT}/website/nextjs"
+PLATFORM_DIR="${REPO_ROOT}/legacy/axalon-nextjs"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -58,7 +58,7 @@ check_deps() {
 
 check_model() {
     if [ ! -f "${REPO_ROOT}/ml/checkpoints/best.pt" ]; then
-        error "Model not found at ml/checkpoints/best.pt"
+        error "Model not found at ml/thermal/checkpoints/best.pt"
         exit 1
     fi
 }

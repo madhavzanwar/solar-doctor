@@ -15,7 +15,7 @@
 
 ## Conventions
 
-- Same as prior phases: Python under `drone/`, tests via `python -m pytest drone/tests -v`; frontend via `cd website/nextjs && npx vitest run <file>`.
+- Same as prior phases: Python under `drone/`, tests via `python -m pytest drone/tests -v`; frontend via `cd legacy/axalon-nextjs && npx vitest run <file>`.
 - Commit after every green step.
 - **Per-peer routing:** unlike telemetry/ack (fanned to all operators), signaling targets a single `operator_id`. The relay routes by it.
 - **No-hardware demo:** the agent video publisher supports a `videotestsrc` test pattern so the whole WebRTC path is demoable without a camera.
@@ -778,8 +778,8 @@ git commit -m "feat(agent): WebRTC publisher (webrtcbin) + signal routing in mai
 ## Task 7: Frontend signaling helpers + ICE config fetch
 
 **Files:**
-- Create: `website/nextjs/lib/liveVideo.ts`
-- Test: `website/nextjs/tests/unit/liveVideo.test.ts`
+- Create: `legacy/axalon-nextjs/lib/liveVideo.ts`
+- Test: `legacy/axalon-nextjs/tests/unit/liveVideo.test.ts`
 
 Pure builders/parsers (tested) plus a thin `fetchIceServers`. The RTCPeerConnection
 wiring lives in the component (Task 8).
@@ -787,7 +787,7 @@ wiring lives in the component (Task 8).
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// website/nextjs/tests/unit/liveVideo.test.ts
+// legacy/axalon-nextjs/tests/unit/liveVideo.test.ts
 import { describe, it, expect, vi } from "vitest";
 import {
   buildSignalEnvelope, parseSignalFrame, fetchIceServers,
@@ -842,13 +842,13 @@ describe("fetchIceServers", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/liveVideo.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/liveVideo.test.ts`
 Expected: FAIL — cannot resolve `@/lib/liveVideo`
 
-- [ ] **Step 3: Write `website/nextjs/lib/liveVideo.ts`**
+- [ ] **Step 3: Write `legacy/axalon-nextjs/lib/liveVideo.ts`**
 
 ```ts
-// website/nextjs/lib/liveVideo.ts
+// legacy/axalon-nextjs/lib/liveVideo.ts
 // WebRTC signaling helpers for the live video feed. Signaling rides the existing
 // live-ops WebSocket (send via the LiveOpsHandle from liveOps.ts). ICE servers are
 // fetched from the relay's /turn-credentials endpoint.
@@ -901,13 +901,13 @@ export async function fetchIceServers(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd website/nextjs && npx vitest run tests/unit/liveVideo.test.ts`
+Run: `cd legacy/axalon-nextjs && npx vitest run tests/unit/liveVideo.test.ts`
 Expected: PASS (6 passed)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/liveVideo.ts website/nextjs/tests/unit/liveVideo.test.ts
+git add legacy/axalon-nextjs/lib/liveVideo.ts legacy/axalon-nextjs/tests/unit/liveVideo.test.ts
 git commit -m "feat(web): WebRTC signaling helpers + ICE config fetch"
 ```
 
@@ -916,9 +916,9 @@ git commit -m "feat(web): WebRTC signaling helpers + ICE config fetch"
 ## Task 8: Frontend video panel (RTCPeerConnection + start/stop)
 
 **Files:**
-- Modify: `website/nextjs/lib/liveOps.ts` (add `onSignal` passthrough)
-- Create: `website/nextjs/components/Platform/VideoPanel.tsx`
-- Modify: `website/nextjs/components/Platform/LiveOpsTab.tsx` (mount the panel)
+- Modify: `legacy/axalon-nextjs/lib/liveOps.ts` (add `onSignal` passthrough)
+- Create: `legacy/axalon-nextjs/components/Platform/VideoPanel.tsx`
+- Modify: `legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx` (mount the panel)
 
 No unit test (browser RTCPeerConnection + media); validated manually with the
 agent's test-pattern path. The panel is the WebRTC offerer; the agent answers.
@@ -941,7 +941,7 @@ signal passthrough that forwards the raw frame:
 - [ ] **Step 2: Create `VideoPanel.tsx`**
 
 ```tsx
-// website/nextjs/components/Platform/VideoPanel.tsx
+// legacy/axalon-nextjs/components/Platform/VideoPanel.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -1050,7 +1050,7 @@ Render the panel (e.g. below the HUD):
 
 - [ ] **Step 4: Verify build**
 
-Run: `cd website/nextjs && npm run build`
+Run: `cd legacy/axalon-nextjs && npm run build`
 Expected: build succeeds.
 
 - [ ] **Step 5: Manual verification (no camera needed)**
@@ -1063,7 +1063,7 @@ reaches `streaming`.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add website/nextjs/lib/liveOps.ts website/nextjs/components/Platform/VideoPanel.tsx website/nextjs/components/Platform/LiveOpsTab.tsx
+git add legacy/axalon-nextjs/lib/liveOps.ts legacy/axalon-nextjs/components/Platform/VideoPanel.tsx legacy/axalon-nextjs/components/Platform/LiveOpsTab.tsx
 git commit -m "feat(web): WebRTC video panel wired into Live Ops"
 ```
 

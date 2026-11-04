@@ -37,7 +37,7 @@ SKIP = "\033[93mSKIP\033[0m"
 
 _results: list[tuple[str, bool, str]] = []
 _skipped: list[str] = []
-_DATASETS_DIR = Path(_ROOT) / "ml" / "Datasets"
+_DATASETS_DIR = Path(_ROOT) / "ml" / "thermal" / "Datasets"
 
 
 def _raw_datasets_present() -> bool:
@@ -75,7 +75,7 @@ ROOT         = Path(_ROOT)
 ISM_ROOT     = ROOT / "ml/Datasets/InfraredSolarModules/2020-02-14_InfraredSolarModules/InfraredSolarModules"
 ISM_IMAGES   = ISM_ROOT / "images"
 ISM_METADATA = ISM_ROOT / "module_metadata.json"
-MODEL_PATH   = ROOT / "ml/checkpoints/best.pt"
+MODEL_PATH   = ROOT / "ml/thermal/checkpoints/best.pt"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -83,7 +83,7 @@ MODEL_PATH   = ROOT / "ml/checkpoints/best.pt"
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 1: utils.py ──────────────────────────────────────────────")
 
-from ml.src.utils import (
+from ml.thermal.src.utils import (
     CANONICAL_CLASSES, CLASS2ID, ID2CLASS,
     SEVERITY_MAP, SEVERITY_COLOR_BGR,
     read_yolo_label, write_yolo_label,
@@ -172,7 +172,7 @@ def _():
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 2: dataset.py — class mappings ───────────────────────────")
 
-from ml.src.dataset import (
+from ml.thermal.src.dataset import (
     ISM_CLASSES_MAP, PV_CLASSES_MAP,
     collect_ism_pairs, collect_all_pairs,
     stratified_split, _remap_class_id, _majority_class,
@@ -343,7 +343,7 @@ def _():
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 5: model weights ─────────────────────────────────────────")
 
-@test("Model weights file exists at ml/checkpoints/best.pt")
+@test("Model weights file exists at ml/thermal/checkpoints/best.pt")
 def _():
     assert MODEL_PATH.exists(), f"Missing: {MODEL_PATH}"
 
@@ -355,7 +355,7 @@ def _():
 @test("thermal_dataset.yaml class names match CANONICAL_CLASSES")
 def _():
     import yaml
-    yaml_path = ROOT / "ml/thermal_dataset.yaml"
+    yaml_path = ROOT / "ml/thermal/thermal_dataset.yaml"
     data = yaml.safe_load(yaml_path.read_text())
     assert data["nc"] == 11
     assert data["names"] == CANONICAL_CLASSES
@@ -366,7 +366,7 @@ def _():
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 6: extract.py ────────────────────────────────────────────")
 
-from ml.src.extract import extract_archive_zip, extract_pvmd
+from ml.thermal.src.extract import extract_archive_zip, extract_pvmd
 
 ARCHIVE_ZIP = ROOT / "ml/Datasets/archive.zip"
 PVMD_ZIP = ROOT / (
@@ -418,7 +418,7 @@ def _():
 # ═══════════════════════════════════════════════════════════════════════════
 print("\n── Section 7: PVMD support + layout fix ─────────────────────────────")
 
-from ml.src.dataset import (
+from ml.thermal.src.dataset import (
     PVMD_CLASSES_MAP, collect_pvmd_pairs, write_merged_dataset,
 )
 

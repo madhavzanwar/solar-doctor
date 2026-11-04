@@ -15,7 +15,7 @@
 ## Important Conventions (read before starting)
 
 - **Python imports use the `axalon.*` namespace**, not `platform.*`. E.g. `from solardoctor.db.models import ...`. The `platform/` directory is mapped to the `axalon` package. Tests and app code both use `axalon`.
-- **Frontend tests use Vitest.** Test files live next to `lib/` as `lib/<name>.test.ts`. Run with `cd website/nextjs && npm run test`.
+- **Frontend tests use Vitest.** Test files live next to `lib/` as `lib/<name>.test.ts`. Run with `cd legacy/axalon-nextjs && npm run test`.
 - **Backend tests use pytest** with fixtures from `tests/backend/conftest.py` (`client`, `db_session`, `temp_db`). Run with `source .venv/bin/activate && pytest tests/backend/...`.
 - **Alembic migrations** are linear: current head is `0003`. The new migration is `0004` with `down_revision = '0003'`.
 - All commit messages end with:
@@ -30,24 +30,24 @@
 ### New Files
 | File | Responsibility |
 |---|---|
-| `website/nextjs/lib/cameras.ts` | Camera preset library (5 cameras + Custom) and `Camera` type |
-| `website/nextjs/lib/missionGeometry.ts` | Pure geometry: `generateGrid`, `generatePerimeter`, `generateCorridor`, `computeStats`, `computeFootprint`, shared types |
-| `website/nextjs/lib/missionGeometry.test.ts` | Vitest unit tests for geometry |
-| `website/nextjs/lib/waypointExport.ts` | Serialise waypoints to QGC WPL 110, browser download |
-| `website/nextjs/lib/waypointExport.test.ts` | Vitest unit tests for export |
-| `website/nextjs/components/Platform/PlanMap.tsx` | Leaflet map with draw tools + waypoint overlay + stats bar |
-| `website/nextjs/components/Platform/PlanSidebar.tsx` | Mission name/type, camera picker, sliders, saved list, actions |
-| `website/nextjs/components/Platform/PlanTab.tsx` | Top-level tab; owns shared state; wires map + sidebar |
+| `legacy/axalon-nextjs/lib/cameras.ts` | Camera preset library (5 cameras + Custom) and `Camera` type |
+| `legacy/axalon-nextjs/lib/missionGeometry.ts` | Pure geometry: `generateGrid`, `generatePerimeter`, `generateCorridor`, `computeStats`, `computeFootprint`, shared types |
+| `legacy/axalon-nextjs/lib/missionGeometry.test.ts` | Vitest unit tests for geometry |
+| `legacy/axalon-nextjs/lib/waypointExport.ts` | Serialise waypoints to QGC WPL 110, browser download |
+| `legacy/axalon-nextjs/lib/waypointExport.test.ts` | Vitest unit tests for export |
+| `legacy/axalon-nextjs/components/Platform/PlanMap.tsx` | Leaflet map with draw tools + waypoint overlay + stats bar |
+| `legacy/axalon-nextjs/components/Platform/PlanSidebar.tsx` | Mission name/type, camera picker, sliders, saved list, actions |
+| `legacy/axalon-nextjs/components/Platform/PlanTab.tsx` | Top-level tab; owns shared state; wires map + sidebar |
 | `alembic/versions/0004_missions.py` | DB migration: create `missions` table |
 | `tests/backend/test_missions.py` | pytest for the 4 mission endpoints |
 
 ### Modified Files
 | File | Change |
 |---|---|
-| `website/nextjs/package.json` | Add `leaflet-draw` + `@types/leaflet-draw` |
-| `website/nextjs/lib/api.ts` | Add `Mission` types + `api.missions` helpers |
-| `website/nextjs/app/platform/page.tsx` | Add `'plan'` tab + rail button + `<PlanTab />` |
-| `website/nextjs/app/platform/platform.css` | Add `.plan-*` classes |
+| `legacy/axalon-nextjs/package.json` | Add `leaflet-draw` + `@types/leaflet-draw` |
+| `legacy/axalon-nextjs/lib/api.ts` | Add `Mission` types + `api.missions` helpers |
+| `legacy/axalon-nextjs/app/platform/page.tsx` | Add `'plan'` tab + rail button + `<PlanTab />` |
+| `legacy/axalon-nextjs/app/platform/platform.css` | Add `.plan-*` classes |
 | `platform/db/models.py` | Add `Mission` model |
 | `platform/api/app.py` | Add 4 mission CRUD endpoints + `_serialize_mission` |
 
@@ -56,12 +56,12 @@
 ## Task 1: Camera Library
 
 **Files:**
-- Create: `website/nextjs/lib/cameras.ts`
+- Create: `legacy/axalon-nextjs/lib/cameras.ts`
 
 - [ ] **Step 1: Create cameras.ts**
 
 ```ts
-// website/nextjs/lib/cameras.ts
+// legacy/axalon-nextjs/lib/cameras.ts
 
 export type Camera = {
   id: string
@@ -133,7 +133,7 @@ export function getCamera(id: string): Camera {
 - [ ] **Step 2: Commit**
 
 ```bash
-git add website/nextjs/lib/cameras.ts
+git add legacy/axalon-nextjs/lib/cameras.ts
 git commit -m "feat(plan): add camera preset library for mission planner"
 ```
 
@@ -142,8 +142,8 @@ git commit -m "feat(plan): add camera preset library for mission planner"
 ## Task 2: Geometry Engine
 
 **Files:**
-- Create: `website/nextjs/lib/missionGeometry.ts`
-- Create: `website/nextjs/lib/missionGeometry.test.ts`
+- Create: `legacy/axalon-nextjs/lib/missionGeometry.ts`
+- Create: `legacy/axalon-nextjs/lib/missionGeometry.test.ts`
 
 ### Background
 All math uses a flat-earth (equirectangular) approximation valid for the small areas (< 50 km²) involved in solar-park surveys. We convert lat/lon to local metres relative to the polygon centroid, do all geometry in metres, then convert back. `metresPerDegLat ≈ 111320`. `metresPerDegLon ≈ 111320 × cos(centroidLatRad)`.
@@ -151,7 +151,7 @@ All math uses a flat-earth (equirectangular) approximation valid for the small a
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-// website/nextjs/lib/missionGeometry.test.ts
+// legacy/axalon-nextjs/lib/missionGeometry.test.ts
 import { describe, it, expect } from 'vitest'
 import {
   generateGrid,
@@ -259,14 +259,14 @@ describe('computeStats', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-cd website/nextjs && npx vitest run lib/missionGeometry.test.ts 2>&1 | head -20
+cd legacy/axalon-nextjs && npx vitest run lib/missionGeometry.test.ts 2>&1 | head -20
 ```
 Expected: FAIL — cannot find module `./missionGeometry`
 
 - [ ] **Step 3: Create missionGeometry.ts**
 
 ```ts
-// website/nextjs/lib/missionGeometry.ts
+// legacy/axalon-nextjs/lib/missionGeometry.ts
 import type { Camera } from './cameras'
 
 export type LatLon = { lat: number; lon: number }
@@ -483,14 +483,14 @@ export function computeStats(
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-cd website/nextjs && npx vitest run lib/missionGeometry.test.ts 2>&1 | tail -20
+cd legacy/axalon-nextjs && npx vitest run lib/missionGeometry.test.ts 2>&1 | tail -20
 ```
 Expected: all tests pass
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/missionGeometry.ts website/nextjs/lib/missionGeometry.test.ts
+git add legacy/axalon-nextjs/lib/missionGeometry.ts legacy/axalon-nextjs/lib/missionGeometry.test.ts
 git commit -m "feat(plan): add mission geometry engine (grid/perimeter/corridor + stats)"
 ```
 
@@ -499,13 +499,13 @@ git commit -m "feat(plan): add mission geometry engine (grid/perimeter/corridor 
 ## Task 3: Waypoint Export
 
 **Files:**
-- Create: `website/nextjs/lib/waypointExport.ts`
-- Create: `website/nextjs/lib/waypointExport.test.ts`
+- Create: `legacy/axalon-nextjs/lib/waypointExport.ts`
+- Create: `legacy/axalon-nextjs/lib/waypointExport.test.ts`
 
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-// website/nextjs/lib/waypointExport.test.ts
+// legacy/axalon-nextjs/lib/waypointExport.test.ts
 import { describe, it, expect } from 'vitest'
 import { serialiseQGCWPL110, waypointFilename } from './waypointExport'
 import type { Waypoint } from './missionGeometry'
@@ -566,14 +566,14 @@ describe('waypointFilename', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-cd website/nextjs && npx vitest run lib/waypointExport.test.ts 2>&1 | head -20
+cd legacy/axalon-nextjs && npx vitest run lib/waypointExport.test.ts 2>&1 | head -20
 ```
 Expected: FAIL — cannot find module `./waypointExport`
 
 - [ ] **Step 3: Create waypointExport.ts**
 
 ```ts
-// website/nextjs/lib/waypointExport.ts
+// legacy/axalon-nextjs/lib/waypointExport.ts
 import type { Waypoint } from './missionGeometry'
 
 // MAVLink command IDs
@@ -647,14 +647,14 @@ export function downloadWaypoints(waypoints: Waypoint[], triggerDistM: number, m
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-cd website/nextjs && npx vitest run lib/waypointExport.test.ts 2>&1 | tail -20
+cd legacy/axalon-nextjs && npx vitest run lib/waypointExport.test.ts 2>&1 | tail -20
 ```
 Expected: all tests pass
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add website/nextjs/lib/waypointExport.ts website/nextjs/lib/waypointExport.test.ts
+git add legacy/axalon-nextjs/lib/waypointExport.ts legacy/axalon-nextjs/lib/waypointExport.test.ts
 git commit -m "feat(plan): add ArduPilot QGC WPL 110 waypoint exporter"
 ```
 
@@ -1029,19 +1029,19 @@ git commit -m "feat(plan): add mission CRUD endpoints (POST/GET/DELETE /missions
 ## Task 6: Frontend API Client + leaflet-draw Dependency
 
 **Files:**
-- Modify: `website/nextjs/package.json`
-- Modify: `website/nextjs/lib/api.ts`
+- Modify: `legacy/axalon-nextjs/package.json`
+- Modify: `legacy/axalon-nextjs/lib/api.ts`
 
 - [ ] **Step 1: Install leaflet-draw**
 
 ```bash
-cd website/nextjs && npm install leaflet-draw && npm install -D @types/leaflet-draw
+cd legacy/axalon-nextjs && npm install leaflet-draw && npm install -D @types/leaflet-draw
 ```
 Expected: `package.json` and `package-lock.json` updated
 
 - [ ] **Step 2: Add Mission types + API helpers to api.ts**
 
-Find the `export const api = {` object in `website/nextjs/lib/api.ts`. First add these types just above it:
+Find the `export const api = {` object in `legacy/axalon-nextjs/lib/api.ts`. First add these types just above it:
 
 ```ts
 export type MissionSummary = {
@@ -1093,14 +1093,14 @@ Then add these methods inside the `api` object (alongside the existing helpers):
 - [ ] **Step 3: Type-check**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | head -20
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | head -20
 ```
 Expected: no errors
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/package.json website/nextjs/package-lock.json website/nextjs/lib/api.ts
+git add legacy/axalon-nextjs/package.json legacy/axalon-nextjs/package-lock.json legacy/axalon-nextjs/lib/api.ts
 git commit -m "feat(plan): add leaflet-draw dep and mission API client helpers"
 ```
 
@@ -1109,7 +1109,7 @@ git commit -m "feat(plan): add leaflet-draw dep and mission API client helpers"
 ## Task 7: PlanMap Component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/PlanMap.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/PlanMap.tsx`
 
 ### Background
 Follow the basemap pattern from `AnomalyMap.tsx` (Mapbox satellite with token, ESRI fallback). Leaflet and leaflet-draw must only run client-side. PlanMap renders the drawn polygon, the waypoint polyline, start/end markers, and a stats bar overlay.
@@ -1117,7 +1117,7 @@ Follow the basemap pattern from `AnomalyMap.tsx` (Mapbox satellite with token, E
 - [ ] **Step 1: Create PlanMap.tsx**
 
 ```tsx
-// website/nextjs/components/Platform/PlanMap.tsx
+// legacy/axalon-nextjs/components/Platform/PlanMap.tsx
 'use client'
 
 import { useEffect, useRef } from 'react'
@@ -1256,14 +1256,14 @@ export default function PlanMap({
 - [ ] **Step 2: Type-check**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | head -20
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | head -20
 ```
 Expected: no errors (the `as any` casts on leaflet-draw options are intentional — its types are loose)
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/PlanMap.tsx
+git add legacy/axalon-nextjs/components/Platform/PlanMap.tsx
 git commit -m "feat(plan): add PlanMap with leaflet-draw tools and live path overlay"
 ```
 
@@ -1272,12 +1272,12 @@ git commit -m "feat(plan): add PlanMap with leaflet-draw tools and live path ove
 ## Task 8: PlanSidebar Component
 
 **Files:**
-- Create: `website/nextjs/components/Platform/PlanSidebar.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/PlanSidebar.tsx`
 
 - [ ] **Step 1: Create PlanSidebar.tsx**
 
 ```tsx
-// website/nextjs/components/Platform/PlanSidebar.tsx
+// legacy/axalon-nextjs/components/Platform/PlanSidebar.tsx
 'use client'
 
 import { Download, Save, Trash2 } from 'lucide-react'
@@ -1474,14 +1474,14 @@ export default function PlanSidebar(props: Props) {
 - [ ] **Step 2: Type-check**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | head -20
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | head -20
 ```
 Expected: no errors
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/PlanSidebar.tsx
+git add legacy/axalon-nextjs/components/Platform/PlanSidebar.tsx
 git commit -m "feat(plan): add PlanSidebar with camera picker, sliders, saved missions"
 ```
 
@@ -1490,12 +1490,12 @@ git commit -m "feat(plan): add PlanSidebar with camera picker, sliders, saved mi
 ## Task 9: PlanTab Component (wiring)
 
 **Files:**
-- Create: `website/nextjs/components/Platform/PlanTab.tsx`
+- Create: `legacy/axalon-nextjs/components/Platform/PlanTab.tsx`
 
 - [ ] **Step 1: Create PlanTab.tsx**
 
 ```tsx
-// website/nextjs/components/Platform/PlanTab.tsx
+// legacy/axalon-nextjs/components/Platform/PlanTab.tsx
 'use client'
 
 import dynamic from 'next/dynamic'
@@ -1660,21 +1660,21 @@ export function PlanTab() {
 Check that `useToast()` exposes `success` and `error`:
 
 ```bash
-cd website/nextjs && grep -n "success\|error" components/Platform/Toast.tsx | head
+cd legacy/axalon-nextjs && grep -n "success\|error" components/Platform/Toast.tsx | head
 ```
 If `success` does not exist, use `toast.error` for failures and `toast.info`/whatever the success method is. Adjust the calls in PlanTab accordingly.
 
 - [ ] **Step 3: Type-check**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | head -20
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | head -20
 ```
 Expected: no errors
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/components/Platform/PlanTab.tsx
+git add legacy/axalon-nextjs/components/Platform/PlanTab.tsx
 git commit -m "feat(plan): add PlanTab wiring map, sidebar, geometry and persistence"
 ```
 
@@ -1683,12 +1683,12 @@ git commit -m "feat(plan): add PlanTab wiring map, sidebar, geometry and persist
 ## Task 10: CSS + Tab Integration
 
 **Files:**
-- Modify: `website/nextjs/app/platform/platform.css`
-- Modify: `website/nextjs/app/platform/page.tsx`
+- Modify: `legacy/axalon-nextjs/app/platform/platform.css`
+- Modify: `legacy/axalon-nextjs/app/platform/page.tsx`
 
 - [ ] **Step 1: Add CSS to platform.css**
 
-Append to `website/nextjs/app/platform/platform.css`:
+Append to `legacy/axalon-nextjs/app/platform/platform.css`:
 
 ```css
 /* ─── Plan tab (mission planner) ─── */
@@ -1793,7 +1793,7 @@ Append to `website/nextjs/app/platform/platform.css`:
 
 - [ ] **Step 2: Wire the tab into page.tsx**
 
-In `website/nextjs/app/platform/page.tsx`:
+In `legacy/axalon-nextjs/app/platform/page.tsx`:
 
 1. Add `Navigation2` to the lucide-react import:
 ```tsx
@@ -1840,14 +1840,14 @@ type Tab = 'operations' | 'inspect' | 'history' | 'settings' | 'parkmap' | 'diff
 - [ ] **Step 3: Type-check and build**
 
 ```bash
-cd website/nextjs && npx tsc --noEmit 2>&1 | head -20
+cd legacy/axalon-nextjs && npx tsc --noEmit 2>&1 | head -20
 ```
 Expected: no errors
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add website/nextjs/app/platform/platform.css website/nextjs/app/platform/page.tsx
+git add legacy/axalon-nextjs/app/platform/platform.css legacy/axalon-nextjs/app/platform/page.tsx
 git commit -m "feat(plan): add Plan tab styles and rail navigation entry"
 ```
 
@@ -1858,7 +1858,7 @@ git commit -m "feat(plan): add Plan tab styles and rail navigation entry"
 - [ ] **Step 1: Run frontend unit tests**
 
 ```bash
-cd website/nextjs && npx vitest run lib/missionGeometry.test.ts lib/waypointExport.test.ts 2>&1 | tail -15
+cd legacy/axalon-nextjs && npx vitest run lib/missionGeometry.test.ts lib/waypointExport.test.ts 2>&1 | tail -15
 ```
 Expected: all pass
 
@@ -1872,7 +1872,7 @@ Expected: all pass, no regressions
 - [ ] **Step 3: Production build of the Next.js app**
 
 ```bash
-cd website/nextjs && npm run build 2>&1 | tail -25
+cd legacy/axalon-nextjs && npm run build 2>&1 | tail -25
 ```
 Expected: build succeeds, `/platform` route compiles
 
@@ -1889,7 +1889,7 @@ Expected: `0004 (head)`
 # Terminal 1
 cd /home/parakh/Desktop/AxalonSystems && source .venv/bin/activate && uvicorn solardoctor.api.app:app --port 8000
 # Terminal 2
-cd website/nextjs && npm run dev
+cd legacy/axalon-nextjs && npm run dev
 # Open http://localhost:3000/platform → Plan tab → draw a polygon →
 # confirm path appears, stats bar updates, export downloads a .waypoints file,
 # Save persists and the mission appears in the Saved Missions list.

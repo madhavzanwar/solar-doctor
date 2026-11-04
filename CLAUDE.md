@@ -78,7 +78,7 @@ AxalonSystems/
 ├── tests/                           ← Test suite
 ├── main.py                          ← CLI entrypoint
 ├── requirements_platform.txt        ← Platform Python dependencies
-└── ml/requirements.txt              ← ML Python dependencies
+└── ml/thermal/requirements.txt              ← ML Python dependencies
 ```
 
 ---
@@ -129,10 +129,10 @@ All scenes share the same fixed Canvas. `SceneController` fades components in/ou
 
 ## Critical Rules — Read Before Making Changes
 
-### 1. Never Redefine These — Import from `ml/src/utils.py`
+### 1. Never Redefine These — Import from `ml/thermal/src/utils.py`
 
 ```python
-from ml.src.utils import (
+from ml.thermal.src.utils import (
     CANONICAL_CLASSES,       # list of 11 class names, indices matter
     CLASS2ID,                # {"cell": 0, "cell-multi": 1, ...}
     ID2CLASS,                # {0: "cell", 1: "cell-multi", ...}
@@ -147,11 +147,11 @@ from ml.src.utils import (
 )
 ```
 
-> In older code (AxalonPIPE era) this was `solar_thermal_detection.src.utils` — the canonical path is now `ml.src.utils`.
+> In older code (AxalonPIPE era) this was `solar_thermal_detection.src.utils` — the canonical path is now `ml.thermal.src.utils`.
 
 ### 2. Primary Model
 
-- Path: `ml/checkpoints/best.pt` (109 MB, sha256 prefix `fabb41c88f9d`)
+- Path: `ml/thermal/checkpoints/best.pt` (109 MB, sha256 prefix `fabb41c88f9d`)
 - Framework: **Ultralytics YOLO11x** (`yolo11x.yaml`, 11 classes, trained with Ultralytics 8.4.84, checkpoint dated 2026-07-02) — the bake-off winner; the previous `best.pt` was YOLOv8s (see `docs/MODEL_COMPARISON_YOLOV8_VS_YOLO11X.md`). Verified from the checkpoint metadata, not assumed.
 - Don't trust docs for which model is live: `GET /health` reads `model` / `model_info` (architecture, size, sha256 prefix) from the weights file actually on disk (`platform/core/model_info.py`).
 - Input size: **640×640** (resize handled by Ultralytics automatically)
@@ -194,11 +194,11 @@ from ml.src.utils import (
 - **ML/model code** → `ml/` only
 - **Platform code** → `platform/` only
 - **Do not cross-import** between website and platform
-- Platform imports ML utils: `from ml.src.utils import ...`
+- Platform imports ML utils: `from ml.thermal.src.utils import ...`
 
 ### 6. Don't Touch Training Code
 
-`ml/src/augmentation.py`, `ml/src/dataset.py`, and notebooks are stable.
+`ml/thermal/src/augmentation.py`, `ml/thermal/src/dataset.py`, and notebooks are stable.
 Only modify if explicitly asked to retrain.
 
 ---
@@ -207,7 +207,7 @@ Only modify if explicitly asked to retrain.
 
 ```bash
 # Run Next.js website (dev)
-cd website/nextjs && npm run dev
+cd legacy/axalon-nextjs && npm run dev
 
 # Start platform API
 uvicorn platform.api.app:app --host 0.0.0.0 --port 8000
@@ -218,13 +218,13 @@ uvicorn platform.api.app:app --host 0.0.0.0 --port 8000
 # Quick model test
 python -c "
 from ultralytics import YOLO
-model = YOLO('ml/checkpoints/best.pt')
+model = YOLO('ml/thermal/checkpoints/best.pt')
 results = model('ml/data/images/test/', conf=0.25)
 print(f'Detected {sum(len(r.boxes) for r in results)} anomalies')
 "
 
 # Install ML deps
-pip install -r ml/requirements.txt
+pip install -r ml/thermal/requirements.txt
 
 # Install platform deps
 pip install -r requirements_platform.txt

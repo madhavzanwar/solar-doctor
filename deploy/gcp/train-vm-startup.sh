@@ -63,7 +63,7 @@ ln -s "$MOUNT_POINT"/runs runs
 # opencv-python needs libGL which this minimal server image also lacks.
 apt-get update -qq
 apt-get install -y -qq python3-pip libgl1
-python3 -m pip install -r ml/requirements.txt
+python3 -m pip install -r ml/thermal/requirements.txt
 
 # This repo's own platform/ directory (at repo root) shadows the stdlib
 # platform module whenever cwd is the repo root and lands on sys.path, which
@@ -100,18 +100,18 @@ case "$CANDIDATE" in
     LAST_CKPT="$(find_last_checkpoint yolo11x_solar)"
     if [ -n "$LAST_CKPT" ]; then
       echo "Resuming from $LAST_CKPT"
-      run_py_module ml.scripts.train_ultralytics --config ml/configs/thermal_yolo11x.yaml --resume-from "$LAST_CKPT"
+      run_py_module ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_yolo11x.yaml --resume-from "$LAST_CKPT"
     else
-      run_py_module ml.scripts.train_ultralytics --config ml/configs/thermal_yolo11x.yaml
+      run_py_module ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_yolo11x.yaml
     fi
     ;;
   rtdetr-x)
     LAST_CKPT="$(find_last_checkpoint rtdetr_x_solar)"
     if [ -n "$LAST_CKPT" ]; then
       echo "Resuming from $LAST_CKPT"
-      run_py_module ml.scripts.train_ultralytics --config ml/configs/thermal_rtdetr_x.yaml --resume-from "$LAST_CKPT"
+      run_py_module ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_rtdetr_x.yaml --resume-from "$LAST_CKPT"
     else
-      run_py_module ml.scripts.train_ultralytics --config ml/configs/thermal_rtdetr_x.yaml
+      run_py_module ml.scripts.train_ultralytics --config ml/thermal/configs/thermal_rtdetr_x.yaml
     fi
     ;;
   codetr)

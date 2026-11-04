@@ -52,11 +52,11 @@ info "▶ Backend pytest"
 (cd /tmp && PYTHONSAFEPATH=1 python -m pytest "$REPO_ROOT" -v)
 
 info "▶ Frontend vitest"
-(cd "$REPO_ROOT/website/nextjs" && npm test --silent)
+(cd "$REPO_ROOT/legacy/axalon-nextjs" && npm test --silent)
 
 ensure_services
 
 info "▶ Frontend playwright"
-(cd "$REPO_ROOT/website/nextjs" && npm run test:e2e --silent)
+(cd "$REPO_ROOT/legacy/axalon-nextjs" && npm run test:e2e --silent)
 
 success "All suites passed."
