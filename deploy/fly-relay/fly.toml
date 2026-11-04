@@ -1,0 +1,22 @@
+# Fly.io config for the Axalon Drone Relay.
+# Deploy from repo root: fly deploy -c deploy/fly-relay/fly.toml
+# Secrets (set once): fly secrets set -c deploy/fly-relay/fly.toml \
+#   DRONE_TOKENS="drone-01:<token>" OPS_TOKEN="<token>" \
+#   TURN_HOST="axalon-relay.fly.dev" TURN_SECRET="<secret>"
+
+app = "axalon-relay"
+primary_region = "bom"   # Mumbai — closest to India
+
+[build]
+  dockerfile = "deploy/fly-relay/Dockerfile"
+
+[http_service]
+  internal_port = 8800
+  force_https = true
+  auto_stop_machines = false   # relay must stay up; never sleep
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

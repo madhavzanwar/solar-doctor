@@ -1,0 +1,1117 @@
+07/02 21:03:45 - mmengine - INFO - 
+------------------------------------------------------------
+System environment:
+    sys.platform: linux
+    Python: 3.10.12 (main, Mar  3 2026, 11:56:32) [GCC 11.4.0]
+    CUDA available: True
+    MUSA available: False
+    numpy_random_seed: 1486138792
+    GPU 0: NVIDIA A100-SXM4-40GB
+    CUDA_HOME: /usr/local/cuda
+    NVCC: Cuda compilation tools, release 12.9, V12.9.41
+    GCC: x86_64-linux-gnu-gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+    PyTorch: 2.1.2+cu121
+    PyTorch compiling details: PyTorch built with:
+  - GCC 9.3
+  - C++ Version: 201703
+  - Intel(R) oneAPI Math Kernel Library Version 2022.2-Product Build 20220804 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v3.1.1 (Git Hash 64f6bcbcbab628e96f33a62c3e975f8535a7bde4)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - LAPACK is enabled (usually provided by MKL)
+  - NNPACK is enabled
+  - CPU capability usage: AVX512
+  - CUDA Runtime 12.1
+  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90
+  - CuDNN 8.9.2
+  - Magma 2.6.1
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=12.1, CUDNN_VERSION=8.9.2, CXX_COMPILER=/opt/rh/devtoolset-9/root/usr/bin/c++, CXX_FLAGS= -D_GLIBCXX_USE_CXX11_ABI=0 -fabi-version=11 -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOROCTRACER -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=old-style-cast -Wno-invalid-partial-specialization -Wno-unused-private-field -Wno-aligned-allocation-unavailable -Wno-missing-braces -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Werror=cast-function-type -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_DISABLE_GPU_ASSERTS=ON, TORCH_VERSION=2.1.2, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=1, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, 
+
+    TorchVision: 0.16.2+cu121
+    OpenCV: 4.13.0
+    MMEngine: 0.10.7
+
+Runtime environment:
+    cudnn_benchmark: False
+    mp_cfg: {'mp_start_method': 'fork', 'opencv_num_threads': 0}
+    dist_cfg: {'backend': 'nccl'}
+    seed: 1486138792
+    Distributed launcher: none
+    Distributed training: False
+    GPU number: 1
+------------------------------------------------------------
+
+07/02 21:03:47 - mmengine - INFO - Config:
+auto_scale_lr = dict(base_batch_size=16)
+backend_args = None
+batch_augments = [
+    dict(pad_mask=True, size=(
+        1024,
+        1024,
+    ), type='BatchFixedSizePad'),
+]
+classes = (
+    'cell',
+    'cell-multi',
+    'module',
+    'string',
+    'bypass-diode',
+    'offline-module',
+    'vegetation-shading',
+    'soiling',
+    'short-circuit',
+    'hot-spot-low',
+    'hot-spot-high',
+)
+custom_imports = dict(
+    allow_failed_imports=False, imports=[
+        'projects.CO-DETR.codetr',
+    ])
+data_root = '/opt/repo/ml/data/combined_coco/'
+dataset_type = 'CocoDataset'
+default_hooks = dict(
+    checkpoint=dict(
+        _scope_='mmdet',
+        by_epoch=True,
+        interval=1,
+        max_keep_ckpts=3,
+        type='CheckpointHook'),
+    logger=dict(_scope_='mmdet', interval=50, type='LoggerHook'),
+    param_scheduler=dict(_scope_='mmdet', type='ParamSchedulerHook'),
+    sampler_seed=dict(_scope_='mmdet', type='DistSamplerSeedHook'),
+    timer=dict(_scope_='mmdet', type='IterTimerHook'),
+    visualization=dict(_scope_='mmdet', type='DetVisualizationHook'))
+default_scope = 'mmdet'
+env_cfg = dict(
+    cudnn_benchmark=False,
+    dist_cfg=dict(backend='nccl'),
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0))
+image_size = (
+    1024,
+    1024,
+)
+launcher = 'none'
+load_from = '/opt/repo/runs/thermal/codetr_solar/epoch_12.pth'
+load_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(
+        keep_ratio=True,
+        ratio_range=(
+            0.1,
+            2.0,
+        ),
+        scale=(
+            1024,
+            1024,
+        ),
+        type='RandomResize'),
+    dict(
+        allow_negative_crop=True,
+        crop_size=(
+            1024,
+            1024,
+        ),
+        crop_type='absolute_range',
+        recompute_bbox=True,
+        type='RandomCrop'),
+    dict(min_gt_bbox_wh=(
+        0.01,
+        0.01,
+    ), type='FilterAnnotations'),
+    dict(prob=0.5, type='RandomFlip'),
+    dict(pad_val=dict(img=(
+        114,
+        114,
+        114,
+    )), size=(
+        1024,
+        1024,
+    ), type='Pad'),
+]
+log_level = 'INFO'
+log_processor = dict(
+    _scope_='mmdet', by_epoch=True, type='LogProcessor', window_size=50)
+loss_lambda = 2.0
+max_epochs = 12
+max_iters = 270000
+model = dict(
+    backbone=dict(
+        depth=50,
+        frozen_stages=1,
+        init_cfg=dict(checkpoint='torchvision://resnet50', type='Pretrained'),
+        norm_cfg=dict(requires_grad=False, type='BN'),
+        norm_eval=True,
+        num_stages=4,
+        out_indices=(
+            0,
+            1,
+            2,
+            3,
+        ),
+        style='pytorch',
+        type='ResNet'),
+    bbox_head=[
+        dict(
+            anchor_generator=dict(
+                octave_base_scale=8,
+                ratios=[
+                    1.0,
+                ],
+                scales_per_octave=1,
+                strides=[
+                    4,
+                    8,
+                    16,
+                    32,
+                    64,
+                    128,
+                ],
+                type='AnchorGenerator'),
+            bbox_coder=dict(
+                target_means=[
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                target_stds=[
+                    0.1,
+                    0.1,
+                    0.2,
+                    0.2,
+                ],
+                type='DeltaXYWHBBoxCoder'),
+            feat_channels=256,
+            in_channels=256,
+            loss_bbox=dict(loss_weight=24.0, type='GIoULoss'),
+            loss_centerness=dict(
+                loss_weight=12.0, type='CrossEntropyLoss', use_sigmoid=True),
+            loss_cls=dict(
+                alpha=0.25,
+                gamma=2.0,
+                loss_weight=12.0,
+                type='FocalLoss',
+                use_sigmoid=True),
+            num_classes=11,
+            stacked_convs=1,
+            type='CoATSSHead'),
+    ],
+    data_preprocessor=dict(
+        batch_augments=None,
+        bgr_to_rgb=True,
+        mean=[
+            123.675,
+            116.28,
+            103.53,
+        ],
+        pad_mask=False,
+        std=[
+            58.395,
+            57.12,
+            57.375,
+        ],
+        type='DetDataPreprocessor'),
+    eval_module='detr',
+    neck=dict(
+        act_cfg=None,
+        in_channels=[
+            256,
+            512,
+            1024,
+            2048,
+        ],
+        kernel_size=1,
+        norm_cfg=dict(num_groups=32, type='GN'),
+        num_outs=5,
+        out_channels=256,
+        type='ChannelMapper'),
+    query_head=dict(
+        as_two_stage=True,
+        dn_cfg=dict(
+            box_noise_scale=1.0,
+            group_cfg=dict(dynamic=True, num_dn_queries=100, num_groups=None),
+            label_noise_scale=0.5),
+        in_channels=2048,
+        loss_bbox=dict(loss_weight=5.0, type='L1Loss'),
+        loss_cls=dict(
+            beta=2.0,
+            loss_weight=1.0,
+            type='QualityFocalLoss',
+            use_sigmoid=True),
+        loss_iou=dict(loss_weight=2.0, type='GIoULoss'),
+        num_classes=11,
+        num_query=900,
+        positional_encoding=dict(
+            normalize=True,
+            num_feats=128,
+            temperature=20,
+            type='SinePositionalEncoding'),
+        transformer=dict(
+            decoder=dict(
+                num_layers=6,
+                return_intermediate=True,
+                transformerlayers=dict(
+                    attn_cfgs=[
+                        dict(
+                            dropout=0.0,
+                            embed_dims=256,
+                            num_heads=8,
+                            type='MultiheadAttention'),
+                        dict(
+                            dropout=0.0,
+                            embed_dims=256,
+                            num_levels=5,
+                            type='MultiScaleDeformableAttention'),
+                    ],
+                    feedforward_channels=2048,
+                    ffn_dropout=0.0,
+                    operation_order=(
+                        'self_attn',
+                        'norm',
+                        'cross_attn',
+                        'norm',
+                        'ffn',
+                        'norm',
+                    ),
+                    type='DetrTransformerDecoderLayer'),
+                type='DinoTransformerDecoder'),
+            encoder=dict(
+                num_layers=6,
+                transformerlayers=dict(
+                    attn_cfgs=dict(
+                        dropout=0.0,
+                        embed_dims=256,
+                        num_levels=5,
+                        type='MultiScaleDeformableAttention'),
+                    feedforward_channels=2048,
+                    ffn_dropout=0.0,
+                    operation_order=(
+                        'self_attn',
+                        'norm',
+                        'ffn',
+                        'norm',
+                    ),
+                    type='BaseTransformerLayer'),
+                type='DetrTransformerEncoder',
+                with_cp=4),
+            num_co_heads=2,
+            num_feature_levels=5,
+            type='CoDinoTransformer',
+            with_coord_feat=False),
+        type='CoDINOHead'),
+    roi_head=[
+        dict(
+            bbox_head=dict(
+                bbox_coder=dict(
+                    target_means=[
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                    ],
+                    target_stds=[
+                        0.1,
+                        0.1,
+                        0.2,
+                        0.2,
+                    ],
+                    type='DeltaXYWHBBoxCoder'),
+                fc_out_channels=1024,
+                in_channels=256,
+                loss_bbox=dict(loss_weight=120.0, type='GIoULoss'),
+                loss_cls=dict(
+                    loss_weight=12.0,
+                    type='CrossEntropyLoss',
+                    use_sigmoid=False),
+                num_classes=11,
+                reg_class_agnostic=False,
+                reg_decoded_bbox=True,
+                roi_feat_size=7,
+                type='Shared2FCBBoxHead'),
+            bbox_roi_extractor=dict(
+                featmap_strides=[
+                    4,
+                    8,
+                    16,
+                    32,
+                    64,
+                ],
+                finest_scale=56,
+                out_channels=256,
+                roi_layer=dict(
+                    output_size=7, sampling_ratio=0, type='RoIAlign'),
+                type='SingleRoIExtractor'),
+            type='CoStandardRoIHead'),
+    ],
+    rpn_head=dict(
+        anchor_generator=dict(
+            octave_base_scale=4,
+            ratios=[
+                0.5,
+                1.0,
+                2.0,
+            ],
+            scales_per_octave=3,
+            strides=[
+                4,
+                8,
+                16,
+                32,
+                64,
+                128,
+            ],
+            type='AnchorGenerator'),
+        bbox_coder=dict(
+            target_means=[
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            target_stds=[
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+            ],
+            type='DeltaXYWHBBoxCoder'),
+        feat_channels=256,
+        in_channels=256,
+        loss_bbox=dict(loss_weight=12.0, type='L1Loss'),
+        loss_cls=dict(
+            loss_weight=12.0, type='CrossEntropyLoss', use_sigmoid=True),
+        type='RPNHead'),
+    test_cfg=[
+        dict(max_per_img=300, nms=dict(iou_threshold=0.8, type='soft_nms')),
+        dict(
+            rcnn=dict(
+                max_per_img=100,
+                nms=dict(iou_threshold=0.5, type='nms'),
+                score_thr=0.0),
+            rpn=dict(
+                max_per_img=1000,
+                min_bbox_size=0,
+                nms=dict(iou_threshold=0.7, type='nms'),
+                nms_pre=1000)),
+        dict(
+            max_per_img=100,
+            min_bbox_size=0,
+            nms=dict(iou_threshold=0.6, type='nms'),
+            nms_pre=1000,
+            score_thr=0.0),
+    ],
+    train_cfg=[
+        dict(
+            assigner=dict(
+                match_costs=[
+                    dict(type='FocalLossCost', weight=2.0),
+                    dict(box_format='xywh', type='BBoxL1Cost', weight=5.0),
+                    dict(iou_mode='giou', type='IoUCost', weight=2.0),
+                ],
+                type='HungarianAssigner')),
+        dict(
+            rcnn=dict(
+                assigner=dict(
+                    ignore_iof_thr=-1,
+                    match_low_quality=False,
+                    min_pos_iou=0.5,
+                    neg_iou_thr=0.5,
+                    pos_iou_thr=0.5,
+                    type='MaxIoUAssigner'),
+                debug=False,
+                pos_weight=-1,
+                sampler=dict(
+                    add_gt_as_proposals=True,
+                    neg_pos_ub=-1,
+                    num=512,
+                    pos_fraction=0.25,
+                    type='RandomSampler')),
+            rpn=dict(
+                allowed_border=-1,
+                assigner=dict(
+                    ignore_iof_thr=-1,
+                    match_low_quality=True,
+                    min_pos_iou=0.3,
+                    neg_iou_thr=0.3,
+                    pos_iou_thr=0.7,
+                    type='MaxIoUAssigner'),
+                debug=False,
+                pos_weight=-1,
+                sampler=dict(
+                    add_gt_as_proposals=False,
+                    neg_pos_ub=-1,
+                    num=256,
+                    pos_fraction=0.5,
+                    type='RandomSampler')),
+            rpn_proposal=dict(
+                max_per_img=1000,
+                min_bbox_size=0,
+                nms=dict(iou_threshold=0.7, type='nms'),
+                nms_pre=4000)),
+        dict(
+            allowed_border=-1,
+            assigner=dict(topk=9, type='ATSSAssigner'),
+            debug=False,
+            pos_weight=-1),
+    ],
+    type='CoDETR',
+    use_lsj=False)
+num_classes = 11
+num_dec_layer = 6
+optim_wrapper = dict(
+    clip_grad=dict(max_norm=0.1, norm_type=2),
+    optimizer=dict(lr=0.0002, type='AdamW', weight_decay=0.0001),
+    paramwise_cfg=dict(custom_keys=dict(backbone=dict(lr_mult=0.1))),
+    type='OptimWrapper')
+param_scheduler = [
+    dict(
+        begin=0,
+        by_epoch=True,
+        end=12,
+        gamma=0.1,
+        milestones=[
+            11,
+        ],
+        type='MultiStepLR'),
+]
+resume = False
+test_cfg = dict(_scope_='mmdet', type='TestLoop')
+test_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        _scope_='mmdet',
+        ann_file='test.json',
+        backend_args=None,
+        data_prefix=dict(img='../combined/test/images/'),
+        data_root='/opt/repo/ml/data/combined_coco/',
+        metainfo=dict(
+            classes=(
+                'cell',
+                'cell-multi',
+                'module',
+                'string',
+                'bypass-diode',
+                'offline-module',
+                'vegetation-shading',
+                'soiling',
+                'short-circuit',
+                'hot-spot-low',
+                'hot-spot-high',
+            )),
+        pipeline=[
+            dict(backend_args=None, type='LoadImageFromFile'),
+            dict(keep_ratio=True, scale=(
+                1333,
+                800,
+            ), type='Resize'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                ),
+                type='PackDetInputs'),
+        ],
+        test_mode=True,
+        type='CocoDataset'),
+    drop_last=False,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(_scope_='mmdet', shuffle=False, type='DefaultSampler'))
+test_evaluator = dict(
+    _scope_='mmdet',
+    ann_file='/opt/repo/ml/data/combined_coco/test.json',
+    backend_args=None,
+    classwise=True,
+    format_only=False,
+    metric='bbox',
+    type='CocoMetric')
+test_pipeline = [
+    dict(backend_args=None, type='LoadImageFromFile'),
+    dict(keep_ratio=True, scale=(
+        1333,
+        800,
+    ), type='Resize'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        meta_keys=(
+            'img_id',
+            'img_path',
+            'ori_shape',
+            'img_shape',
+            'scale_factor',
+        ),
+        type='PackDetInputs'),
+]
+train_cfg = dict(max_epochs=12, type='EpochBasedTrainLoop', val_interval=1)
+train_dataloader = dict(
+    batch_size=2,
+    dataset=dict(
+        ann_file='train.json',
+        backend_args=None,
+        data_prefix=dict(img='../combined/train/images/'),
+        data_root='/opt/repo/ml/data/combined_coco/',
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        metainfo=dict(
+            classes=(
+                'cell',
+                'cell-multi',
+                'module',
+                'string',
+                'bypass-diode',
+                'offline-module',
+                'vegetation-shading',
+                'soiling',
+                'short-circuit',
+                'hot-spot-low',
+                'hot-spot-high',
+            )),
+        pipeline=[
+            dict(backend_args=None, type='LoadImageFromFile'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(prob=0.5, type='RandomFlip'),
+            dict(
+                transforms=[
+                    [
+                        dict(
+                            keep_ratio=True,
+                            scales=[
+                                (
+                                    480,
+                                    1333,
+                                ),
+                                (
+                                    512,
+                                    1333,
+                                ),
+                                (
+                                    544,
+                                    1333,
+                                ),
+                                (
+                                    576,
+                                    1333,
+                                ),
+                                (
+                                    608,
+                                    1333,
+                                ),
+                                (
+                                    640,
+                                    1333,
+                                ),
+                                (
+                                    672,
+                                    1333,
+                                ),
+                                (
+                                    704,
+                                    1333,
+                                ),
+                                (
+                                    736,
+                                    1333,
+                                ),
+                                (
+                                    768,
+                                    1333,
+                                ),
+                                (
+                                    800,
+                                    1333,
+                                ),
+                            ],
+                            type='RandomChoiceResize'),
+                    ],
+                    [
+                        dict(
+                            keep_ratio=True,
+                            scales=[
+                                (
+                                    400,
+                                    4200,
+                                ),
+                                (
+                                    500,
+                                    4200,
+                                ),
+                                (
+                                    600,
+                                    4200,
+                                ),
+                            ],
+                            type='RandomChoiceResize'),
+                        dict(
+                            allow_negative_crop=True,
+                            crop_size=(
+                                384,
+                                600,
+                            ),
+                            crop_type='absolute_range',
+                            type='RandomCrop'),
+                        dict(
+                            keep_ratio=True,
+                            scales=[
+                                (
+                                    480,
+                                    1333,
+                                ),
+                                (
+                                    512,
+                                    1333,
+                                ),
+                                (
+                                    544,
+                                    1333,
+                                ),
+                                (
+                                    576,
+                                    1333,
+                                ),
+                                (
+                                    608,
+                                    1333,
+                                ),
+                                (
+                                    640,
+                                    1333,
+                                ),
+                                (
+                                    672,
+                                    1333,
+                                ),
+                                (
+                                    704,
+                                    1333,
+                                ),
+                                (
+                                    736,
+                                    1333,
+                                ),
+                                (
+                                    768,
+                                    1333,
+                                ),
+                                (
+                                    800,
+                                    1333,
+                                ),
+                            ],
+                            type='RandomChoiceResize'),
+                    ],
+                ],
+                type='RandomChoice'),
+            dict(type='PackDetInputs'),
+        ],
+        type='CocoDataset'),
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(_scope_='mmdet', shuffle=True, type='DefaultSampler'))
+train_pipeline = [
+    dict(backend_args=None, type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(prob=0.5, type='RandomFlip'),
+    dict(
+        transforms=[
+            [
+                dict(
+                    keep_ratio=True,
+                    scales=[
+                        (
+                            480,
+                            1333,
+                        ),
+                        (
+                            512,
+                            1333,
+                        ),
+                        (
+                            544,
+                            1333,
+                        ),
+                        (
+                            576,
+                            1333,
+                        ),
+                        (
+                            608,
+                            1333,
+                        ),
+                        (
+                            640,
+                            1333,
+                        ),
+                        (
+                            672,
+                            1333,
+                        ),
+                        (
+                            704,
+                            1333,
+                        ),
+                        (
+                            736,
+                            1333,
+                        ),
+                        (
+                            768,
+                            1333,
+                        ),
+                        (
+                            800,
+                            1333,
+                        ),
+                    ],
+                    type='RandomChoiceResize'),
+            ],
+            [
+                dict(
+                    keep_ratio=True,
+                    scales=[
+                        (
+                            400,
+                            4200,
+                        ),
+                        (
+                            500,
+                            4200,
+                        ),
+                        (
+                            600,
+                            4200,
+                        ),
+                    ],
+                    type='RandomChoiceResize'),
+                dict(
+                    allow_negative_crop=True,
+                    crop_size=(
+                        384,
+                        600,
+                    ),
+                    crop_type='absolute_range',
+                    type='RandomCrop'),
+                dict(
+                    keep_ratio=True,
+                    scales=[
+                        (
+                            480,
+                            1333,
+                        ),
+                        (
+                            512,
+                            1333,
+                        ),
+                        (
+                            544,
+                            1333,
+                        ),
+                        (
+                            576,
+                            1333,
+                        ),
+                        (
+                            608,
+                            1333,
+                        ),
+                        (
+                            640,
+                            1333,
+                        ),
+                        (
+                            672,
+                            1333,
+                        ),
+                        (
+                            704,
+                            1333,
+                        ),
+                        (
+                            736,
+                            1333,
+                        ),
+                        (
+                            768,
+                            1333,
+                        ),
+                        (
+                            800,
+                            1333,
+                        ),
+                    ],
+                    type='RandomChoiceResize'),
+            ],
+        ],
+        type='RandomChoice'),
+    dict(type='PackDetInputs'),
+]
+val_cfg = dict(_scope_='mmdet', type='ValLoop')
+val_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        _scope_='mmdet',
+        ann_file='val.json',
+        backend_args=None,
+        data_prefix=dict(img='../combined/val/images/'),
+        data_root='/opt/repo/ml/data/combined_coco/',
+        metainfo=dict(
+            classes=(
+                'cell',
+                'cell-multi',
+                'module',
+                'string',
+                'bypass-diode',
+                'offline-module',
+                'vegetation-shading',
+                'soiling',
+                'short-circuit',
+                'hot-spot-low',
+                'hot-spot-high',
+            )),
+        pipeline=[
+            dict(backend_args=None, type='LoadImageFromFile'),
+            dict(keep_ratio=True, scale=(
+                1333,
+                800,
+            ), type='Resize'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                ),
+                type='PackDetInputs'),
+        ],
+        test_mode=True,
+        type='CocoDataset'),
+    drop_last=False,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(_scope_='mmdet', shuffle=False, type='DefaultSampler'))
+val_evaluator = dict(
+    _scope_='mmdet',
+    ann_file='/opt/repo/ml/data/combined_coco/val.json',
+    backend_args=None,
+    format_only=False,
+    metric='bbox',
+    type='CocoMetric')
+vis_backends = [
+    dict(_scope_='mmdet', type='LocalVisBackend'),
+]
+visualizer = dict(
+    _scope_='mmdet',
+    name='visualizer',
+    type='DetLocalVisualizer',
+    vis_backends=[
+        dict(type='LocalVisBackend'),
+        dict(
+            init_kwargs=dict(
+                entity='axalonsystems-',
+                name='codetr_solar',
+                project='axalon-thermal-bakeoff'),
+            type='WandbVisBackend'),
+    ])
+work_dir = '/opt/repo/runs/thermal/codetr_solar'
+
+/opt/mmdetection/mmdet/models/dense_heads/anchor_head.py:108: UserWarning: DeprecationWarning: `num_anchors` is deprecated, for consistency or also use `num_base_priors` instead
+  warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+07/02 21:03:52 - mmengine - INFO - Distributed training is not used, all SyncBatchNorm (SyncBN) layers in the model will be automatically reverted to BatchNormXd layers if they are used.
+07/02 21:03:52 - mmengine - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+before_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DistSamplerSeedHook                
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) IterTimerHook                      
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_val_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DetVisualizationHook               
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_val_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_test_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_test_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_test_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DetVisualizationHook               
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_run:
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+loading annotations into memory...
+Done (t=0.07s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.01s)
+creating index...
+index created!
+07/02 21:03:54 - mmengine - WARNING - The prefix is not set in metric class DumpDetResults.
+Loads checkpoint by local backend from path: /opt/repo/runs/thermal/codetr_solar/epoch_12.pth
+07/02 21:04:00 - mmengine - INFO - Load checkpoint from /opt/repo/runs/thermal/codetr_solar/epoch_12.pth
+/usr/local/lib/python3.10/dist-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3526.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+07/02 21:04:18 - mmengine - INFO - Epoch(test) [  50/2834]    eta: 0:17:03  time: 0.3675  data_time: 0.0120  memory: 1674  
+07/02 21:04:26 - mmengine - INFO - Epoch(test) [ 100/2834]    eta: 0:12:01  time: 0.1599  data_time: 0.0025  memory: 1674  
+07/02 21:04:34 - mmengine - INFO - Epoch(test) [ 150/2834]    eta: 0:10:14  time: 0.1599  data_time: 0.0025  memory: 1674  
+07/02 21:04:42 - mmengine - INFO - Epoch(test) [ 200/2834]    eta: 0:09:17  time: 0.1595  data_time: 0.0024  memory: 1674  
+07/02 21:04:50 - mmengine - INFO - Epoch(test) [ 250/2834]    eta: 0:08:40  time: 0.1597  data_time: 0.0024  memory: 1674  
+07/02 21:04:58 - mmengine - INFO - Epoch(test) [ 300/2834]    eta: 0:08:12  time: 0.1605  data_time: 0.0024  memory: 1674  
+07/02 21:05:06 - mmengine - INFO - Epoch(test) [ 350/2834]    eta: 0:07:50  time: 0.1586  data_time: 0.0024  memory: 1674  
+07/02 21:05:14 - mmengine - INFO - Epoch(test) [ 400/2834]    eta: 0:07:30  time: 0.1564  data_time: 0.0024  memory: 1674  
+07/02 21:05:22 - mmengine - INFO - Epoch(test) [ 450/2834]    eta: 0:07:14  time: 0.1590  data_time: 0.0024  memory: 1674  
+07/02 21:05:30 - mmengine - INFO - Epoch(test) [ 500/2834]    eta: 0:06:59  time: 0.1585  data_time: 0.0024  memory: 1674  
+07/02 21:05:38 - mmengine - INFO - Epoch(test) [ 550/2834]    eta: 0:06:46  time: 0.1593  data_time: 0.0024  memory: 1674  
+07/02 21:05:46 - mmengine - INFO - Epoch(test) [ 600/2834]    eta: 0:06:34  time: 0.1589  data_time: 0.0024  memory: 1674  
+07/02 21:05:54 - mmengine - INFO - Epoch(test) [ 650/2834]    eta: 0:06:22  time: 0.1603  data_time: 0.0024  memory: 1674  
+07/02 21:06:02 - mmengine - INFO - Epoch(test) [ 700/2834]    eta: 0:06:11  time: 0.1600  data_time: 0.0024  memory: 1674  
+07/02 21:06:10 - mmengine - INFO - Epoch(test) [ 750/2834]    eta: 0:06:00  time: 0.1583  data_time: 0.0024  memory: 1674  
+07/02 21:06:18 - mmengine - INFO - Epoch(test) [ 800/2834]    eta: 0:05:50  time: 0.1585  data_time: 0.0024  memory: 1674  
+07/02 21:06:26 - mmengine - INFO - Epoch(test) [ 850/2834]    eta: 0:05:39  time: 0.1578  data_time: 0.0024  memory: 1674  
+07/02 21:06:33 - mmengine - INFO - Epoch(test) [ 900/2834]    eta: 0:05:29  time: 0.1569  data_time: 0.0024  memory: 1674  
+07/02 21:06:41 - mmengine - INFO - Epoch(test) [ 950/2834]    eta: 0:05:20  time: 0.1600  data_time: 0.0024  memory: 1674  
+07/02 21:06:49 - mmengine - INFO - Epoch(test) [1000/2834]    eta: 0:05:10  time: 0.1579  data_time: 0.0024  memory: 1674  
+07/02 21:06:57 - mmengine - INFO - Epoch(test) [1050/2834]    eta: 0:05:01  time: 0.1602  data_time: 0.0024  memory: 1674  
+07/02 21:07:05 - mmengine - INFO - Epoch(test) [1100/2834]    eta: 0:04:52  time: 0.1603  data_time: 0.0024  memory: 1674  
+07/02 21:07:13 - mmengine - INFO - Epoch(test) [1150/2834]    eta: 0:04:43  time: 0.1603  data_time: 0.0024  memory: 1674  
+07/02 21:07:20 - mmengine - INFO - Epoch(test) [1200/2834]    eta: 0:04:32  time: 0.1364  data_time: 0.0023  memory: 1674  
+07/02 21:07:28 - mmengine - INFO - Epoch(test) [1250/2834]    eta: 0:04:23  time: 0.1468  data_time: 0.0023  memory: 1674  
+07/02 21:07:35 - mmengine - INFO - Epoch(test) [1300/2834]    eta: 0:04:14  time: 0.1544  data_time: 0.0024  memory: 1674  
+07/02 21:07:43 - mmengine - INFO - Epoch(test) [1350/2834]    eta: 0:04:05  time: 0.1571  data_time: 0.0024  memory: 1674  
+07/02 21:07:51 - mmengine - INFO - Epoch(test) [1400/2834]    eta: 0:03:56  time: 0.1523  data_time: 0.0023  memory: 1674  
+07/02 21:07:59 - mmengine - INFO - Epoch(test) [1450/2834]    eta: 0:03:47  time: 0.1567  data_time: 0.0024  memory: 1674  
+07/02 21:08:06 - mmengine - INFO - Epoch(test) [1500/2834]    eta: 0:03:39  time: 0.1549  data_time: 0.0023  memory: 1674  
+07/02 21:08:14 - mmengine - INFO - Epoch(test) [1550/2834]    eta: 0:03:30  time: 0.1584  data_time: 0.0024  memory: 1674  
+07/02 21:08:22 - mmengine - INFO - Epoch(test) [1600/2834]    eta: 0:03:22  time: 0.1585  data_time: 0.0024  memory: 1674  
+07/02 21:08:30 - mmengine - INFO - Epoch(test) [1650/2834]    eta: 0:03:13  time: 0.1620  data_time: 0.0024  memory: 1674  
+07/02 21:08:38 - mmengine - INFO - Epoch(test) [1700/2834]    eta: 0:03:05  time: 0.1617  data_time: 0.0024  memory: 1674  
+07/02 21:08:46 - mmengine - INFO - Epoch(test) [1750/2834]    eta: 0:02:57  time: 0.1550  data_time: 0.0023  memory: 1674  
+07/02 21:08:54 - mmengine - INFO - Epoch(test) [1800/2834]    eta: 0:02:48  time: 0.1605  data_time: 0.0024  memory: 1674  
+07/02 21:09:02 - mmengine - INFO - Epoch(test) [1850/2834]    eta: 0:02:40  time: 0.1605  data_time: 0.0024  memory: 1674  
+07/02 21:09:10 - mmengine - INFO - Epoch(test) [1900/2834]    eta: 0:02:32  time: 0.1607  data_time: 0.0024  memory: 1674  
+07/02 21:09:18 - mmengine - INFO - Epoch(test) [1950/2834]    eta: 0:02:24  time: 0.1611  data_time: 0.0024  memory: 1674  
+07/02 21:09:26 - mmengine - INFO - Epoch(test) [2000/2834]    eta: 0:02:16  time: 0.1592  data_time: 0.0024  memory: 1674  
+07/02 21:09:34 - mmengine - INFO - Epoch(test) [2050/2834]    eta: 0:02:07  time: 0.1555  data_time: 0.0024  memory: 1674  
+07/02 21:09:42 - mmengine - INFO - Epoch(test) [2100/2834]    eta: 0:01:59  time: 0.1619  data_time: 0.0024  memory: 1674  
+07/02 21:09:50 - mmengine - INFO - Epoch(test) [2150/2834]    eta: 0:01:51  time: 0.1510  data_time: 0.0023  memory: 1674  
+07/02 21:09:55 - mmengine - INFO - Epoch(test) [2200/2834]    eta: 0:01:42  time: 0.1160  data_time: 0.0022  memory: 1107  
+07/02 21:10:01 - mmengine - INFO - Epoch(test) [2250/2834]    eta: 0:01:33  time: 0.1163  data_time: 0.0022  memory: 1107  
+07/02 21:10:07 - mmengine - INFO - Epoch(test) [2300/2834]    eta: 0:01:25  time: 0.1161  data_time: 0.0022  memory: 1107  
+07/02 21:10:13 - mmengine - INFO - Epoch(test) [2350/2834]    eta: 0:01:16  time: 0.1163  data_time: 0.0022  memory: 1107  
+07/02 21:10:19 - mmengine - INFO - Epoch(test) [2400/2834]    eta: 0:01:08  time: 0.1162  data_time: 0.0021  memory: 1107  
+07/02 21:10:25 - mmengine - INFO - Epoch(test) [2450/2834]    eta: 0:01:00  time: 0.1163  data_time: 0.0021  memory: 1107  
+07/02 21:10:30 - mmengine - INFO - Epoch(test) [2500/2834]    eta: 0:00:52  time: 0.1164  data_time: 0.0021  memory: 1107  
+07/02 21:10:36 - mmengine - INFO - Epoch(test) [2550/2834]    eta: 0:00:44  time: 0.1162  data_time: 0.0022  memory: 1107  
+07/02 21:10:42 - mmengine - INFO - Epoch(test) [2600/2834]    eta: 0:00:36  time: 0.1154  data_time: 0.0021  memory: 1107  
+07/02 21:10:48 - mmengine - INFO - Epoch(test) [2650/2834]    eta: 0:00:28  time: 0.1153  data_time: 0.0021  memory: 1107  
+07/02 21:10:53 - mmengine - INFO - Epoch(test) [2700/2834]    eta: 0:00:20  time: 0.1154  data_time: 0.0021  memory: 1107  
+07/02 21:10:59 - mmengine - INFO - Epoch(test) [2750/2834]    eta: 0:00:12  time: 0.1161  data_time: 0.0022  memory: 1107  
+07/02 21:11:05 - mmengine - INFO - Epoch(test) [2800/2834]    eta: 0:00:05  time: 0.1165  data_time: 0.0021  memory: 1107  
+07/02 21:11:13 - mmengine - INFO - Evaluating bbox...
+Loading and preparing results...
+DONE (t=0.86s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=7.52s).
+Accumulating evaluation results...
+DONE (t=5.68s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.176
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.265
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.196
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.106
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.390
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.542
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.403
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.404
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.404
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.335
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.627
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.857
+07/02 21:11:28 - mmengine - INFO - 
++--------------------+-------+--------+--------+-------+-------+-------+
+| category           | mAP   | mAP_50 | mAP_75 | mAP_s | mAP_m | mAP_l |
++--------------------+-------+--------+--------+-------+-------+-------+
+| cell               | 0.0   | 0.0    | 0.0    | 0.0   | nan   | nan   |
+| cell-multi         | 0.0   | 0.0    | 0.0    | 0.0   | nan   | nan   |
+| module             | 0.0   | 0.0    | 0.0    | 0.0   | nan   | nan   |
+| string             | 0.215 | 0.34   | 0.225  | 0.001 | 0.144 | 0.416 |
+| bypass-diode       | 0.44  | 0.671  | 0.497  | 0.234 | 0.533 | 0.621 |
+| offline-module     | 0.0   | 0.0    | 0.0    | 0.0   | nan   | nan   |
+| vegetation-shading | 0.197 | 0.214  | 0.214  | 0.178 | nan   | 0.399 |
+| soiling            | 0.0   | 0.0    | 0.0    | 0.0   | nan   | nan   |
+| short-circuit      | 0.231 | 0.306  | 0.305  | nan   | nan   | 0.475 |
+| hot-spot-low       | 0.43  | 0.707  | 0.449  | 0.401 | 0.424 | 0.687 |
+| hot-spot-high      | 0.428 | 0.673  | 0.466  | 0.248 | 0.458 | 0.654 |
++--------------------+-------+--------+--------+-------+-------+-------+
+07/02 21:11:28 - mmengine - INFO - bbox_mAP_copypaste: 0.176 0.265 0.196 0.106 0.390 0.542
+07/02 21:11:29 - mmengine - INFO - Results has been saved to /opt/repo/runs/thermal/codetr_solar/test_predictions.pkl.
+07/02 21:11:29 - mmengine - INFO - Epoch(test) [2834/2834]    coco/cell_precision: 0.0000  coco/cell-multi_precision: 0.0000  coco/module_precision: 0.0000  coco/string_precision: 0.2150  coco/bypass-diode_precision: 0.4400  coco/offline-module_precision: 0.0000  coco/vegetation-shading_precision: 0.1970  coco/soiling_precision: 0.0000  coco/short-circuit_precision: 0.2310  coco/hot-spot-low_precision: 0.4300  coco/hot-spot-high_precision: 0.4280  coco/bbox_mAP: 0.1760  coco/bbox_mAP_50: 0.2650  coco/bbox_mAP_75: 0.1960  coco/bbox_mAP_s: 0.1060  coco/bbox_mAP_m: 0.3900  coco/bbox_mAP_l: 0.5420  data_time: 0.0025  time: 0.1514

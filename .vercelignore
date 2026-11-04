@@ -1,0 +1,14 @@
+# Only website/nextjs is needed for the build (rootDirectory=website/nextjs).
+# Exclude heavy / irrelevant top-level dirs to stay under CLI upload limits.
+# Leading slash anchors to repo root so nested dirs (e.g. app/platform) aren't matched.
+/ml
+/platform
+/docs
+/tests
+/deploy
+/website/frontend
+/website/backend
+**/node_modules
+**/.next
+**/__pycache__
+*.pt

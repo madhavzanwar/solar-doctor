@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axalon Systems — Technical Investor Brief 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700;800&display=swap');
+
+  :root {
+    --black: #0a0a0a;
+    --surface: #111111;
+    --card: #181818;
+    --border: #2a2a2a;
+    --gold: #C9993A;
+    --gold-light: #E2B55A;
+    --white: #F0EDE8;
+    --muted: #888;
+    --green: #4CAF50;
+    --amber: #FFA726;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --display: 'Barlow Condensed', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--gold);
+    padding: 40px 60px 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 40px;
+  }
+  .logo-block { display: flex; align-items: center; gap: 18px; }
+  .logo-img {
+    height: 48px;
+    width: auto;
+    flex-shrink: 0;
+    display: block;
+  }
+  .logo-text { font-family: var(--display); font-size: 32px; font-weight: 800; letter-spacing: 0.12em; color: var(--white); }
+  .logo-sub { font-family: var(--sans); font-size: 10px; letter-spacing: 0.3em; color: var(--muted); margin-top: 2px; }
+  .header-meta { text-align: right; }
+  .header-meta .doc-type { font-family: var(--display); font-size: 13px; letter-spacing: 0.2em; color: var(--gold); font-weight: 600; }
+  .header-meta .doc-title { font-size: 20px; font-weight: 600; color: var(--white); margin-top: 4px; }
+  .header-meta .doc-date { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .confidential-badge {
+    display: inline-block;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    padding: 3px 10px;
+    margin-top: 8px;
+    font-family: var(--mono);
+  }
+
+  /* ── LAYOUT ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 60px 40px; }
+
+  /* ── SECTION ── */
+  section { margin-bottom: 64px; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--white);
+    margin-bottom: 4px;
+    line-height: 1.1;
+  }
+  .section-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+
+  /* ── OVERVIEW BAR ── */
+  .overview-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.8;
+  }
+  .overview-bar strong { color: var(--gold-light); }
+
+  /* ── GRID SYSTEMS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* ── SPEC CARD ── */
+  .spec-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    border-radius: 2px;
+  }
+  .spec-card .card-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .spec-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 10px;
+  }
+  .spec-card p, .spec-card li {
+    font-size: 13px;
+    color: #aaa;
+    line-height: 1.7;
+  }
+  .spec-card ul { list-style: none; padding: 0; }
+  .spec-card ul li::before { content: "→ "; color: var(--gold); }
+  .spec-card .highlight { color: var(--gold-light); font-weight: 500; }
+
+  /* ── SPEC TABLE ── */
+  .spec-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .spec-table tr { border-bottom: 1px solid var(--border); }
+  .spec-table tr:last-child { border-bottom: none; }
+  .spec-table td { padding: 10px 0; font-size: 13px; vertical-align: top; }
+  .spec-table td:first-child {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--gold);
+    width: 38%;
+    padding-right: 20px;
+    letter-spacing: 0.04em;
+  }
+  .spec-table td:last-child { color: #ccc; }
+  .spec-table td span.note {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── STATUS BADGE ── */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .badge.validated { background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3); }
+  .badge.in-progress { background: rgba(255,167,38,0.12); color: var(--amber); border: 1px solid rgba(255,167,38,0.3); }
+  .badge.planned { background: rgba(100,100,100,0.2); color: #888; border: 1px solid #333; }
+
+  /* ── PIPELINE FLOW ── */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .pipeline-step {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-right: none;
+    padding: 16px 14px;
+    position: relative;
+    min-width: 120px;
+  }
+  .pipeline-step:last-child { border-right: 1px solid var(--border); }
+  .pipeline-step::after {
+    content: "›";
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    font-size: 20px;
+    z-index: 1;
+    background: var(--black);
+    padding: 0 2px;
+  }
+  .pipeline-step:last-child::after { display: none; }
+  .pipeline-step .step-num { font-family: var(--mono); font-size: 10px; color: var(--gold); margin-bottom: 6px; }
+  .pipeline-step .step-name { font-size: 12px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+  .pipeline-step .step-detail { font-size: 11px; color: #888; }
+
+  /* ── AI MODEL BLOCK ── */
+  .model-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--gold);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .model-block h4 { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 12px; }
+  .metric-row { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    text-align: center;
+    min-width: 100px;
+  }
+  .metric .val { font-family: var(--display); font-size: 24px; font-weight: 800; color: var(--gold-light); }
+  .metric .label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; margin-top: 2px; }
+
+  /* ── DEFECT CLASS LIST ── */
+  .defect-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .defect-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #bbb;
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .defect-item::before { content: "⬥ "; color: var(--gold); font-size: 8px; }
+
+  /* ── ARCHITECTURE DIAGRAM (ASCII-style) ── */
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #aaa;
+    line-height: 1.9;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .arch-box .gold { color: var(--gold); }
+  .arch-box .green { color: var(--green); }
+  .arch-box .dim { color: #555; }
+
+  /* ── RISK TABLE ── */
+  .risk-row {
+    display: grid;
+    grid-template-columns: 2fr 3fr 3fr;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .risk-row.header {
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    padding: 10px 0;
+  }
+  .risk-row:not(.header) { padding: 12px 0; }
+  .risk-row > div { padding: 0 12px; font-size: 12px; color: #bbb; }
+  .risk-row > div:first-child { color: var(--white); font-weight: 500; }
+  .risk-high { border-left: 3px solid #e53935; }
+  .risk-med  { border-left: 3px solid var(--amber); }
+  .risk-low  { border-left: 3px solid var(--green); }
+
+  /* ── COMMS LAYER ── */
+  .comms-layer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .comms-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .comms-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .comms-item h4 { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+  .comms-item p { font-size: 12px; color: #888; }
+
+  /* ── DOCK SECTION ── */
+  .dock-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .dock-feat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+  }
+  .dock-feat h4 { font-size: 13px; font-weight: 600; color: var(--gold-light); margin-bottom: 6px; }
+  .dock-feat p { font-size: 12px; color: #999; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 24px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 768px) {
+    header { flex-direction: column; padding: 24px; }
+    main { padding: 32px 20px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .comms-layer, .dock-features { grid-template-columns: 1fr; }
+    .risk-row { grid-template-columns: 1fr; }
+    .pipeline { flex-direction: column; }
+    .pipeline-step::after { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <img class="logo-img" src="/logo.png" alt="Axalon Systems">
+    <div>
+      <div class="logo-text">AXALON</div>
+      <div class="logo-sub">S Y S T E M S</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="doc-type">Technical Investor Brief</div>
+    <div class="doc-title">Autonomous Drone Inspection Platform</div>
+    <div class="doc-date">June 2026</div>
+    <div><span class="confidential-badge">CONFIDENTIAL</span></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="overview-bar">
+    This document provides a full technical breakdown of the Axalon Systems autonomous drone inspection stack — hardware architecture, flight systems, AI pipeline, docking infrastructure, and data layer — for investor due diligence. All validated components are clearly distinguished from in-progress development.
+    <br><br>
+    <strong>TL;DR for technologists:</strong> Axalon is a vertically integrated autonomous inspection system — a 650-class carbon-fiber quadrotor running CubePilot/ArduPilot on an NVIDIA Jetson Orin Nano, with a custom YOLOv8s dual-model thermal+RGB fusion AI stack (mAP50 0.734, 11 defect classes), operating from a proprietary weatherproof docking station with automated charging. No pilot required. Reports generated in-flight.
+  </div>
+
+  <!-- SECTION 1: SYSTEM ARCHITECTURE -->
+  <section>
+    <div class="section-label">01 / System Overview</div>
+    <h2>FULL SYSTEM ARCHITECTURE</h2>
+    <div class="section-sub">How the hardware, AI, and software layers connect end-to-end</div>
+
+    <div class="arch-box"><span class="gold">┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                        AXALON AUTONOMOUS INSPECTION SYSTEM                          │
+└─────────────────────────────────────────────────────────────────────────────────────┘</span>
+
+<span class="gold">  [DOCK STATION]</span>               <span class="gold">[DRONE - AIRBORNE]</span>                  <span class="gold">[CLOUD / O&M]</span>
+
+  ┌──────────────┐            ┌──────────────────────────┐         ┌─────────────────┐
+  │ Weatherproof │            │  CubePilot (ArduPilot)   │         │  O&M Dashboard  │
+  │    Shell     │  Launch ─→ │  GPS + MAVLink backbone  │ ──────→ │  Work Orders    │
+  │  (FDM/ABS)   │            │  ExpressLRS telemetry    │  4G/WiFi│  Defect Maps    │
+  │              │            └──────────┬───────────────┘         │  Trend Analysis │
+  │ Magnetic     │                       │ UART/I2C/CAN            └─────────────────┘
+  │ Charging     │            ┌──────────▼───────────────┐
+  │ Cassette     │            │   NVIDIA Jetson Orin Nano│
+  │ (XT90-S)     │            │   Edge AI Inference      │<span class="green"> ← AI runs here</span>
+  │              │            │   YOLOv8s (11 classes)   │
+  │ Precision    │            │   Dual-model fusion      │
+  │ Landing Pad  │ ←─Return─  │   GPS coordinate mapping │
+  └──────────────┘            └──────────┬───────────────┘
+                                         │ SPI / MIPI CSI
+                              ┌──────────▼───────────────┐
+                              │   SENSING SUITE          │
+                              │  • Calibrated IR thermal │
+                              │  • 4K RGB synchronized   │
+                              │  • Benewake TFmini-i CAN │
+                              │    LiDAR (altitude hold) │
+                              └──────────────────────────┘
+
+  <span class="dim">Data flow: Sensors → Jetson inference → GPS-tagged defect JSON → report → dashboard</span>
+  <span class="dim">No raw images transmitted. Structured intelligence only.</span></div>
+  </section>
+
+  <!-- SECTION 2: DRONE HARDWARE -->
+  <section>
+    <div class="section-label">02 / Hardware Stack</div>
+    <h2>DRONE HARDWARE SPECIFICATION</h2>
+    <div class="section-sub">Industrial-grade components selected for solar field conditions — heat, dust, vibration</div>
+
+    <div class="grid-2">
+      <div class="spec-card">
+        <div class="card-label">Airframe & Propulsion</div>
+        <table class="spec-table">
+          <tr>
+            <td>Frame</td>
+            <td>650-class carbon fiber quadrotor<span class="note">High stiffness-to-weight. Low vibration propagation to sensors.</span></td>
+          </tr>
+          <tr>
+            <td>Motors</td>
+            <td>T-Motor low-KV industrial series<span class="note">16" props. Optimized for payload efficiency, not speed. High MTBF.</span></td>
+          </tr>
+          <tr>
+            <td>Propellers</td>
+            <td>16-inch carbon fiber<span class="note">Matched to low-KV motors for max thrust efficiency at 6S.</span></td>
+          </tr>
+          <tr>
+            <td>Takeoff weight</td>
+            <td>~2.8–3.2 kg (estimated with full payload)<span class="note">Jetson + thermal + RGB + LiDAR onboard.</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">Power System</div>
+        <table class="spec-table">
+          <tr>
+            <td>Battery</td>
+            <td>6S LiPo (22.2V nominal)<span class="note">High energy density for flight duration. Industry standard voltage class.</span></td>
+          </tr>
+          <tr>
+            <td>Dock interface</td>
+            <td>XT90-S slide rail connector<span class="note">Keyed anti-spark connector. Enables automated dock charging without human contact.</span></td>
+          </tr>
+          <tr>
+            <td>Flight time</td>
+            <td>~25–30 min per charge<span class="note">Sufficient for complete 15 MW block scan. Dock recharges for next cycle.</span></td>
+          </tr>
+          <tr>
+            <td>Charge cycle</td>
+            <td>Automated post-landing<span class="note">Dock supplies charge via slide rail. No battery swap needed.</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">Flight Controller</div>
+        <table class="spec-table">
+          <tr>
+            <td>FC</td>
+            <td>CubePilot (Cube Orange+)<span class="note">Triple-redundant IMU. Military-grade vibration isolation. Industry standard for professional UAVs.</span></td>
+          </tr>
+          <tr>
+            <td>Autopilot</td>
+            <td>ArduPilot (ArduCopter)<span class="note">Open-source, mature, battle-tested across industrial drone deployments globally.</span></td>
+          </tr>
+          <tr>
+            <td>Telemetry</td>
+            <td>MAVLink protocol (UART/SiK/RFD900)<span class="note">Full state telemetry: GPS, altitude, attitude, battery, mission progress.</span></td>
+          </tr>
+          <tr>
+            <td>Status</td>
+            <td><span class="badge validated">Validated</span><span class="note">Stable hover, GPS hold, LiDAR alt-hold confirmed.</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">Communications</div>
+        <table class="spec-table">
+          <tr>
+            <td>RC / Telemetry</td>
+            <td>ExpressLRS (2.4 GHz)<span class="note">Sub-3ms latency. Long range. Encrypted link for safe operations.</span></td>
+          </tr>
+          <tr>
+            <td>Video</td>
+            <td>Digital FPV (Walksnail Avatar ecosystem)<span class="note">HD digital feed for monitoring and safety override. Latency &lt;40ms.</span></td>
+          </tr>
+          <tr>
+            <td>Long-range video</td>
+            <td>SIYI HM30 / MK15 (evaluated)<span class="note">For large-park ops where dock is 500m+ from monitoring station.</span></td>
+          </tr>
+          <tr>
+            <td>Data upload</td>
+            <td>4G LTE / WiFi via Jetson<span class="note">Defect JSON + report transmitted after landing. Not during flight.</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: SENSING SUITE -->
+  <section>
+    <div class="section-label">03 / Sensing Suite</div>
+    <h2>SENSOR ARCHITECTURE</h2>
+    <div class="section-sub">Dual-modality sensing with hardware-synchronized thermal and RGB capture</div>
+
+    <div class="grid-3">
+      <div class="spec-card">
+        <div class="card-label">Thermal Imaging</div>
+        <h3>Calibrated IR Camera</h3>
+        <ul>
+          <li>Radiometric calibration for absolute temperature readings</li>
+          <li>Detects hotspots, bypass diode failures, soiling anomalies</li>
+          <li>Hardware-synchronized with RGB for pixel-accurate fusion</li>
+          <li>Captures full block in ~25 minutes at mission altitude</li>
+        </ul>
+        <p style="margin-top:10px; font-size:11px; color:var(--muted)">Critical: Radiometric calibration is what separates inspection-grade thermal from consumer thermal cameras. Raw temperature values enable kWh loss estimation per fault.</p>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">Visual Imaging</div>
+        <h3>4K RGB Camera</h3>
+        <ul>
+          <li>High-res visual context for thermal anomaly correlation</li>
+          <li>Detects physical damage: micro-cracks, delamination, soiling</li>
+          <li>Synchronized trigger with thermal camera (hardware-level)</li>
+          <li>Used in dual-model fusion pipeline with homography alignment</li>
+        </ul>
+        <p style="margin-top:10px; font-size:11px; color:var(--muted)">Synchronization matters: thermal and RGB images are registered via a homography transform. Misalignment would corrupt GPS coordinate attribution of defects.</p>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">Ranging / Altitude</div>
+        <h3>Benewake TFmini-i LiDAR</h3>
+        <ul>
+          <li>Interface: CAN bus (UAVCAN/DroneCAN protocol)</li>
+          <li>Precise altitude hold above panel surface</li>
+          <li>Consistent GSD (ground sampling distance) per flight</li>
+          <li>Critical for thermal image comparability across cycles</li>
+        </ul>
+        <p style="margin-top:10px; font-size:11px; color:var(--muted)">Status: <span class="badge validated" style="font-size:8px;">Validated</span> — UAVCAN integration confirmed, stable altitude lock demonstrated.</p>
+      </div>
+    </div>
+
+    <div class="spec-card" style="margin-top:16px;">
+      <div class="card-label">Sensor Fusion — Why Both Modalities Matter</div>
+      <div class="grid-2" style="margin-top:12px;">
+        <div>
+          <h3 style="color:var(--gold-light); margin-bottom:8px;">Thermal alone (limitation)</h3>
+          <p>Identifies temperature anomalies but cannot distinguish fault type from thermal signature alone. A hotspot from soiling looks different from a hotspot from a bypass diode failure — but both appear as elevated temperature in IR.</p>
+        </div>
+        <div>
+          <h3 style="color:var(--gold-light); margin-bottom:8px;">Thermal + RGB fusion (Axalon approach)</h3>
+          <p>RGB provides visual fault context (physical crack vs. shading vs. cell failure). The homography-based fusion maps both modalities to GPS coordinates with panel-level precision, enabling work orders specific to one module in a 100,000-panel park.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: FLIGHT AUTONOMY -->
+  <section>
+    <div class="section-label">04 / Flight Autonomy</div>
+    <h2>AUTONOMOUS FLIGHT SYSTEM</h2>
+    <div class="section-sub">Structured grid missions with zero pilot involvement — from dock launch to precision return</div>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="step-num">01</div>
+        <div class="step-name">Mission Upload</div>
+        <div class="step-detail">Pre-planned waypoint grid for each 15 MW block loaded to FC. Triggered on schedule.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">02</div>
+        <div class="step-name">Auto-Launch</div>
+        <div class="step-detail">Dock releases drone. ArduPilot executes auto-takeoff. No RC input needed.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">03</div>
+        <div class="step-name">Grid Scan</div>
+        <div class="step-detail">Lawnmower pattern at fixed altitude. LiDAR maintains consistent sensor-to-panel height.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">04</div>
+        <div class="step-name">In-Flight AI</div>
+        <div class="step-detail">Jetson processes frames continuously. Defects classified, GPS-tagged, severity scored.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">05</div>
+        <div class="step-name">Precision Return</div>
+        <div class="step-detail">ArduPilot RTL. AprilTag / visual precision landing on dock pad. XT90-S connects.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">06</div>
+        <div class="step-name">Report Upload</div>
+        <div class="step-detail">Structured JSON defect report transmitted. Dashboard updates. Recharge begins.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div class="spec-card">
+        <div class="card-label">Mission Planning</div>
+        <table class="spec-table">
+          <tr>
+            <td>Pattern</td>
+            <td>Lawnmower grid (boustrophedon) over each 15 MW block</td>
+          </tr>
+          <tr>
+            <td>Coverage</td>
+            <td>100% of panels per scan<span class="note">vs. 10-25% with manual handheld thermography</span></td>
+          </tr>
+          <tr>
+            <td>Scan time</td>
+            <td>~25 minutes per 15 MW block</td>
+          </tr>
+          <tr>
+            <td>Frequency</td>
+            <td>2× per month = 24 cycles/year<span class="note">vs. 2× per year with outsourced drone vendors</span></td>
+          </tr>
+        </table>
+      </div>
+      <div class="spec-card">
+        <div class="card-label">Safety & Failsafes</div>
+        <table class="spec-table">
+          <tr>
+            <td>Low battery</td>
+            <td>Auto-RTL triggered at configurable threshold (e.g. 20% SoC)</td>
+          </tr>
+          <tr>
+            <td>GPS loss</td>
+            <td>Position hold → land failsafe via ArduPilot</td>
+          </tr>
+          <tr>
+            <td>Geofence</td>
+            <td>Configurable hard boundary per block — drone cannot leave assigned zone</td>
+          </tr>
+          <tr>
+            <td>Override</td>
+            <td>ExpressLRS RC link always active for manual takeover if needed</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: EDGE AI -->
+  <section>
+    <div class="section-label">05 / Edge AI Stack</div>
+    <h2>AI DEFECT DETECTION PIPELINE</h2>
+    <div class="section-sub">Custom-trained YOLOv8s with dual-model thermal+RGB fusion — running fully onboard at inference time</div>
+
+    <div class="model-block">
+      <h4>Primary Model: YOLOv8s — Thermal Defect Detection</h4>
+      <table class="spec-table">
+        <tr>
+          <td>Architecture</td>
+          <td>YOLOv8 Small (YOLOv8s) — chosen for edge inference on Jetson Orin Nano<span class="note">Balance of accuracy and inference latency. Full YOLOv8x would exceed Jetson real-time budget.</span></td>
+        </tr>
+        <tr>
+          <td>Training data</td>
+          <td>InfraredSolarModules dataset + PV module thermal fault dataset<span class="note">Both datasets provide labeled thermal imagery of real solar panel defects in field conditions.</span></td>
+        </tr>
+        <tr>
+          <td>Defect classes</td>
+          <td>11 classes (see below)</td>
+        </tr>
+        <tr>
+          <td>Deployment</td>
+          <td>NVIDIA Jetson Orin Nano — TensorRT-optimized inference<span class="note">TensorRT export from PyTorch for hardware-accelerated inference. INT8 quantization evaluated.</span></td>
+        </tr>
+      </table>
+
+      <div class="metric-row">
+        <div class="metric">
+          <div class="val">0.734</div>
+          <div class="label">mAP50</div>
+        </div>
+        <div class="metric">
+          <div class="val">11</div>
+          <div class="label">Defect Classes</div>
+        </div>
+        <div class="metric">
+          <div class="val">Orin Nano</div>
+          <div class="label">Edge Hardware</div>
+        </div>
+        <div class="metric">
+          <div class="val">In-flight</div>
+          <div class="label">Inference Timing</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-card" style="margin-bottom:16px;">
+      <div class="card-label">11 Defect Classes Detected</div>
+      <div class="defect-grid" style="margin-top:12px;">
+        <div class="defect-item">Hotspot (single cell)</div>
+        <div class="defect-item">Hotspot (multi-cell)</div>
+        <div class="defect-item">Bypass diode failure</div>
+        <div class="defect-item">Micro-crack</div>
+        <div class="defect-item">Delamination</div>
+        <div class="defect-item">Soiling anomaly</div>
+        <div class="defect-item">Shading defect</div>
+        <div class="defect-item">PID (potential-induced degradation)</div>
+        <div class="defect-item">Snail trail</div>
+        <div class="defect-item">Cell mismatch</div>
+        <div class="defect-item">Electrical arc signature</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="spec-card">
+        <div class="card-label">Dual-Model Fusion</div>
+        <h3>Thermal Model + RGB Model → Fused Output</h3>
+        <ul style="margin-top:10px;">
+          <li>Thermal model: YOLOv8s on IR frames (primary)</li>
+          <li>RGB model: Complementary visual defect detection</li>
+          <li>Homography transform aligns both modalities</li>
+          <li>Fused bounding boxes cross-referenced for fault type confidence</li>
+          <li>GPS coordinates computed from homography + flight telemetry</li>
+        </ul>
+        <p style="margin-top:10px; font-size:11px; color:var(--muted)">Output: per-fault GPS coordinate, defect class, severity score, estimated kWh loss.</p>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">LLM-Assisted Report Generation</div>
+        <h3>From Detection Output → Human-Readable Work Order</h3>
+        <ul style="margin-top:10px;">
+          <li>Structured detection JSON fed to onboard LLM layer</li>
+          <li>LLM generates natural-language fault descriptions</li>
+          <li>Prioritization: Critical → High → Medium → Low</li>
+          <li>kWh loss estimate per fault (based on fault type + irradiance model)</li>
+          <li>IEC 62446-3 compliant format for warranty documentation</li>
+        </ul>
+        <p style="margin-top:10px; font-size:11px; color:var(--muted)">This layer is the key differentiator. Competitors deliver images. Axalon delivers work orders a technician can act on in 60 seconds.</p>
+      </div>
+    </div>
+
+    <div class="spec-card" style="margin-top:16px;">
+      <div class="card-label">Compute: NVIDIA Jetson Orin Nano</div>
+      <div class="grid-2" style="margin-top:12px;">
+        <table class="spec-table">
+          <tr><td>CPU</td><td>6-core Arm Cortex-A78AE</td></tr>
+          <tr><td>GPU</td><td>1024-core NVIDIA Ampere, 32 Tensor Cores</td></tr>
+          <tr><td>AI performance</td><td>40 TOPS (INT8)</td></tr>
+          <tr><td>RAM</td><td>8GB LPDDR5</td></tr>
+        </table>
+        <table class="spec-table">
+          <tr><td>Power draw</td><td>7–15W — viable for onboard battery budget</td></tr>
+          <tr><td>Form factor</td><td>Compact SOM — fits within 650-class frame payload bay</td></tr>
+          <tr><td>Interface</td><td>UART to FC (MAVLink), CSI for cameras, USB/SPI for peripherals</td></tr>
+          <tr><td>Status</td><td><span class="badge in-progress">Integration In Progress</span></td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: DOCKING SYSTEM -->
+  <section>
+    <div class="section-label">06 / Docking Infrastructure</div>
+    <h2>DRONE DOCKING STATION</h2>
+    <div class="section-sub">Proprietary weatherproof housing with automated charging — the key to zero-human-intervention ops</div>
+
+    <div class="dock-features">
+      <div class="dock-feat">
+        <h4>🏗 Mechanical Design</h4>
+        <p>Single-hinge fold-back shell design. Opens on launch, closes and seals on return. Protects drone from dust, rain, and the 45°C+ field conditions typical of Rajasthan / Gujarat solar parks. Parametric FDM design (Bambu Lab A1, ASA/ABS filament) for rapid iteration and low-cost manufacturing.</p>
+      </div>
+      <div class="dock-feat">
+        <h4>⚡ Charging System</h4>
+        <p>Magnetic diagonal-pair charging cassette with XT90-S slide rail connector. Anti-spark, keyed, positive-engagement. Drone lands, slides into charge position, charging initiates without any operator action. Full recharge estimated 45–60 min, enabling 2–3 cycles per day if needed.</p>
+      </div>
+      <div class="dock-feat">
+        <h4>🎯 Precision Landing</h4>
+        <p>ArduPilot precision landing via AprilTag / IR beacon on dock pad. GPS brings drone to within 1–2m. Precision landing system closes to &lt;10cm. Required for reliable XT90-S connector engagement. Status: <span class="badge in-progress">Prototype in fabrication</span></p>
+      </div>
+      <div class="dock-feat">
+        <h4>🌦 Environmental Sealing</h4>
+        <p>IP65+ target rating. Gasket-sealed on closure. Sun-facing solar panel on dock roof charges an internal battery that powers the dock control board, shell actuator, and charge circuitry — making the dock itself off-grid.</p>
+      </div>
+    </div>
+
+    <div class="spec-card" style="margin-top:16px;">
+      <div class="card-label">Deployment Model</div>
+      <table class="spec-table">
+        <tr>
+          <td>Coverage per unit</td>
+          <td>1 dock + 1 drone per 15 MW block<span class="note">Placed at perimeter of each block. No cabling into active panel field required.</span></td>
+        </tr>
+        <tr>
+          <td>Example: 300 MW park</td>
+          <td>20 blocks → 20 dock units deployed<span class="note">Each unit operates independently. No centralized control required for basic ops.</span></td>
+        </tr>
+        <tr>
+          <td>Manufacturing approach</td>
+          <td>FDM structural shell (Bambu Lab A1) + off-the-shelf structural hardware<span class="note">Designed for low-cost rapid iteration. Production version will migrate to injection-molded ABS/PC.</span></td>
+        </tr>
+        <tr>
+          <td>Field access</td>
+          <td>Battery replacement access panel on dock rear<span class="note">Physical battery swap ~5 min. Year 3–4 replacement cycle based on LiPo degradation curve.</span></td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 7: SOFTWARE & DATA -->
+  <section>
+    <div class="section-label">07 / Software & Data Layer</div>
+    <h2>SOFTWARE STACK</h2>
+    <div class="section-sub">Onboard processing pipeline + cloud O&M dashboard + data infrastructure</div>
+
+    <div class="grid-2">
+      <div class="spec-card">
+        <div class="card-label">Onboard Software (Jetson)</div>
+        <table class="spec-table">
+          <tr>
+            <td>OS</td>
+            <td>Ubuntu 20.04 LTS (JetPack SDK)</td>
+          </tr>
+          <tr>
+            <td>AI runtime</td>
+            <td>PyTorch → TensorRT (production inference)</td>
+          </tr>
+          <tr>
+            <td>Flight integration</td>
+            <td>ROS 2 + MAVLink (MAVROS bridge)<span class="note">Enables Jetson to read GPS, trigger cameras on waypoints, access telemetry state.</span></td>
+          </tr>
+          <tr>
+            <td>Camera pipeline</td>
+            <td>GStreamer / V4L2 for synchronized capture</td>
+          </tr>
+          <tr>
+            <td>Output format</td>
+            <td>Structured JSON defect manifest per flight<span class="note">Per-fault: GPS coords, class, severity, confidence, kWh loss estimate, thumbnail.</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="spec-card">
+        <div class="card-label">O&M Dashboard (Cloud)</div>
+        <table class="spec-table">
+          <tr>
+            <td>Interface</td>
+            <td>Web-based O&M dashboard — park map + defect overlay</td>
+          </tr>
+          <tr>
+            <td>Work orders</td>
+            <td>Severity-ranked list with GPS pin, fault description, priority</td>
+          </tr>
+          <tr>
+            <td>Trend tracking</td>
+            <td>24 data points/year per block — degradation curves over time</td>
+          </tr>
+          <tr>
+            <td>Warranty export</td>
+            <td>IEC 62446-3 compliant PDF with timestamped thermal evidence</td>
+          </tr>
+          <tr>
+            <td>Stack</td>
+            <td>Full-stack web (React frontend + Node.js API + database)<span class="note">Built and owned by Meenakshi Sharma (co-founder, software).</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 8: COMMS -->
+  <section>
+    <div class="section-label">08 / Communications Architecture</div>
+    <h2>COMMUNICATIONS STACK</h2>
+    <div class="section-sub">Layered RF architecture — safety-critical control separated from data transmission</div>
+
+    <div class="comms-layer">
+      <div class="comms-item">
+        <div class="comms-icon">📡</div>
+        <div>
+          <h4>ExpressLRS — Safety Link <span class="badge validated">Validated</span></h4>
+          <p>2.4 GHz FHSS RC/telemetry link. Sub-3ms latency. Long-range (1km+ LOS). Encrypted. Used for ArduPilot telemetry, mission upload, and manual override capability. Always-active — this is the safety backstop if autonomous systems fail.</p>
+        </div>
+      </div>
+      <div class="comms-item">
+        <div class="comms-icon">📹</div>
+        <div>
+          <h4>Walksnail Avatar — Digital FPV <span class="badge validated">Validated</span></h4>
+          <p>HD digital FPV for situational awareness during operations. &lt;40ms latency. Used for monitoring and safety oversight, not data transmission. Evaluated Walksnail Avatar ecosystem for reliability in high-EMI solar field environments.</p>
+        </div>
+      </div>
+      <div class="comms-item">
+        <div class="comms-icon">🌐</div>
+        <div>
+          <h4>SIYI HM30 / MK15 — Long-Range Ops</h4>
+          <p>Evaluated for large park scenarios where dock may be 500m+ from monitoring station. Miniaturized HD video + datalink in single unit. Relevant for Phase 2 deployments at 500+ MW parks.</p>
+        </div>
+      </div>
+      <div class="comms-item">
+        <div class="comms-icon">☁️</div>
+        <div>
+          <h4>4G LTE / WiFi — Data Upload</h4>
+          <p>Jetson uploads structured defect JSON to cloud after each flight via 4G or park WiFi. Not transmitted during flight — eliminates latency dependency on uplink quality for AI inference. Dashboard updates within minutes of landing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 9: BUILD STATUS -->
+  <section>
+    <div class="section-label">09 / Build Status</div>
+    <h2>VALIDATED vs. IN PROGRESS</h2>
+    <div class="section-sub">Honest technology readiness assessment — what works today, what is actively being built</div>
+
+    <div class="grid-2">
+      <div class="spec-card" style="border-top:2px solid var(--green);">
+        <div class="card-label" style="color:var(--green)">✓ Validated — Working Today</div>
+        <table class="spec-table" style="margin-top:12px;">
+          <tr><td>Airframe</td><td>650-class carbon quad built, structurally sound</td></tr>
+          <tr><td>Flight controller</td><td>CubePilot + ArduPilot integrated and tuned</td></tr>
+          <tr><td>Stable hover</td><td>GPS position hold, altitude hold confirmed</td></tr>
+          <tr><td>LiDAR integration</td><td>Benewake TFmini-i UAVCAN live on FC</td></tr>
+          <tr><td>Telemetry</td><td>MAVLink + digital FPV link validated</td></tr>
+          <tr><td>AI model</td><td>YOLOv8s trained (mAP50 0.734, 11 classes)</td></tr>
+          <tr><td>Market pricing</td><td>Validated: Lesoko quote + NTPC Nokhra benchmark</td></tr>
+          <tr><td>Incorporation</td><td>Axalon Systems Pvt Ltd registered</td></tr>
+        </table>
+      </div>
+
+      <div class="spec-card" style="border-top:2px solid var(--amber);">
+        <div class="card-label" style="color:var(--amber)">→ In Progress — Next 6 Months</div>
+        <table class="spec-table" style="margin-top:12px;">
+          <tr><td>Jetson integration</td><td>Onboard compute mount + ROS/MAVLink bridge</td></tr>
+          <tr><td>AI inference onboard</td><td>TensorRT deploy on Jetson, live inference pipeline</td></tr>
+          <tr><td>Docking prototype</td><td>FDM shell fabrication + XT90-S rail testing</td></tr>
+          <tr><td>Precision landing</td><td>AprilTag / IR beacon precision landing validation</td></tr>
+          <tr><td>Autonomous grid mission</td><td>Full waypoint mission end-to-end without pilot</td></tr>
+          <tr><td>First pilot deployment</td><td>≥20 MW block, paid DaaS contract</td></tr>
+          <tr><td>DGCA compliance</td><td>RPL, UIN, insurance for commercial ops</td></tr>
+          <tr><td>O&M dashboard MVP</td><td>Live defect map, work order interface</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 10: TECHNICAL RISKS -->
+  <section>
+    <div class="section-label">10 / Risk & Mitigation</div>
+    <h2>TECHNICAL RISK REGISTER</h2>
+    <div class="section-sub">Known risks, honest assessment, and existing mitigations</div>
+
+    <div class="risk-row header">
+      <div style="padding:0 12px;">Risk</div>
+      <div style="padding:0 12px;">Nature</div>
+      <div style="padding:0 12px;">Mitigation</div>
+    </div>
+    <div class="risk-row risk-high">
+      <div>Precision landing reliability</div>
+      <div>XT90-S engagement requires &lt;10cm accuracy. GPS gives ~1-2m. Precision landing system must close the gap consistently in field wind conditions.</div>
+      <div>AprilTag + IR beacon fallback. ArduPilot precision landing is proven technology (used in commercial delivery drones). Dock funnel / guide rails being designed as mechanical assist.</div>
+    </div>
+    <div class="risk-row risk-high">
+      <div>DGCA regulatory path</div>
+      <div>Beyond Visual Line of Sight (BVLOS) operations require DGCA Type Certification and operator approval. Timeline is uncertain.</div>
+      <div>Phase 1 operates within VLOS rules — operator present on-site. BVLOS required for Phase 2 fully unattended ops. Engaging DGCA compliance consultants. Regulatory timeline tracked.</div>
+    </div>
+    <div class="risk-row risk-med">
+      <div>Jetson power budget</div>
+      <div>Jetson Orin Nano draws 7–15W continuously. 6S LiPo budget is tight against extended flight time targets.</div>
+      <div>Dynamic power mode switching (Max 15W on approach/landing, lower during cruise). Alternative: Jetson Orin NX (10W, higher TOPS) evaluated. Flight time buffer built into mission planning.</div>
+    </div>
+    <div class="risk-row risk-med">
+      <div>AI accuracy in field conditions</div>
+      <div>Training dataset (InfraredSolarModules) may not fully represent Indian solar field conditions — different panel types, ambient temps, soiling patterns.</div>
+      <div>Pilot deployments are primarily data collection. First 6 months of DaaS contracts will generate proprietary labeled dataset. Fine-tune YOLOv8s on India-specific data. mAP50 0.734 is baseline — expect improvement with proprietary data.</div>
+    </div>
+    <div class="risk-row risk-low">
+      <div>Battery degradation</div>
+      <div>LiPo cells degrade after ~200–400 cycles. With 24 flights/year, replacement needed at Year 3–4.</div>
+      <div>Battery replacement is planned cost (₹3L total modeled in customer TCO). Access panel on dock designed for 5-minute swap. Lithium Iron Phosphate (LiFePO4) migration evaluated for Year 2 for higher cycle count.</div>
+    </div>
+    <div class="risk-row risk-low">
+      <div>Component supply</div>
+      <div>CubePilot, Jetson Orin Nano, T-Motor supply chains have lead times.</div>
+      <div>Components are commercially available globally. T-Motor has India distribution. Jetson availability has improved post-2024. Buffer stock strategy for initial batch production.</div>
+    </div>
+  </section>
+
+  <!-- SECTION 11: MOAT -->
+  <section>
+    <div class="section-label">11 / Technical Moat</div>
+    <h2>DEFENSIBILITY</h2>
+    <div class="section-sub">Why this stack is difficult to replicate quickly</div>
+
+    <div class="grid-3">
+      <div class="spec-card">
+        <div class="card-label">Proprietary AI Model</div>
+        <p>YOLOv8s fine-tuned on solar defect data with 11 classes. As pilot deployments generate labeled India-specific thermal data, model quality compounds over time. Competitors starting today face an 18–24 month data collection lag.</p>
+      </div>
+      <div class="spec-card">
+        <div class="card-label">Integrated Stack</div>
+        <p>DJI sells hardware without the AI analytics. Service providers sell hours without the autonomy. No competitor currently combines full dock autonomy + edge AI inference + structured work order output in a single deployable unit at this price point in India.</p>
+      </div>
+      <div class="spec-card">
+        <div class="card-label">Operational Data Flywheel</div>
+        <p>24 inspection cycles/year per block means each deployed unit generates ~24× more labeled solar defect data than a competitor doing 2× annual inspections. Data quality and volume improve model accuracy and kWh loss estimation models over time.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div>AXALON SYSTEMS PVT LTD &nbsp;·&nbsp; Technical Investor Brief &nbsp;·&nbsp; June 2026</div>
+  <div>parakh@axalonsystems.com &nbsp;·&nbsp; +91 94135 52887 &nbsp;·&nbsp; axalonsystems.com</div>
+  <div class="confidential-badge">CONFIDENTIAL</div>
+</footer>
+
+</body>
+</html>

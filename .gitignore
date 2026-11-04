@@ -1,0 +1,156 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# IDE and editors
+.idea/
+.vscode/
+
+# Dependencies
+node_modules/
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+**/.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# Playwright artifacts and screenshots
+**/.playwright-mcp/
+**/step*.png
+
+# Production builds
+/build
+dist/
+dist
+
+# Environment files (comprehensive coverage)
+
+*token.json*
+*credentials.json*
+
+# Logs and debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dump.rdb
+
+# System files
+.DS_Store
+*.pem
+
+# Python
+__pycache__/
+*pyc*
+venv/
+.venv/
+# Secondary venvs (e.g. .venv-relay for the drone relay deps)
+.venv-*/
+
+# Development tools
+chainlit.md
+.chainlit
+.ipynb_checkpoints/
+.ac
+
+# ML — large data files (not tracked in git)
+ml/data/images/
+ml/data/labels/
+ml/data/augmented/
+ml/output/annotated/
+ml/runs/thermal/train/weights/
+# Stock Ultralytics pretrained weights are auto-downloaded on first use
+ml/notebooks/*.pt
+
+# Claude Code tooling
+.claude/*
+!.claude/skills/
+.claude/settings.local.json
+.remember/
+memory/
+test_reports/
+
+# Deployment
+.vercel
+
+# Data and databases
+agenthub/agents/youtube/db
+
+# Archive files and large assets
+**/*.zip
+**/*.tar.gz
+**/*.tar
+**/*.tgz
+*.pack
+*.deb
+*.dylib
+
+# Build caches
+.cache/
+
+# Mobile development
+android-sdk/
+
+# Axalon platform — runtime artifacts
+axalon.db
+# SQLite WAL sidecar files (PRAGMA journal_mode=WAL in platform/db/session.py)
+axalon.db-shm
+axalon.db-wal
+axalon_systems.egg-info/
+logs/
+output/
+.superpowers/
+
+# Debug screenshots & temp artifacts
+website/*.png
+website/*.html
+web_temp.html
+**/test-results/
+*.local.db
+axalon_inspections.db
+
+# Next.js build output (never commit)
+website/nextjs/.next/
+**/.next/
+
+# Secrets — never commit real env files
+.env
+**/.env
+**/.env.*
+!.env.example
+
+# Session/debug screenshots committed by accident
+platform_map_verify.png
+platform-post-*.png
+
+# Large datasets live outside the repo (stale submodule gitlink removed)
+ml/Datasets/
+.aider*
+deploy/azure/.infra-state
+
+# Test/coverage and agent-pipeline runtime artifacts (not source)
+.coverage
+docs/pipelines/
+
+# Bake-off training artifacts (large, regenerable locally or on the training
+# VMs — never committed): built combined dataset, candidate checkpoints, and
+# Ultralytics/MMDetection run outputs.
+ml/data/combined/
+ml/data/combined_coco/
+ml/data/_staging/
+ml/checkpoints/candidates/
+ml/checkpoints/*_legacy.pt
+/runs/
+.gstack/

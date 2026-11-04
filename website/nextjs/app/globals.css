@@ -1,0 +1,344 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Syne:wght@400;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #050508;
+  --surface: #0d0d14;
+  --teal: #00f0c8;
+  --purple: #6c63ff;
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  cursor: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--teal);
+  border-radius: 2px;
+  opacity: 0.3;
+}
+
+/* Teal glow utility */
+.glow-teal {
+  box-shadow: 0 0 20px rgba(0, 240, 200, 0.3), 0 0 60px rgba(0, 240, 200, 0.1);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(108, 99, 255, 0.3), 0 0 60px rgba(108, 99, 255, 0.1);
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(13, 13, 20, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 200, 0.08);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #00f0c8 0%, #6c63ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated scan line */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Number counter animation */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Subtle pulse */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Dynamic layout zones ─────────────────────────────────────────────────── */
+
+#main-wrapper {
+  position: relative;
+}
+
+/* Canvas panel: fixed, starts full width */
+#right-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+}
+
+/* Left content panel: fixed, hidden off-screen left */
+#left-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 40%;
+  height: 100vh;
+  background: #050508;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  z-index: 20;
+  overflow: hidden;
+  transform: translateX(-110%);
+  pointer-events: none;
+}
+
+/* Inner scroll track — translateY driven by JS */
+#left-panel-inner {
+  width: 100%;
+  will-change: transform;
+}
+
+/* Smooth transitions on both panels */
+#left-panel {
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+#right-panel {
+  transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Split-active: left panel slides in, canvas narrows to 60% */
+#main-wrapper.split-active #left-panel {
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+#main-wrapper.split-active #right-panel {
+  width: 60%;
+}
+
+/* CTA-active: back to full width */
+#main-wrapper.cta-active #left-panel {
+  transform: translateX(-110%);
+  pointer-events: none;
+}
+
+#main-wrapper.cta-active #right-panel {
+  width: 100%;
+}
+
+/* Hero + CTA full-width overlays */
+.layout-hero,
+.layout-cta {
+  position: relative;
+  z-index: 20;
+  pointer-events: all;
+}
+
+/* Split-line flash animation element */
+#split-line {
+  position: fixed;
+  top: 0;
+  width: 1px;
+  height: 100vh;
+  background: linear-gradient(to bottom, transparent, var(--teal) 20%, var(--teal) 80%, transparent);
+  box-shadow: 0 0 8px rgba(0, 240, 200, 0.8);
+  left: 50%;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  /* transitions managed by JS for precise phase control */
+}
+
+/* ── Bento grid column spans ── */
+.col-span-2 { grid-column: span 2; }
+
+/* ── Responsive: stack grids on mobile ── */
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .bento-grid .col-span-2 {
+    grid-column: span 1;
+  }
+  .steps-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .steps-grid > div {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .contact-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .stats-grid > div:nth-child(2) {
+    border-right: none !important;
+  }
+  .hero-layout {
+    flex-direction: column !important;
+  }
+  .hero-drone {
+    height: 340px !important;
+  }
+  .nav-links {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body {
+    cursor: auto;
+  }
+
+  #main-wrapper.mobile-layout {
+    min-height: 100vh;
+  }
+
+  #main-wrapper.mobile-layout #right-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 58svh;
+    opacity: 0.95;
+    z-index: 0;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 65%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 65%, transparent 100%);
+  }
+
+  #main-wrapper.mobile-layout #mobile-content-flow {
+    position: relative;
+    z-index: 20;
+    padding: 1rem 0 0;
+  }
+
+  #main-wrapper.mobile-layout #mobile-content-flow section {
+    min-height: auto;
+    padding: 3rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    background: linear-gradient(180deg, rgba(5, 5, 8, 0.84), rgba(5, 5, 8, 0.96));
+  }
+
+  #main-wrapper.mobile-layout #mobile-content-flow section:first-child {
+    padding-top: 2rem;
+  }
+
+  #main-wrapper.mobile-layout #mobile-content-flow div[style*='display: flex'][style*='gap: 2rem'] {
+    flex-wrap: wrap;
+  }
+
+  #main-wrapper.mobile-layout #mobile-content-flow div[style*='grid-template-columns: 1fr 1fr'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  #main-wrapper.mobile-layout #mobile-content-flow textarea,
+  #main-wrapper.mobile-layout #mobile-content-flow input,
+  #main-wrapper.mobile-layout #mobile-content-flow button {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Live Ops cockpit ─────────────────────────────────────────── */
+.liveops {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "hud hud"
+    "map side";
+  gap: 12px;
+  height: calc(100vh - 120px);
+}
+.liveops-hud {
+  grid-area: hud;
+  display: flex; flex-wrap: wrap; gap: 16px;
+  padding: 10px 14px;
+  background: var(--surface, #0f1720);
+  border: 1px solid var(--border, #1f2a37);
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.live-map { grid-area: map; min-height: 320px; border-radius: 10px; overflow: hidden; }
+.liveops-side {
+  grid-area: side;
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+}
+.liveops-control, .liveops-commands { display: flex; flex-wrap: wrap; gap: 8px; }
+.liveops-commands button:disabled { opacity: .4; cursor: not-allowed; }
+.live-drone-marker { color: #14b8a6; font-size: 20px; line-height: 24px; text-align: center; }
+.live-route-marker {
+  display: grid; place-items: center; box-sizing: border-box;
+  border-radius: 50%; border: 1.5px solid #f59e0b; background: #fffbeb; color: #92400e;
+  font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .35);
+}
+.live-route-marker--start { background: #16a34a; border-color: #fff; color: #fff; }
+.live-route-marker--end { background: #dc2626; border-color: #fff; color: #fff; }
+.ack-ok { color: #34d399; } .ack-fail { color: #f87171; }
+.video-panel-feed { width: 100%; border-radius: 8px; background: #000; aspect-ratio: 16/9; }
+
+@media (max-width: 900px) {
+  .liveops { grid-template-columns: 1fr; grid-template-areas: "hud" "map" "side"; height: auto; }
+}
+
+/* Manual joystick pad (GREEN-only) */
+.manual-pad { display: flex; gap: 12px; align-items: center; }
+.manual-stick {
+  width: 120px; height: 120px; border-radius: 12px;
+  border: 1px solid var(--border, #1f2a37); background: #0b1118;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #6b7a8d; touch-action: none; user-select: none;
+}
+.manual-pad-disabled { font-size: 12px; color: #6b7a8d; }
+.manual-state { font-size: 12px; color: #14b8a6; }

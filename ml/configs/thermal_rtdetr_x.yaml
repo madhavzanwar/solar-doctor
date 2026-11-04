@@ -1,0 +1,30 @@
+# ── RT-DETR-x Thermal Solar Training Config (bake-off candidate 2) ──────────
+dataset_yaml: ml/thermal_dataset.yaml
+imgsz: 640
+
+model: rtdetr-x.pt
+
+epochs: 150
+batch: 16
+device: 0
+lr0: 0.0001
+lrf: 0.0001
+cos_lr: true
+warmup_epochs: 5
+warmup_momentum: 0.8
+patience: 20
+optimizer: AdamW
+weight_decay: 0.0001
+
+hsv_h: 0.0
+hsv_s: 0.0
+hsv_v: 0.4
+degrees: 5.0
+scale: 0.3
+fliplr: 0.5
+flipud: 0.0
+
+project: ml/runs/thermal
+name: rtdetr_x_solar
+save_period: 10
+plots: true

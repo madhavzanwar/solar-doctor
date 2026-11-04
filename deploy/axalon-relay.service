@@ -1,0 +1,34 @@
+# systemd unit for the Axalon Drone Relay (FastAPI + WebSocket).
+# Bridges the Jetson drone agent <-> browser cockpit over WSS.
+#
+# Install on the Oracle VM:
+#   sudo cp deploy/axalon-relay.service /etc/systemd/system/axalon-relay.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now axalon-relay
+#   systemctl status axalon-relay
+#   journalctl -u axalon-relay -f    # live logs
+
+[Unit]
+Description=Axalon Drone Relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+# Same cwd trick as axalon-api.service: /tmp avoids the repo's platform/ package
+# shadowing stdlib platform inside uvicorn/websockets.
+WorkingDirectory=/tmp
+Environment=PYTHONSAFEPATH=1
+# All secrets are set here — never in code.
+# DRONE_TOKENS: comma-separated id:token pairs, one per physical drone.
+# OPS_TOKEN: shared secret for browser operators (replace with JWT later).
+# TURN_HOST / TURN_SECRET: must match /etc/turnserver.conf static-auth-secret.
+EnvironmentFile=/home/ubuntu/AxalonSystems/.env.relay
+ExecStart=/home/ubuntu/AxalonSystems/.venv/bin/python -m uvicorn drone.relay.server:app --host 0.0.0.0 --port 8800
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

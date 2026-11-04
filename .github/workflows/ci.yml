@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+# A new push supersedes any still-running CI for the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements_platform.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - run: python -m pip install -r requirements_platform.txt -r ml/requirements.txt -e . pytest pytest-timeout
+      - run: PYTHONSAFEPATH=1 python -m pytest tests/backend/ -ra --strict-markers
+      - name: Drone agent + relay tests (SITL e2e skipped without RUN_SITL_E2E)
+        run: |
+          python -m pip install -r drone/requirements.txt
+          PYTHONSAFEPATH=1 python -m pytest drone/tests -ra
+      - name: Root-level platform + ML tests
+        run: |
+          PYTHONSAFEPATH=1 python -m pytest tests/test_api.py tests/test_db.py tests/test_imports.py tests/test_orchestrator.py -ra
+          for t in test_ml_dataset test_select_winner test_train_ultralytics test_yolo_to_coco; do
+            PYTHONSAFEPATH=1 python "tests/$t.py"
+          done
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('website/nextjs/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+      - run: cd website/nextjs && npm ci
+      - run: cd website/nextjs && npm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-unit]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Verify model weights resolved from LFS
+        run: |
+          mkdir -p ml/checkpoints
+          if [ ! -s ml/checkpoints/best.pt ] || head -c 7 ml/checkpoints/best.pt | grep -q "version"; then
+            echo "ERROR: ml/checkpoints/best.pt is missing or still an unresolved LFS pointer" >&2
+            exit 1
+          fi
+
+      - name: Install fixture generator dependencies
+        run: python3 -m pip install opencv-python-headless numpy Pillow piexif
+
+      - name: Set up sample mission fixture
+        run: |
+          python3 scripts/make_sample_mission.py
+          cd tests/fixtures && zip -rq sample_mission.zip sample_mission/
+
+      - uses: docker/setup-buildx-action@v3
+
+      # GHA layer cache: the api image's ML deps (torch, ultralytics, easyocr)
+      # take ~10 min to build cold; cached rebuilds only re-run layers whose
+      # inputs changed (requirements files for the heavy ones).
+      - name: Build docker-compose stack (cached)
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          files: docker-compose.yml
+          load: true
+          set: |
+            api.cache-from=type=gha,scope=api
+            api.cache-to=type=gha,scope=api,mode=max,ignore-error=true
+            nextjs.cache-from=type=gha,scope=nextjs
+            nextjs.cache-to=type=gha,scope=nextjs,mode=max,ignore-error=true
+
+      - name: Start docker-compose stack
+        run: |
+          docker compose up -d
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8000/health >/dev/null 2>&1 \
+              && curl -fsS -o /dev/null http://localhost:3000/platform \
+              && break
+            echo "Waiting for services... ($i/60)"
+            sleep 3
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: website/nextjs/package-lock.json
+
+      - name: Install npm deps + Playwright
+        run: |
+          cd website/nextjs
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_CI: "1"
+        run: cd website/nextjs && npm run test:e2e
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-trace
+          path: website/nextjs/test-results/
+
+      - name: Stop docker-compose stack
+        if: always()
+        run: docker compose down

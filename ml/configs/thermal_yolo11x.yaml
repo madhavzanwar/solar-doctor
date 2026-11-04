@@ -1,0 +1,34 @@
+# ── YOLO11x Thermal Solar Training Config (bake-off candidate 1) ────────────
+dataset_yaml: ml/thermal_dataset.yaml
+imgsz: 640
+
+model: yolo11x.pt
+
+epochs: 150
+batch: 16
+device: 0
+lr0: 0.001
+lrf: 0.0001
+cos_lr: true
+warmup_epochs: 5
+warmup_momentum: 0.8
+patience: 20
+optimizer: AdamW
+weight_decay: 0.0005
+
+hsv_h: 0.0
+hsv_s: 0.0
+hsv_v: 0.4
+degrees: 5.0
+scale: 0.3
+fliplr: 0.5
+flipud: 0.0
+mosaic: 1.0
+mixup: 0.15
+copy_paste: 0.1
+close_mosaic: 15
+
+project: ml/runs/thermal
+name: yolo11x_solar
+save_period: 10
+plots: true

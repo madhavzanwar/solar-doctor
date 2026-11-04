@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AXA-9 Mission Report — Axalon Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#07080a; --panel:#0c0d10; --panel-2:#0a0b0d;
+    --border:rgba(255,255,255,0.08); --border-2:rgba(255,255,255,0.14);
+    --text:#f6f5f3; --muted:#8b8c8a; --dim:#5a5c5a;
+    --amber:oklch(0.78 0.16 65); --amber-2:oklch(0.86 0.14 75);
+    --cyan:oklch(0.78 0.12 225); --cyan-2:oklch(0.85 0.10 215);
+    --good:oklch(0.78 0.14 155);
+    --healthy:oklch(0.62 0.10 230); --moderate:oklch(0.80 0.16 75); --critical:oklch(0.66 0.20 25);
+    --font-sans:'Space Grotesk',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#000;color:var(--text);font-family:var(--font-sans);-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  img{display:block;max-width:100%}
+
+  /* ---- stage / scaling ---- */
+  .stage{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .canvas{width:1920px;height:1080px;position:relative;background:radial-gradient(ellipse at 30% 0%,#0d0f13 0%,#07080a 60%);overflow:hidden;flex:0 0 auto}
+  .canvas .gridbg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+  .glow{position:absolute;width:900px;height:700px;border-radius:50%;filter:blur(140px);pointer-events:none}
+  .glow.amber{background:radial-gradient(circle,rgba(240,170,70,0.10),transparent 60%);top:-200px;right:-100px}
+  .glow.cyan{background:radial-gradient(circle,rgba(80,150,210,0.08),transparent 60%);bottom:-250px;left:-150px}
+
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:0;opacity:0;visibility:hidden;transition:opacity .35s}
+  .screen.active{opacity:1;visibility:visible}
+
+  /* ================= TOP BAR ================= */
+  .topbar{display:flex;align-items:center;justify-content:space-between;height:84px;padding:0 56px;border-bottom:1px solid var(--border);flex:0 0 auto;position:relative;z-index:2}
+  .topbar .brand{display:flex;align-items:center;gap:16px;transition:opacity .2s}
+  a.brand:hover{opacity:0.75}
+  .topbar .brand .back{display:flex;align-items:center;color:var(--muted)}
+  .topbar .brand .back svg{width:20px;height:20px}
+  .topbar .brand img{height:30px;filter:invert(1) brightness(1.1)}
+  .topbar .brand .div{width:1px;height:30px;background:var(--border-2)}
+  .topbar .crumbs{display:flex;align-items:center;gap:18px;font-family:var(--font-mono);font-size:16px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase}
+  .topbar .crumbs b{color:var(--text);font-weight:500}
+  .topbar .crumbs .sep{color:var(--dim)}
+  .topbar .status{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:14px;letter-spacing:0.14em;color:var(--good);text-transform:uppercase}
+  .topbar .status .pulse{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 12px var(--good);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+
+  /* ================= BODY 3-COL ================= */
+  .body{flex:1;display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:28px;padding:36px 56px;min-height:0;position:relative;z-index:2}
+  .pane{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,0.022),rgba(255,255,255,0.006));display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .pane-h{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--border)}
+  .pane-h .t{font-family:var(--font-mono);font-size:14px;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+  .pane-h .t .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  .pane-h .tag{font-family:var(--font-mono);font-size:12px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;border:1px solid var(--border-2);border-radius:6px;padding:5px 10px}
+
+  /* ---- block map ---- */
+  .map-body{flex:1;display:flex;flex-direction:column;padding:26px;min-height:0}
+  .map-grid{flex:1;display:grid;gap:3px;min-height:0}
+  .cell{border-radius:2px;background:color-mix(in oklch,var(--healthy) 32%,transparent);position:relative}
+  .cell.mod{background:var(--moderate);box-shadow:0 0 10px rgba(240,180,70,0.5)}
+  .cell.crit{background:var(--critical);box-shadow:0 0 12px rgba(225,80,60,0.65);animation:blink 2.2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.55}}
+  .map-legend{display:flex;align-items:center;gap:32px;margin-top:24px;font-family:var(--font-mono);font-size:14px;letter-spacing:0.06em;color:var(--muted)}
+  .map-legend .lg{display:flex;align-items:center;gap:10px}
+  .map-legend .sw{width:16px;height:16px;border-radius:4px}
+  .map-legend .sw.h{background:color-mix(in oklch,var(--healthy) 50%,transparent)}
+  .map-legend .sw.m{background:var(--moderate)}
+  .map-legend .sw.c{background:var(--critical)}
+  .map-legend .spacer{flex:1}
+  .map-legend .scan{color:var(--cyan-2)}
+
+  /* ---- summary stats ---- */
+  .stats-body{flex:1;padding:14px 26px;display:flex;flex-direction:column;justify-content:center}
+  .stat-row{display:flex;align-items:baseline;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--border);font-family:var(--font-mono)}
+  .stat-row:last-child{border-bottom:0}
+  .stat-row .lbl{font-size:15px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase}
+  .stat-row .val{font-size:32px;font-weight:700;color:var(--text);letter-spacing:-0.01em;font-family:var(--font-sans)}
+  .stat-row.hi .val{color:var(--critical)}
+  .stat-row.warn .val{color:var(--moderate)}
+
+  /* ---- top defects ---- */
+  .def-body{flex:1;padding:10px 0;display:flex;flex-direction:column}
+  .def-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:20px 26px;border-bottom:1px solid var(--border)}
+  .def-row:last-child{border-bottom:0}
+  .def-row .id{font-family:var(--font-mono);font-size:15px;color:var(--muted);letter-spacing:0.08em}
+  .def-row .main{display:flex;flex-direction:column;gap:5px;padding:0 4px}
+  .def-row .name{font-size:19px;font-weight:600;letter-spacing:-0.01em}
+  .def-row .meta{font-family:var(--font-mono);font-size:13px;color:var(--muted);letter-spacing:0.06em;display:flex;gap:14px}
+  .def-row .meta .dt{color:var(--amber-2)}
+  .def-row .sev{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap}
+  .def-row .sev .d{width:12px;height:12px;border-radius:50%}
+  .sev.critical{color:var(--critical)} .sev.critical .d{background:var(--critical);box-shadow:0 0 10px var(--critical)}
+  .sev.moderate{color:var(--moderate)} .sev.moderate .d{background:var(--moderate);box-shadow:0 0 10px var(--moderate)}
+  .def-foot{margin-top:auto;padding:22px 26px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .def-foot .lbl{font-family:var(--font-mono);font-size:13px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase}
+  .def-foot .v{font-size:26px;font-weight:700;color:var(--amber-2)}
+  .report-btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#1a1208;background:linear-gradient(180deg,var(--amber-2),var(--amber));border-radius:8px;padding:11px 16px}
+
+  /* ================= BOTTOM BAR ================= */
+  .botbar{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 56px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:14px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;flex:0 0 auto;position:relative;z-index:2}
+  .botbar .left{display:flex;align-items:center;gap:18px}
+  .botbar .left .sep{color:var(--dim)}
+  .botbar .left b{color:#bcbdb8;font-weight:500}
+  .botbar .right{display:flex;align-items:center;gap:10px;color:var(--good)}
+  .botbar .right .ok{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 10px var(--good)}
+
+  /* ================= SCREEN 2: EMAIL + WORK ORDER ================= */
+  .loop-body{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:36px 56px;min-height:0;position:relative;z-index:2}
+  .term{border:1px solid var(--border);border-radius:18px;background:var(--panel-2);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .term-h{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:14px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase}
+  .term-h .dots{display:flex;gap:7px}
+  .term-h .dots i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.1)}
+  .term-h .ttl{margin-left:6px}
+  .term-h .badge{margin-left:auto;font-size:12px;border:1px solid var(--border-2);border-radius:6px;padding:5px 10px;color:var(--good)}
+  .term-body{flex:1;padding:32px 36px;font-family:var(--font-mono);font-size:18px;line-height:1.85;color:#cfd0cc;overflow:hidden}
+  .term-body .k{color:var(--muted)}
+  .term-body .hl{color:var(--text);font-weight:500}
+  .term-body .crit{color:var(--critical);font-weight:700}
+  .term-body .amber{color:var(--amber-2)}
+  .term-body .blank{height:18px}
+  .term-body .rule{height:1px;background:var(--border);margin:18px 0}
+  .term-body table{width:100%;border-collapse:collapse;font-size:17px}
+  .term-body td{padding:4px 0}
+
+  /* ================= SCREEN SWITCHER (outside canvas) ================= */
+  .switcher{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:6px;background:rgba(12,13,16,0.86);backdrop-filter:blur(14px);border:1px solid var(--border-2);border-radius:14px;padding:7px}
+  .switcher button{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:11px 18px;border-radius:9px;transition:all .2s}
+  .switcher button .n{opacity:0.6}
+  .switcher button:hover{color:var(--text)}
+  .switcher button.active{background:rgba(255,255,255,0.07);color:var(--text)}
+  .switcher button.active .n{color:var(--amber-2);opacity:1}
+  .home-link{position:fixed;top:22px;left:24px;z-index:50;display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:rgba(12,13,16,0.86);backdrop-filter:blur(14px);border:1px solid var(--border-2);border-radius:10px;padding:10px 15px;transition:color .2s}
+  .home-link:hover{color:var(--amber-2)}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="canvas" id="canvas">
+    <div class="gridbg"></div>
+    <div class="glow amber"></div>
+    <div class="glow cyan"></div>
+
+    <!-- ===================== SCREEN 1: DEFECT MAP ===================== -->
+    <section class="screen active" id="screen-map" data-screen-label="Defect map">
+      <div class="topbar">
+        <a class="brand" href="/" title="Back to site">
+          <span class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span>
+          <img src="/site/assets/logo.png" alt="Axalon Systems" />
+          <div class="div"></div>
+          <div class="crumbs"><b>AXA-9 Mission Report</b></div>
+        </a>
+        <div class="crumbs">
+          <span>Block 04</span><span class="sep">—</span><b>15.2 MW</b><span class="sep">·</span><span>01 June 2026</span>
+        </div>
+        <div class="status"><span class="pulse"></span>Report ready</div>
+      </div>
+
+      <div class="body">
+        <!-- LEFT: block map -->
+        <div class="pane">
+          <div class="pane-h">
+            <div class="t"><span class="dot"></span>Block thermography map</div>
+            <div class="tag">LWIR 8–14μm · 7,200 panels</div>
+          </div>
+          <div class="map-body">
+            <div class="map-grid" id="mapGrid"></div>
+            <div class="map-legend">
+              <div class="lg"><span class="sw h"></span>Healthy</div>
+              <div class="lg"><span class="sw m"></span>Moderate anomaly</div>
+              <div class="lg"><span class="sw c"></span>Critical hotspot</div>
+              <span class="spacer"></span>
+              <div class="lg scan">100% coverage</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER: summary stats -->
+        <div class="pane">
+          <div class="pane-h"><div class="t"><span class="dot"></span>Mission summary</div></div>
+          <div class="stats-body">
+            <div class="stat-row"><span class="lbl">Total panels scanned</span><span class="val">7,200</span></div>
+            <div class="stat-row"><span class="lbl">Defects detected</span><span class="val">42</span></div>
+            <div class="stat-row hi"><span class="lbl">Critical hotspots</span><span class="val">8</span></div>
+            <div class="stat-row warn"><span class="lbl">Bypass diode failures</span><span class="val">21</span></div>
+            <div class="stat-row"><span class="lbl">Cell cracks</span><span class="val">13</span></div>
+            <div class="stat-row warn"><span class="lbl">Estimated yield loss</span><span class="val">2.3%</span></div>
+            <div class="stat-row"><span class="lbl">Mission duration</span><span class="val">00:47:23</span></div>
+            <div class="stat-row"><span class="lbl">Coverage</span><span class="val" style="color:var(--good)">100%</span></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: top defects -->
+        <div class="pane">
+          <div class="pane-h">
+            <div class="t"><span class="dot"></span>Top defects</div>
+            <div class="tag">42 flagged</div>
+          </div>
+          <div class="def-body">
+            <div class="def-row">
+              <div class="id">D-07</div>
+              <div class="main"><div class="name">Hotspot</div><div class="meta"><span>String 07</span><span class="dt">ΔT +24°C</span></div></div>
+              <div class="sev critical"><span class="d"></span>Critical</div>
+            </div>
+            <div class="def-row">
+              <div class="id">D-12</div>
+              <div class="main"><div class="name">Diode failure</div><div class="meta"><span>String 12</span><span class="dt">ΔT +18°C</span></div></div>
+              <div class="sev critical"><span class="d"></span>Critical</div>
+            </div>
+            <div class="def-row">
+              <div class="id">D-19</div>
+              <div class="main"><div class="name">Cell crack</div><div class="meta"><span>String 03</span><span class="dt">ΔT +11°C</span></div></div>
+              <div class="sev moderate"><span class="d"></span>Moderate</div>
+            </div>
+            <div class="def-foot">
+              <div class="lbl">Auto work order</div>
+              <button class="report-btn" onclick="show('loop')">View report
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="botbar">
+        <div class="left"><span>Generated by AXA-9 Edge AI</span><span class="sep">|</span><b>Jetson Orin Nano 8GB</b><span class="sep">|</span><span>IEC TS 62446-3 Compliant</span></div>
+        <div class="right"><span class="ok"></span>Validated</div>
+      </div>
+    </section>
+
+    <!-- ===================== SCREEN 2: EMAIL + WORK ORDER ===================== -->
+    <section class="screen" id="screen-loop" data-screen-label="Auto report">
+      <div class="topbar">
+        <a class="brand" href="/" title="Back to site">
+          <span class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span>
+          <img src="/site/assets/logo.png" alt="Axalon Systems" />
+          <div class="div"></div>
+          <div class="crumbs"><b>Closing the loop</b><span class="sep">·</span><span>Auto-dispatch</span></div>
+        </a>
+        <div class="crumbs"><span>Block 04</span><span class="sep">—</span><b>15.2 MW</b><span class="sep">·</span><span>01 June 2026</span></div>
+        <div class="status"><span class="pulse"></span>Sent · 13:42 IST</div>
+      </div>
+
+      <div class="loop-body">
+        <!-- EMAIL -->
+        <div class="term">
+          <div class="term-h"><div class="dots"><i></i><i></i><i></i></div><span class="ttl">Automated email</span><span class="badge">● Delivered</span></div>
+          <div class="term-body">
+            <table>
+              <tr><td class="k" style="width:120px">FROM</td><td class="hl">axa9@axalonsystems.in</td></tr>
+              <tr><td class="k">TO</td><td>substation.incharge@solarpark.in</td></tr>
+              <tr><td class="k">CC</td><td>o&amp;m.manager@solarpark.in</td></tr>
+              <tr><td class="k" style="vertical-align:top">SUBJECT</td><td><span class="amber">[AUTO]</span> Thermography Report — Block 04 | <span class="crit">42 Defects</span> | 01 June 2026</td></tr>
+            </table>
+            <div class="rule"></div>
+            Dear Sir/Madam,
+            <div class="blank"></div>
+            AXA-9 has completed autonomous thermal inspection of <span class="hl">Block 04 (15.2 MW)</span> at 13:42 IST on 01 June 2026.
+            <div class="blank"></div>
+            <span class="k">MISSION SUMMARY</span><br/>
+            &nbsp;&nbsp;Panels scanned&nbsp;&nbsp;&nbsp;&nbsp;: <span class="hl">7,200</span><br/>
+            &nbsp;&nbsp;Defects detected&nbsp;&nbsp;: <span class="hl">42</span><br/>
+            &nbsp;&nbsp;Critical hotspots&nbsp;: <span class="crit">8</span><br/>
+            &nbsp;&nbsp;Est. yield loss&nbsp;&nbsp;&nbsp;: <span class="amber">2.3%</span>
+            <div class="blank"></div>
+            Full thermographic report and defect map attached.<br/>
+            Work order <span class="amber">WO-2026-0601-B04</span> auto-generated.
+            <div class="blank"></div>
+            Regards,<br/>
+            <span class="hl">AXA-9 Autonomous Inspection System</span><br/>
+            <span class="k">AXALON Systems Pvt. Ltd.</span>
+          </div>
+        </div>
+
+        <!-- WORK ORDER -->
+        <div class="term">
+          <div class="term-h"><div class="dots"><i></i><i></i><i></i></div><span class="ttl">Work order</span><span class="badge" style="color:var(--moderate)">● Open · High</span></div>
+          <div class="term-body">
+            <span class="k">WORK ORDER</span><br/>
+            <span class="hl" style="font-size:22px">WO-2026-0601-B04</span>
+            <div class="rule"></div>
+            <table>
+              <tr><td class="k" style="width:160px">SITE</td><td class="hl">Solar Park · Block 04</td></tr>
+              <tr><td class="k">DATE</td><td>01 June 2026</td></tr>
+              <tr><td class="k">PRIORITY</td><td class="crit">HIGH</td></tr>
+            </table>
+            <div class="blank"></div>
+            <span class="k">DEFECTS REQUIRING ATTENTION</span>
+            <div style="margin-top:10px">
+            <table>
+              <tr><td style="width:78px"><span class="crit">D-07</span></td><td style="width:140px">String 07</td><td style="width:200px">Hotspot</td><td class="amber" style="width:120px">ΔT +24°C</td><td class="hl">Replace cell</td></tr>
+              <tr><td><span class="crit">D-12</span></td><td>String 12</td><td>Diode failure</td><td class="amber">ΔT +18°C</td><td class="hl">Replace diode</td></tr>
+              <tr><td><span class="amber">D-19</span></td><td>String 03</td><td>Cell crack</td><td class="amber">ΔT +11°C</td><td class="hl">Inspect string</td></tr>
+            </table>
+            </div>
+            <div class="rule"></div>
+            <table>
+              <tr><td class="k" style="width:160px">ASSIGNED TO</td><td class="hl">Field Maintenance Team</td></tr>
+              <tr><td class="k">TARGET DATE</td><td>03 June 2026</td></tr>
+              <tr><td class="k">STATUS</td><td class="amber">OPEN</td></tr>
+            </table>
+            <div class="blank"></div>
+            <span class="k">Generated automatically by AXA-9 Edge AI</span><br/>
+            <span class="k">AXALON Systems Pvt. Ltd.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="botbar">
+        <div class="left"><span>Generated by AXA-9 Edge AI</span><span class="sep">|</span><b>Jetson Orin Nano 8GB</b><span class="sep">|</span><span>IEC TS 62446-3 Compliant</span></div>
+        <div class="right"><span class="ok"></span>Loop closed · 0 manual steps</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- switcher (outside scaled canvas, always usable) -->
+<div class="switcher">
+  <button id="btn-map" class="active" onclick="show('map')"><span class="n">01</span> Defect map</button>
+  <button id="btn-loop" onclick="show('loop')"><span class="n">02</span> Auto report</button>
+</div>
+
+<script>
+  // ---- build block map: scatter 8 critical + 21 moderate over a grid ----
+  (function(){
+    const grid = document.getElementById('mapGrid');
+    const COLS = 30, ROWS = 18, N = COLS*ROWS;
+    grid.style.gridTemplateColumns = `repeat(${COLS},1fr)`;
+    grid.style.gridTemplateRows = `repeat(${ROWS},1fr)`;
+    const cells = [];
+    for(let i=0;i<N;i++){
+      const c = document.createElement('div');
+      c.className = 'cell';
+      // gentle healthy tonal variation
+      c.style.opacity = (0.7 + Math.random()*0.3).toFixed(2);
+      grid.appendChild(c);
+      cells.push(c);
+    }
+    // pick distinct random indices
+    const pool = Array.from({length:N},(_,i)=>i);
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    const crit = pool.slice(0,8);
+    const mod = pool.slice(8,8+21);
+    crit.forEach((idx,k)=>{cells[idx].className='cell crit';cells[idx].style.opacity=1;cells[idx].style.animationDelay=(k*0.18)+'s';});
+    mod.forEach(idx=>{cells[idx].className='cell mod';cells[idx].style.opacity=1;});
+  })();
+
+  // ---- screen switch ----
+  function show(which){
+    document.getElementById('screen-map').classList.toggle('active', which==='map');
+    document.getElementById('screen-loop').classList.toggle('active', which==='loop');
+    document.getElementById('btn-map').classList.toggle('active', which==='map');
+    document.getElementById('btn-loop').classList.toggle('active', which==='loop');
+    try{ localStorage.setItem('axa9-screen', which); }catch(e){}
+  }
+  try{ const s = localStorage.getItem('axa9-screen'); if(s) show(s); }catch(e){}
+
+  // ---- scale 1920x1080 canvas to fit viewport ----
+  (function(){
+    const canvas = document.getElementById('canvas');
+    function fit(){
+      const s = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      canvas.style.transform = `scale(${s})`;
+    }
+    window.addEventListener('resize', fit);
+    fit();
+  })();
+</script>
+
+</body>
+</html>

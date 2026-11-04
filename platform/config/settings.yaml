@@ -1,0 +1,61 @@
+model:
+  weights: ml/checkpoints/best.pt
+  engine: ml/checkpoints/best.engine
+  use_engine: false
+  confidence: 0.25
+  iou_threshold: 0.45
+  imgsz: 640
+  device: '0'
+  batch_size: 8
+park:
+  mode: auto
+  ocr_engine: easyocr
+  ocr_confidence: 0.7
+  grid_min_panel_area: 500
+  grid_max_panel_area: 50000
+  row_cluster_tolerance_px: 30
+camera:
+  rgb_focal_length_mm: 24
+  rgb_sensor_width_mm: 35.9
+  offset_px:
+  - 0
+  - 0
+  alignment_mode: auto
+  fusion_calibration: ''
+drone:
+  default_altitude_m: 20
+  min_altitude_m: 10
+  max_altitude_m: 120
+  thermal_focal_length_mm: 25
+  thermal_sensor_width_mm: 7.68
+  thermal_sensor_height_mm: 6.144
+output:
+  base_dir: output/
+  save_annotated_thermal: true
+  save_annotated_rgb: true
+  save_fused_overlay: true
+  report_formats:
+  - json
+  - excel
+  - geojson
+  annotated_thickness: 2
+  annotated_font_scale: 0.45
+thresholds:
+  alert_on_critical: true
+  min_confidence: 0.3
+  max_detections_per_image: 100
+api:
+  host: 0.0.0.0
+  port: 8000
+  workers: 1
+  max_upload_size_mb: 50
+  results_ttl_hours: 24
+database:
+  url: sqlite:///axalon_inspections.db
+geo:
+  default_crs: EPSG:4326
+  default_altitude_m: 20
+economics:
+  cost_per_kwh_usd: 0.08
+  panel_capacity_kw: 0.4
+  peak_sun_hours_per_day: 5.0

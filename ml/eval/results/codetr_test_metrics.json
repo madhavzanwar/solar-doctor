@@ -1,0 +1,21 @@
+{
+  "model": "ml/checkpoints/candidates/codetr_epoch12.pth",
+  "timestamp": "2026-07-02T21:11:29+00:00",
+  "split": "test",
+  "map50": 0.265,
+  "map50_95": 0.176,
+  "per_class": {
+    "cell": { "precision": null, "recall": null, "ap50": 0.0 },
+    "cell-multi": { "precision": null, "recall": null, "ap50": 0.0 },
+    "module": { "precision": null, "recall": null, "ap50": 0.0 },
+    "string": { "precision": null, "recall": null, "ap50": 0.34 },
+    "bypass-diode": { "precision": null, "recall": null, "ap50": 0.671 },
+    "offline-module": { "precision": null, "recall": null, "ap50": 0.0 },
+    "vegetation-shading": { "precision": null, "recall": null, "ap50": 0.214 },
+    "soiling": { "precision": null, "recall": null, "ap50": 0.0 },
+    "short-circuit": { "precision": null, "recall": null, "ap50": 0.306 },
+    "hot-spot-low": { "precision": null, "recall": null, "ap50": 0.707 },
+    "hot-spot-high": { "precision": null, "recall": null, "ap50": 0.673 }
+  },
+  "_note": "MMDetection's CocoMetric reports per-class mAP (IoU 0.5:0.95) and AP50 but not precision/recall in the same form as Ultralytics; precision/recall left null here rather than fabricated. AP50 values above are the 'mAP_50' column from the classwise CocoMetric table. Five classes (cell, cell-multi, module, offline-module, soiling) scored exactly 0.0 across every IoU threshold and area size, indicating zero detections for those categories after only 12 training epochs -- see docs/MODEL_COMPARISON note."
+}

@@ -1,0 +1,107 @@
+/* /track workspace — inventory, prototypes, orders, notes, files.
+   Extends platform.css (panels, chips, tables, auth-gate). */
+
+.track-page {
+  height: 100%;
+  overflow: hidden;
+}
+.track-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 18px 22px 60px;
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.track-side-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+/* ── Notes ── */
+.track-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.track-note {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+.track-note header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.track-note header strong {
+  flex: 1;
+  font-size: 13px;
+  color: #0f172a;
+}
+.track-note p {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #334155;
+  white-space: pre-wrap;
+}
+.track-note footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.inv-note-research { background: #e0f2fe; color: #075985; border-color: #7dd3fc; }
+.inv-note-log { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+.inv-note-doc { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+.inv-note-link { background: #dcfce7; color: #166534; border-color: #86efac; }
+.inv-note-idea { background: #ffe4e6; color: #9f1239; border-color: #fda4af; }
+
+/* ── Files ── */
+.track-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #0ea5e9;
+  border-radius: 6px;
+  background: #e0f2fe;
+  color: #075985;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.track-upload:hover {
+  background: #bae6fd;
+}
+.track-file-head,
+.track-file-row {
+  display: grid;
+  grid-template-columns: 1.8fr 0.6fr 0.8fr 70px;
+  gap: 12px;
+  align-items: center;
+}
+.track-file-row {
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.track-file-actions {
+  display: flex;
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .track-side-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "_note": "PLACEHOLDER — all metrics are 0.0. Replace by running `python3 -m ml.eval.evaluate --output /tmp/eval/` against the real thermal test set (stored outside the repo), then copy the produced metrics.json here as the committed baseline.",
+  "model": "ml/checkpoints/best.pt",
+  "timestamp": "2026-06-17T00:00:00+00:00",
+  "split": "test",
+  "map50": 0.0,
+  "map50_95": 0.0,
+  "per_class": {
+    "cell": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "cell-multi": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "module": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "string": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "bypass-diode": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "offline-module": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "vegetation-shading": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "soiling": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "short-circuit": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "hot-spot-low": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 },
+    "hot-spot-high": { "precision": 0.0, "recall": 0.0, "ap50": 0.0 }
+  }
+}

@@ -1,0 +1,49 @@
+# Keep the production Hugging Face Space awake and report when it isn't healthy.
+#
+# Free Spaces sleep after ~48 h without traffic; waking one takes minutes, during
+# which /platform and the drone relay (mounted at /relay in the same Space) are
+# down. Pinging every 6 h keeps it warm at no cost, and a failed run surfaces a
+# broken deploy (DB unreachable, migrations failed) in the Actions tab.
+name: keepalive
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      API: https://parakh20-axalon-api.hf.space
+    steps:
+      - name: API health (waits out a cold start)
+        run: |
+          for attempt in $(seq 1 20); do
+            if body=$(curl -fsS -m 30 "$API/health"); then
+              echo "$body"
+              echo "$body" | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)
+          problems = []
+          if d.get("db") != "ok":
+              problems.append("db=" + str(d.get("db")))
+          if (d.get("migrations") or {}).get("state") == "failed":
+              problems.append("migrations=failed")
+          if problems:
+              sys.exit("unhealthy: " + ", ".join(problems))
+          '
+              exit $?
+            fi
+            echo "attempt $attempt: not ready, retrying in 30 s"
+            sleep 30
+          done
+          echo "API never became healthy" >&2
+          exit 1
+
+      - name: Drone relay health
+        run: curl -fsS -m 30 "$API/relay/health"

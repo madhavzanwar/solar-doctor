@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axalon-systems"
+version = "1.0.0"
+requires-python = ">=3.10"
+dependencies = []   # runtime deps in requirements_platform.txt
+
+[tool.setuptools.package-dir]
+# Map Python package name → directory on disk
+# NOTE: 'platform' dir registered as 'axalon' to avoid shadowing stdlib platform module
+# Sub-package dirs (axalon.core → platform/core/) are inferred automatically from root mapping
+"axalon" = "platform"
+"ml" = "ml"
+
+[tool.setuptools]
+# packages.find cannot discover 'axalon*' because the disk dir is named 'platform/', not 'axalon/'
+# Explicit list required when package-dir renames a directory. Setuptools infers sub-package
+# paths from the root mapping ("axalon" = "platform"), so axalon.core → platform/core/ works.
+packages = [
+    "axalon",
+    "axalon.api",
+    "axalon.core",
+    "axalon.db",
+    "axalon.park",
+    "axalon.pipeline",
+    "axalon.reporting",
+    "ml",
+    "ml.src",
+    "drone",
+    "drone.relay",
+    "drone.common",
+    "drone.agent",
+]
+
+[tool.pytest.ini_options]
+# importlib mode prevents platform/ dir from shadowing stdlib 'platform' module
+# Always run tests with: PYTHONSAFEPATH=1 python -m pytest
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

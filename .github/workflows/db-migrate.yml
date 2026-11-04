@@ -1,0 +1,49 @@
+name: DB migrate (Azure PostgreSQL)
+
+# Applies Alembic migrations to the Azure PostgreSQL database whenever the
+# schema or migrations change on main. The DB URL is the Azure PG connection
+# string stored as the AXALON_DB_URL repository secret.
+# Azure PG: axalon-pg.postgres.database.azure.com (southeastasia, B1MS)
+# NOTE: update the AXALON_DB_URL secret in GitHub repo settings to:
+#   postgresql+psycopg2://axalon:<PW>@axalon-pg.postgres.database.azure.com:5432/axalon?sslmode=require
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'alembic/**'
+      - 'platform/db/**'
+      - 'pyproject.toml'
+      - '.github/workflows/db-migrate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Editable install registers the `axalon` package (mapped to platform/ in
+      # pyproject) so alembic/env.py can import the models; plus the DB toolchain.
+      - name: Install
+        run: pip install -e . sqlalchemy alembic psycopg2-binary
+
+      - name: alembic upgrade head
+        env:
+          AXALON_DB_URL: ${{ secrets.AXALON_DB_URL }}
+          # platform/ shadows the stdlib `platform` module — keep cwd off sys.path.
+          PYTHONSAFEPATH: '1'
+        run: |
+          if [ -z "$AXALON_DB_URL" ]; then
+            echo "::error::AXALON_DB_URL secret is not set"; exit 1
+          fi
+          alembic upgrade head
+          echo "Current revision:"
+          alembic current

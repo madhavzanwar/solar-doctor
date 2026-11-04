@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drone Thermal Inspection Report</title>
+<style>
+  /* ── Base ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1a1a1a; }
+
+  /* ── Page breaks ── */
+  .page { page-break-after: always; padding: 40px 48px; min-height: 100vh; }
+  .page:last-child { page-break-after: auto; }
+
+  /* ── Cover page ── */
+  .cover {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 80px 60px;
+  }
+  .cover-company {
+    font-size: 28px; font-weight: bold; letter-spacing: 1px;
+    color: #1a1a1a; margin-bottom: 48px;
+  }
+  .cover-badge {
+    background: #f0f0f0; padding: 12px 32px;
+    font-size: 16px; font-weight: bold; letter-spacing: 2px;
+    margin-bottom: 32px; width: 100%;
+  }
+  .cover-meta { font-size: 14px; color: #333; line-height: 2; }
+
+  /* ── Page header (all non-cover pages) ── */
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 3px solid #e05c00; padding-bottom: 10px; margin-bottom: 24px;
+  }
+  .page-header-title { font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }
+  .page-footer {
+    position: fixed; bottom: 24px; right: 48px;
+    font-size: 10px; color: #888;
+  }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 14px; font-weight: bold; margin-bottom: 16px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ── Site details table ── */
+  .site-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  .site-table td {
+    padding: 10px 14px; border: 1px solid #ccc;
+    vertical-align: middle; font-size: 12px;
+  }
+  .site-table .label { font-weight: bold; background: #f5f5f5; width: 28%; }
+  .site-table .value { width: 22%; }
+
+  /* ── Defect summary table ── */
+  .defect-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  .defect-table th {
+    background: #1a3a5c; color: #fff;
+    padding: 8px 12px; text-align: left; font-size: 11px;
+  }
+  .defect-table td { padding: 7px 12px; border-bottom: 1px solid #ddd; font-size: 12px; }
+  .defect-table tr:nth-child(even) td { background: #f8f8f8; }
+  .defect-table .total-row td { font-weight: bold; border-top: 2px solid #333; }
+
+  /* ── Detection list table ── */
+  .det-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .det-table th {
+    background: #1a3a5c; color: #fff;
+    padding: 6px 8px; text-align: left;
+  }
+  .det-table td { padding: 5px 8px; border-bottom: 1px solid #e0e0e0; }
+  .det-table tr:nth-child(even) td { background: #f9f9f9; }
+  .det-table .sev-High     { color: #990000; font-weight: bold; }
+  .det-table .sev-Medium   { color: #cc5500; font-weight: bold; }
+  .det-table .sev-Low      { color: #444; }
+
+  /* ── Impact boxes ── */
+  .impact-section { margin-bottom: 20px; }
+  .impact-item { margin-bottom: 10px; }
+  .impact-label { font-weight: bold; font-size: 12px; }
+  .impact-desc  { font-size: 12px; color: #333; }
+
+  /* ── Summary narrative ── */
+  .narrative p { margin-bottom: 12px; line-height: 1.6; font-size: 12px; }
+
+  /* ── TOC ── */
+  .toc { margin-top: 16px; }
+  .toc-item {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px dotted #ccc;
+    font-size: 12px;
+  }
+  .toc-item:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 1 — COVER
+══════════════════════════════════════════════════════ -->
+<div class="page cover">
+  <div class="cover-company">AXALON SYSTEMS</div>
+
+  <div style="font-size:42px; margin-bottom:48px;">🛸</div>
+
+  <div class="cover-badge">DRONE THERMAL INSPECTION</div>
+
+  <div class="cover-meta">
+    <div><strong>PROJECT LOCATION —</strong> {{ location if location != "N/A" else site_name }}</div>
+    <div style="margin-top:12px;">{{ flight_date }}</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 2 — REPORT HEADER + SITE DETAILS
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-title">DRONE THERMAL INSPECTION REPORT</div>
+    <div style="font-size:10px;color:#888;">Axalon Systems</div>
+  </div>
+
+  <h2>Site Details</h2>
+  <table class="site-table">
+    <tr>
+      <td class="label">Client</td>
+      <td class="value">{{ client }}</td>
+      <td class="label">Site Name</td>
+      <td class="value">{{ site_name }}</td>
+    </tr>
+    <tr>
+      <td class="label">Coordinates</td>
+      <td class="value">{{ lat }}, {{ lon }}</td>
+      <td class="label">Plant Capacity</td>
+      <td class="value">{% if capacity_mw != "N/A" %}{{ capacity_mw }} MW{% else %}N/A{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="label">Date of Inspection</td>
+      <td class="value">{{ flight_date }}</td>
+      <td class="label">Total Anomalies Detected</td>
+      <td class="value" style="font-weight:bold;">{{ total_detections }}</td>
+    </tr>
+    <tr>
+      <td class="label">Irradiance During Inspection</td>
+      <td class="value">{% if irradiance != "N/A" %}{{ irradiance }} W/m²{% else %}N/A{% endif %}</td>
+      <td class="label">Inspection Time</td>
+      <td class="value">{{ inspection_time }}</td>
+    </tr>
+    <tr>
+      <td class="label">Drone Model</td>
+      <td class="value" colspan="3">{{ drone_model }}</td>
+    </tr>
+  </table>
+
+  <h2>Table of Contents</h2>
+  <div class="toc">
+    <div class="toc-item"><span>Summary</span><span>3</span></div>
+    <div class="toc-item"><span>Defect Summary</span><span>4</span></div>
+    <div class="toc-item"><span>Full Defect List</span><span>5</span></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 3 — SUMMARY
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-title">DRONE THERMAL INSPECTION REPORT</div>
+    <div style="font-size:10px;color:#888;">Axalon Systems</div>
+  </div>
+
+  <h2>Summary</h2>
+  <div class="narrative">
+    <p>
+      Drone Thermography Inspection for Solar Power Plant
+      {% if capacity_mw != "N/A" %}of {{ capacity_mw }} MW capacity{% endif %}
+      at <strong>{{ site_name }}</strong>
+      {% if location != "N/A" %}, {{ location }}{% endif %}
+      was carried out by Axalon Systems.
+    </p>
+    <p>
+      This inspection was carried out to determine defects that may have arisen
+      during manufacture, installation or operation. Axalon Systems used a
+      Visual and Thermal camera equipped on a Drone for quick and effective
+      Thermal Inspection.
+    </p>
+    <p>
+      The site is marked with <strong>{{ total_detections }}</strong> defects
+      that include hotspots, bypass-diode failures, hotspots due to shadow,
+      vegetation and soiling. Defective modules can be further tested for a
+      Root Cause Analysis using IV Curve tests to understand the underlying
+      cause leading to these hotspots.
+    </p>
+    <p>
+      These hotspots were identified and defect types inferred according to the
+      standard IEC 62446-3: 2017 (Photovoltaic (PV) systems — Requirements for
+      testing, documentation and maintenance — Part 3: Photovoltaic modules and
+      plants — Outdoor infrared thermography).
+    </p>
+    <p>
+      For clear identification of the criticality encountered during the
+      inspection, the following classification on defect impacts is adopted:
+    </p>
+  </div>
+
+  <div class="impact-section">
+    <div class="impact-item">
+      <div class="impact-label">Low Impact — 0°C &lt;ΔT &lt;5°C</div>
+      <div class="impact-desc">No actions to be taken.</div>
+    </div>
+    <div class="impact-item">
+      <div class="impact-label">Medium Impact — 5°C &lt;ΔT &lt;10°C</div>
+      <div class="impact-desc">Check cause and rectify within a reasonable period.</div>
+    </div>
+    <div class="impact-item">
+      <div class="impact-label">High Impact — ΔT &gt;10°C</div>
+      <div class="impact-desc">Prompt interruption of operation and rectify issue within a reasonable period.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 4 — DEFECTS SUMMARY
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-title">DRONE THERMAL INSPECTION REPORT</div>
+    <div style="font-size:10px;color:#888;">Axalon Systems</div>
+  </div>
+
+  <h2>Defects Summary</h2>
+  <table class="defect-table">
+    <thead>
+      <tr>
+        <th>Fault Type</th>
+        <th style="text-align:right; width:120px;">Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ft, cnt in fault_counts %}
+      <tr>
+        <td>{{ ft }}</td>
+        <td style="text-align:right;">{{ cnt }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td>Total</td>
+        <td style="text-align:right;">{{ total_detections }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:12px; font-size:11px; color:#dc2626; font-weight:600;">
+    Estimated daily revenue at risk (CRITICAL + HIGH faults):
+    <strong>${{ "%.2f"|format(revenue_loss_usd) }} USD</strong>
+    <span style="font-weight:400; color:#666;">({{ economics.panel_capacity_kw }}kW panels,
+    {{ economics.peak_sun_hours_per_day }}h/day peak sun,
+    ${{ economics.cost_per_kwh_usd }}/kWh)</span>
+  </p>
+
+  <p style="margin-top:16px; font-size:12px; line-height:1.6;">
+    The following numbering method is adopted for easy identification of
+    defective modules from the array layout shared by the site personnel.
+  </p>
+  <p style="margin-top:8px; font-size:12px; line-height:1.8;">
+    Row number — as assigned by panel grid layout<br>
+    Panel number — sequential position within row
+  </p>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 5+ — FULL DEFECT LIST
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-title">DRONE THERMAL INSPECTION REPORT</div>
+    <div style="font-size:10px;color:#888;">Axalon Systems</div>
+  </div>
+
+  <h2>Full Defect List</h2>
+  <table class="det-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Row No.</th>
+        <th>Panel No.</th>
+        <th>Fault Type</th>
+        <th>Critical</th>
+        <th>Min Temp</th>
+        <th>Max Temp</th>
+        <th>ΔT</th>
+        <th>Confidence</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for det in detections %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ det.row_no }}</td>
+        <td>{{ det.panel_no }}</td>
+        <td>{{ det.fault_display }}</td>
+        <td class="sev-{{ det.severity_display }}">{{ det.severity_display }}</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>{{ "%.2f"|format(det.get("confidence", 0)) }}</td>
+        <td style="font-size:10px; color:#666;">{{ det.get("image_id", "") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:32px; font-size:10px; color:#aaa; text-align:center; border-top:1px solid #eee; padding-top:12px;">
+    Generated by Axalon Systems Solar Inspection Platform &nbsp;|&nbsp;
+    Model: YOLO11m &nbsp;|&nbsp;
+    {{ generated_at }}
+  </div>
+</div>
+
+</body>
+</html>

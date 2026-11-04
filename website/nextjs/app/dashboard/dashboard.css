@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+/* The marketing site hides the cursor for its custom crosshair.
+   The dashboard is a plain UI screen — restore the normal cursor. */
+.axa-dashboard,
+.axa-dashboard * {
+  cursor: auto;
+}
+
+.axa-dashboard {
+  --mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}

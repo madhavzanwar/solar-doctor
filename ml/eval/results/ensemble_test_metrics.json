@@ -1,0 +1,64 @@
+{
+  "model": "ensemble(WBF): ml/checkpoints/candidates/yolo11x_best.pt + ml/checkpoints/candidates/rtdetr_x_best.pt",
+  "split": "test",
+  "map50": 0.7534696661752261,
+  "map50_95": 0.4264228870373381,
+  "per_class": {
+    "cell": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.7369522757563615
+    },
+    "cell-multi": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.5937654578055659
+    },
+    "module": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.9711319046436763
+    },
+    "string": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.8158557383247146
+    },
+    "bypass-diode": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.9226467990227183
+    },
+    "offline-module": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.5862272420332568
+    },
+    "vegetation-shading": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.6217903494420622
+    },
+    "soiling": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.5924661100314574
+    },
+    "short-circuit": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.8073339008108955
+    },
+    "hot-spot-low": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.7992459262511271
+    },
+    "hot-spot-high": {
+      "precision": null,
+      "recall": null,
+      "ap50": 0.8407506238056514
+    }
+  },
+  "_note": "WBF ensemble of YOLO11x + RT-DETR-x, weights=(1.0, 1.0), iou_thr=0.55. precision/recall left null (pycocotools reports AP/AR, not per-class P/R in the Ultralytics sense)."
+}
