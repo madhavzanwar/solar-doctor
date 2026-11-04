@@ -27,8 +27,8 @@ from solardoctor.api.support.odm_jobs import resume_odm_jobs
 from drone.relay.server import create_app as create_relay_app
 from solardoctor.core.observability import init_sentry
 from solardoctor.api.support.principal import (
-    ALWAYS_PUBLIC_PATHS, NOT_AUTHENTICATED, SYSTEM_PRINCIPAL, USERS_PUBLIC_PATHS,
-    access_policy, apikey_matches, request_token, resolve_users_principal,
+    API_PREFIX, ALWAYS_PUBLIC_PATHS, NOT_AUTHENTICATED, SYSTEM_PRINCIPAL, USERS_PUBLIC_PATHS,
+    access_policy, apikey_matches, request_token, resolve_users_principal, strip_api_prefix,
 )
 from solardoctor.core.auth import MODE_APIKEY, MODE_USERS, auth_mode, ensure_bootstrap_admin
 from solardoctor.db.models import ROLE_ADMIN, ROLE_OPERATOR
@@ -105,8 +105,8 @@ def _requeue_stale_jobs() -> None:
 init_sentry()
 
 app = FastAPI(
-    title="Axalon Solar Inspection API",
-    version="1.0.0",
+    title="SolarDoctor API",
+    version="0.1.0",
     lifespan=lifespan,
     description=(
         "Solar anomaly detection and panel localization for drone-captured "
@@ -133,10 +133,9 @@ _CORS_ORIGINS = [
 _CORS_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
 
 # Agents spawn local processes — admin-only whenever accounts are enabled.
-app.include_router(
-    agents_router,
-    dependencies=[Depends(access_policy(allow_share=False, read_role=ROLE_ADMIN, write_role=ROLE_ADMIN))],
-)
+_AGENTS_DEPS = [Depends(access_policy(allow_share=False, read_role=ROLE_ADMIN, write_role=ROLE_ADMIN))]
+app.include_router(agents_router, prefix=API_PREFIX, dependencies=_AGENTS_DEPS)
+app.include_router(agents_router, dependencies=_AGENTS_DEPS, include_in_schema=False, deprecated=True)
 app.add_middleware(
     CORSMiddleware, allow_origins=_CORS_ORIGINS,
     allow_origin_regex=_CORS_ORIGIN_REGEX, allow_credentials=False,
@@ -144,6 +143,7 @@ app.add_middleware(
 )
 
 _REQUEST_TIMEOUT_S = 120
+
 
 
 @app.middleware("http")
@@ -157,7 +157,7 @@ async def auth_middleware(request, call_next):
     """
     if request.method == "OPTIONS":
         return await call_next(request)
-    path = request.url.path
+    path = strip_api_prefix(request.url.path)
     if path == RELAY_PREFIX or path.startswith(RELAY_PREFIX + "/"):
         # The mounted drone relay authenticates drones and operators with its own
         # tokens (DRONE_TOKENS / OPS_TOKEN); API keys and user sessions don't apply.
@@ -226,7 +226,11 @@ _ROUTER_POLICIES = (   # original registration order preserved
     (park_layout, _INTERNAL),
 )
 for _module, _policy in _ROUTER_POLICIES:
-    app.include_router(_module.router, dependencies=[Depends(_policy)] if _policy else [])
+    _deps = [Depends(_policy)] if _policy else []
+    # Canonical public surface: /api/v1/...
+    app.include_router(_module.router, prefix=API_PREFIX, dependencies=_deps)
+    # Deprecated unprefixed alias (legacy clients + existing tests); hidden from OpenAPI.
+    app.include_router(_module.router, dependencies=_deps, include_in_schema=False, deprecated=True)
 
 # ── Drone relay ──────────────────────────────────────────────────────────────
 # Served from this app because new Hugging Face Docker Spaces need a paid plan:

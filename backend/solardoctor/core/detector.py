@@ -53,6 +53,11 @@ class SolarDetector:
             iou:          NMS IoU threshold.
             device:       "0" for first GPU, "cpu" for CPU.
         """
+        if os.environ.get("ENABLE_THERMAL", "true").strip().lower() in ("0", "false", "no", "off"):
+            raise RuntimeError(
+                "Thermal detection is disabled (ENABLE_THERMAL=false). Run "
+                "`python scripts/fetch_weights.py` and set ENABLE_THERMAL=true to enable it."
+            )
         from ultralytics import YOLO
 
         self.weights_path = Path(weights_path)

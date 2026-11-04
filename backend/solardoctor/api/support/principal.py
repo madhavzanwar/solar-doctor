@@ -24,6 +24,15 @@ from solardoctor.core.auth import (
 from solardoctor.db.models import ROLE_ADMIN, ROLE_OPERATOR, ROLE_VIEWER
 from solardoctor.db.session import get_session
 
+API_PREFIX = "/api/v1"
+
+
+def strip_api_prefix(path: str) -> str:
+    """`/api/v1/health` -> `/health`, so public-path allowlists match both mounts."""
+    if path == API_PREFIX or path.startswith(API_PREFIX + "/"):
+        return path[len(API_PREFIX):] or "/"
+    return path
+
 KIND_SYSTEM = "system"
 KIND_USER = "user"
 KIND_SHARE = "share"
@@ -132,7 +141,7 @@ def access_policy(
     Share-link principals are only admitted to routers that serve project data.
     """
     def _guard(request: Request) -> None:
-        if request.url.path in USERS_PUBLIC_PATHS:
+        if strip_api_prefix(request.url.path) in USERS_PUBLIC_PATHS:
             return
         principal = current_principal(request)
         if principal.kind == KIND_SYSTEM:
