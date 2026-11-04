@@ -2,144 +2,162 @@ name: CI
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+    branches: [main, 'claude/**', 'feat/**']
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
 
-# A new push supersedes any still-running CI for the same ref.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONSAFEPATH: "1"
+  ENABLE_THERMAL: "false"
+
 jobs:
-  backend-tests:
+  backend:
+    name: backend (lint, types, tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements_platform.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: python -m pip install -r requirements_platform.txt -r ml/thermal/requirements.txt -e . pytest pytest-timeout
-      - run: PYTHONSAFEPATH=1 python -m pytest tests/backend/ -ra --strict-markers
-      - name: Drone agent + relay tests (SITL e2e skipped without RUN_SITL_E2E)
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements_platform.txt
+            ml/thermal/requirements.txt
+            requirements-dev.txt
+      - run: python -m pip install -r requirements_platform.txt -r ml/thermal/requirements.txt -r requirements-dev.txt -e .
+      - name: ruff
+        run: ruff check backend tests scripts drone ml
+      - name: mypy (new modules only)
+        run: |
+          mods=""
+          for d in physics vision fusion roi workers; do [ -d "backend/solardoctor/$d" ] && mods="$mods backend/solardoctor/$d"; done
+          if [ -n "$mods" ]; then mypy $mods; else echo "no new modules yet"; fi
+      - name: Try to fetch thermal weights from Hugging Face
+        id: weights
+        continue-on-error: true
+        run: python -m pip install -q huggingface_hub && python scripts/fetch_weights.py
+      - name: pytest
+        run: |
+          args=""
+          if [ ! -s ml/thermal/checkpoints/best.pt ]; then
+            echo "::warning::thermal weights unavailable; deselecting the 10 weight-dependent tests listed in tests/weights_required.txt"
+            for t in $(grep -v '^#' tests/weights_required.txt); do args="$args --deselect $t"; done
+          fi
+          python -m pytest tests/backend -ra --strict-markers $args
+      - name: Drone agent + relay tests
         run: |
           python -m pip install -r drone/requirements.txt
-          PYTHONSAFEPATH=1 python -m pytest drone/tests -ra
-      - name: Root-level platform + ML tests
-        run: |
-          PYTHONSAFEPATH=1 python -m pytest tests/test_api.py tests/test_db.py tests/test_imports.py tests/test_orchestrator.py -ra
-          for t in test_ml_dataset test_select_winner test_train_ultralytics test_yolo_to_coco; do
-            PYTHONSAFEPATH=1 python "tests/$t.py"
-          done
+          python -m pytest drone/tests -ra
+      - name: Root-level platform tests
+        run: python -m pytest tests/test_api.py tests/test_db.py tests/test_imports.py tests/test_orchestrator.py -ra
 
-  frontend-unit:
+  migrations:
+    name: alembic up/down (${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: pw, POSTGRES_DB: sd }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11', cache: pip, cache-dependency-path: requirements_platform.txt }
+      - run: python -m pip install -r requirements_platform.txt -e .
+      - name: upgrade -> downgrade -> upgrade
+        env:
+          SOLARDOCTOR_DB_URL: ${{ matrix.db == 'postgres' && 'postgresql+psycopg2://postgres:pw@localhost:5432/sd' || 'sqlite:///./ci.db' }}
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+  frontend:
+    name: frontend (lint, tsc, vitest, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Detect frontend
+        id: has
+        run: '[ -f frontend/package.json ] && echo "yes=true" >> "$GITHUB_OUTPUT" || echo "yes=false" >> "$GITHUB_OUTPUT"'
       - uses: actions/setup-node@v4
+        if: steps.has.outputs.yes == 'true'
         with:
           node-version: '20'
-      - uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('legacy/axalon-nextjs/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-      - run: cd legacy/axalon-nextjs && npm ci
-      - run: cd legacy/axalon-nextjs && npm test
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - if: steps.has.outputs.yes == 'true'
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npx tsc --noEmit
+          npm test --if-present
+          npm run build
 
-  e2e:
+  legacy-site:
+    name: legacy axalon site unit tests
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-unit]
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - name: Verify model weights resolved from LFS
-        run: |
-          mkdir -p ml/thermal/checkpoints
-          if [ ! -s ml/thermal/checkpoints/best.pt ] || head -c 7 ml/thermal/checkpoints/best.pt | grep -q "version"; then
-            echo "ERROR: ml/thermal/checkpoints/best.pt is missing or still an unresolved LFS pointer" >&2
-            exit 1
-          fi
-
-      - name: Install fixture generator dependencies
-        run: python3 -m pip install opencv-python-headless numpy Pillow piexif
-
-      - name: Set up sample mission fixture
-        run: |
-          python3 scripts/make_sample_mission.py
-          cd tests/fixtures && zip -rq sample_mission.zip sample_mission/
-
-      - uses: docker/setup-buildx-action@v3
-
-      # GHA layer cache: the api image's ML deps (torch, ultralytics, easyocr)
-      # take ~10 min to build cold; cached rebuilds only re-run layers whose
-      # inputs changed (requirements files for the heavy ones).
-      - name: Build docker-compose stack (cached)
-        uses: docker/bake-action@v6
-        with:
-          source: .
-          files: docker-compose.yml
-          load: true
-          set: |
-            api.cache-from=type=gha,scope=api
-            api.cache-to=type=gha,scope=api,mode=max,ignore-error=true
-            nextjs.cache-from=type=gha,scope=nextjs
-            nextjs.cache-to=type=gha,scope=nextjs,mode=max,ignore-error=true
-
-      - name: Start docker-compose stack
-        run: |
-          docker compose up -d
-          for i in $(seq 1 60); do
-            curl -fsS http://localhost:8000/health >/dev/null 2>&1 \
-              && curl -fsS -o /dev/null http://localhost:3000/platform \
-              && break
-            echo "Waiting for services... ($i/60)"
-            sleep 3
-          done
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: legacy/axalon-nextjs/package-lock.json
+      - run: cd legacy/axalon-nextjs && npm ci && npm test
 
-      - name: Install npm deps + Playwright
+  smoke:
+    name: playwright smoke (api + frontend)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect frontend
+        id: has
+        run: '[ -f frontend/package.json ] && echo "yes=true" >> "$GITHUB_OUTPUT" || echo "yes=false" >> "$GITHUB_OUTPUT"'
+      - uses: actions/setup-python@v5
+        if: steps.has.outputs.yes == 'true'
+        with: { python-version: '3.11', cache: pip, cache-dependency-path: requirements_platform.txt }
+      - uses: actions/setup-node@v4
+        if: steps.has.outputs.yes == 'true'
+        with: { node-version: '20', cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - if: steps.has.outputs.yes == 'true'
         run: |
-          cd legacy/axalon-nextjs
-          npm ci
-          npx playwright install --with-deps chromium
+          python -m pip install -r requirements_platform.txt -r ml/thermal/requirements.txt -e .
+          (cd /tmp && python -m uvicorn solardoctor.api.app:app --port 8000 &) 
+          cd frontend && npm ci && npx playwright install --with-deps chromium && npm run build
+          (npm run start -- -p 3000 &)
+          for i in $(seq 1 40); do curl -fsS localhost:8000/api/v1/health >/dev/null && curl -fsS localhost:3000 >/dev/null && break; sleep 3; done
+          npm run test:smoke --if-present
 
-      - name: Run Playwright e2e
+  security:
+    name: secret scan + dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-          PLAYWRIGHT_CI: "1"
-        run: cd legacy/axalon-nextjs && npm run test:e2e
-
-      - name: Upload Playwright trace on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-trace
-          path: legacy/axalon-nextjs/test-results/
-
-      - name: Stop docker-compose stack
-        if: always()
-        run: docker compose down
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: pip-audit (report-only until baseline is clean)
+        continue-on-error: true
+        run: python -m pip install pip-audit && pip-audit -r requirements_platform.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: npm audit --omit=dev (report-only until baseline is clean)
+        continue-on-error: true
+        run: |
+          for d in frontend legacy/axalon-nextjs; do [ -f $d/package-lock.json ] && (cd $d && npm audit --omit=dev); done

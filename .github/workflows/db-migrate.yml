@@ -7,13 +7,8 @@ name: DB migrate (Azure PostgreSQL)
 # NOTE: update the SOLARDOCTOR_DB_URL secret in GitHub repo settings to:
 #   postgresql+psycopg2://axalon:<PW>@axalon-pg.postgres.database.azure.com:5432/axalon?sslmode=require
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'alembic/**'
-      - 'backend/solardoctor/db/**'
-      - 'pyproject.toml'
-      - '.github/workflows/db-migrate.yml'
+  # Manual only: this applies migrations to a real (production) database. Re-enable the push
+  # trigger once the SOLARDOCTOR_DB_URL secret exists in this repository.
   workflow_dispatch:
 
 concurrency:
@@ -38,7 +33,7 @@ jobs:
       - name: alembic upgrade head
         env:
           SOLARDOCTOR_DB_URL: ${{ secrets.SOLARDOCTOR_DB_URL }}
-          # platform/ shadows the stdlib `platform` module — keep cwd off sys.path.
+          # keep cwd off sys.path
           PYTHONSAFEPATH: '1'
         run: |
           if [ -z "$SOLARDOCTOR_DB_URL" ]; then

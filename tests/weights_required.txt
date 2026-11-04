@@ -1,0 +1,12 @@
+# Tests that need the real thermal weights (ml/thermal/checkpoints/best.pt).
+# CI deselects exactly these ONLY when `scripts/fetch_weights.py` could not obtain the weights.
+tests/backend/test_api_contract.py::test_parks_includes_park_after_batch
+tests/backend/test_api_contract.py::test_park_summary_returns_park_metadata
+tests/backend/test_api_contract.py::test_inspect_single_thermal_returns_job_id
+tests/backend/test_api_contract.py::test_inspect_with_rgb_returns_rgb_filename
+tests/backend/test_api_contract.py::test_report_downloads_succeed[json]
+tests/backend/test_api_contract.py::test_park_grid_default_inspection
+tests/backend/test_model_info.py::test_describe_weights_real_checkpoint_is_yolo11
+tests/backend/test_park_grid_endpoint.py::test_grid_endpoint_returns_grid_after_batch
+tests/backend/test_park_grid_endpoint.py::test_grid_endpoint_uses_explicit_inspection_id
+tests/backend/test_pipeline_unit.py::test_orchestrator_processes_a_batch_directly
