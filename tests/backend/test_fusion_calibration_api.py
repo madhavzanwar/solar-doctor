@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import pytest
 
-from axalon.core.fusion_calibration import CALIBRATION_FORMAT, load_calibration_file
+from solardoctor.core.fusion_calibration import CALIBRATION_FORMAT, load_calibration_file
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _H = [[6.0, 0.1, 150.0], [-0.05, 6.0, 120.0], [0.0, 0.0, 1.0]]
@@ -40,7 +40,7 @@ def _upload(client, payload: bytes, name: str = "cal.json"):
 # ── API ──────────────────────────────────────────────────────────────────────
 
 def test_get_calibration_when_none_configured(client, monkeypatch):
-    monkeypatch.delenv("AXALON_FUSION_CALIBRATION", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_FUSION_CALIBRATION", raising=False)
     r = client.get("/settings/fusion-calibration")
     assert r.status_code == 200
     body = r.json()
@@ -49,7 +49,7 @@ def test_get_calibration_when_none_configured(client, monkeypatch):
 
 
 def test_upload_valid_calibration_then_get_summary(client, monkeypatch):
-    monkeypatch.delenv("AXALON_FUSION_CALIBRATION", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_FUSION_CALIBRATION", raising=False)
 
     r = _upload(client, json.dumps(_doc()).encode())
     assert r.status_code == 201, r.text
@@ -85,7 +85,7 @@ def test_upload_rejects_oversized_file(client):
 def test_get_reports_env_override(client, monkeypatch, tmp_path):
     path = tmp_path / "env_cal.json"
     path.write_text(json.dumps(_doc(rig_id="ENV-RIG")))
-    monkeypatch.setenv("AXALON_FUSION_CALIBRATION", str(path))
+    monkeypatch.setenv("SOLARDOCTOR_FUSION_CALIBRATION", str(path))
 
     body = client.get("/settings/fusion-calibration").json()
 
@@ -197,9 +197,9 @@ class _FakeDetector:
 
 
 def test_inspect_pair_records_calibration_fusion_mode(tmp_path):
-    from axalon.core.fusion import ImageFusion
-    from axalon.core.fusion_calibration import parse_calibration
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.core.fusion import ImageFusion
+    from solardoctor.core.fusion_calibration import parse_calibration
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
 
     thermal = tmp_path / "t.jpg"
     rgb = tmp_path / "r.jpg"

@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 @pytest.fixture
 def engine(tmp_path):
-    from axalon.db.session import get_engine, init_db
+    from solardoctor.db.session import get_engine, init_db
 
     init_db(f"sqlite:///{tmp_path / 'jobs.db'}")
     return get_engine()
@@ -20,8 +20,8 @@ def test_job_table_exists(engine):
 
 
 def test_job_row_survives_reconnect(engine):
-    from axalon.db.models import Job
-    from axalon.db.session import session_scope
+    from solardoctor.db.models import Job
+    from solardoctor.db.session import session_scope
 
     job_id = "persist-test-001"
     with session_scope(engine) as s:
@@ -35,11 +35,11 @@ def test_job_row_survives_reconnect(engine):
     assert job.processed == 20
 
 
-from axalon.db.models import FaultComment
+from solardoctor.db.models import FaultComment
 
 
 def test_inspection_has_metadata_columns(db_session):
-    from axalon.db.models import Inspection, Park
+    from solardoctor.db.models import Inspection, Park
     park = Park(id="PARK_META_TEST", name="Meta Test Park")
     db_session.add(park)
     db_session.flush()
@@ -65,7 +65,7 @@ def test_inspection_has_metadata_columns(db_session):
 
 
 def test_fault_comment_create_and_list(db_session):
-    from axalon.db.models import Park, PanelFault, FAULT_OPEN
+    from solardoctor.db.models import Park, PanelFault, FAULT_OPEN
     park = Park(id="PARK_COMMENT_TEST", name="Comment Park")
     db_session.add(park)
     db_session.flush()

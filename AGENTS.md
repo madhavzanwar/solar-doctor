@@ -39,7 +39,7 @@ cd website/nextjs && npm run dev
 cd website/nextjs && npm test            # vitest
 
 # Platform API (local) — NOTE the platform/ shadow gotcha below
-PYTHONSAFEPATH=1 uvicorn axalon.api.app:app --port 8000   # run from /tmp or repo root with safe path
+PYTHONSAFEPATH=1 uvicorn solardoctor.api.app:app --port 8000   # run from /tmp or repo root with safe path
 # or: ./run.sh all   (API + Next.js platform UI together)
 
 # Python tests
@@ -52,7 +52,7 @@ python -c "from ultralytics import YOLO; print(len(YOLO('ml/checkpoints/best.pt'
 ## Non-negotiable rules (see CLAUDE.md for the full list)
 
 1. **Single source of truth for classes/severity:** import from `ml/src/utils.py` (`CANONICAL_CLASSES`, `CLASS2ID`, `SEVERITY_MAP`, …). Never redefine the 11 classes or severities anywhere else. In code the package is imported as `from ml.src.utils import ...`.
-2. **`platform/` shadows the stdlib `platform` module.** The repo maps the directory `platform/` → Python package **`axalon`** (`pyproject.toml`), and anything running with the repo root on `sys.path` must use `PYTHONSAFEPATH=1` (and ideally cwd `/tmp`) or SQLAlchemy/uvicorn crash. App code imports as `from axalon.api… / axalon.core…`; ML utils as `from ml.src.utils …`.
+2. **`platform/` shadows the stdlib `platform` module.** The repo maps the directory `platform/` → Python package **`axalon`** (`pyproject.toml`), and anything running with the repo root on `sys.path` must use `PYTHONSAFEPATH=1` (and ideally cwd `/tmp`) or SQLAlchemy/uvicorn crash. App code imports as `from solardoctor.api… / solardoctor.core…`; ML utils as `from ml.src.utils …`.
 3. **Module boundaries:** website ↔ platform never cross-import. Platform may import ML utils. Website is pure frontend.
 4. **Primary model:** `ml/checkpoints/best.pt` (YOLO11m, 640×640, conf 0.25, thermal IR only — never RGB).
 5. **Don't touch training code** (`ml/src/augmentation.py`, `ml/src/dataset.py`, notebooks) unless explicitly retraining.

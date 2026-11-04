@@ -12,8 +12,8 @@ import cv2
 import numpy as np
 import pytest
 
-from axalon.core.fusion import ImageFusion
-from axalon.core.fusion_calibration import (
+from solardoctor.core.fusion import ImageFusion
+from solardoctor.core.fusion_calibration import (
     CALIBRATION_FORMAT,
     CalibrationError,
     FusionCalibration,
@@ -297,7 +297,7 @@ def test_resolve_prefers_env_path(tmp_path, monkeypatch, db_session):
     store_calibration(db_session, loads_calibration(json.dumps(_valid_doc(rig_id="DB-RIG"))))
     env_file = tmp_path / "env.json"
     env_file.write_text(json.dumps(_valid_doc(rig_id="ENV-RIG")))
-    monkeypatch.setenv("AXALON_FUSION_CALIBRATION", str(env_file))
+    monkeypatch.setenv("SOLARDOCTOR_FUSION_CALIBRATION", str(env_file))
 
     # Act
     active = resolve_active_calibration(session=db_session, settings={})
@@ -309,7 +309,7 @@ def test_resolve_prefers_env_path(tmp_path, monkeypatch, db_session):
 
 
 def test_resolve_uses_settings_path_then_db(tmp_path, monkeypatch, db_session):
-    monkeypatch.delenv("AXALON_FUSION_CALIBRATION", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_FUSION_CALIBRATION", raising=False)
     store_calibration(db_session, loads_calibration(json.dumps(_valid_doc(rig_id="DB-RIG"))))
     settings_file = tmp_path / "settings_cal.json"
     settings_file.write_text(json.dumps(_valid_doc(rig_id="YAML-RIG")))
@@ -329,7 +329,7 @@ def test_resolve_reports_broken_env_file_without_silently_using_db(tmp_path, mon
     store_calibration(db_session, loads_calibration(json.dumps(_valid_doc(rig_id="DB-RIG"))))
     bad = tmp_path / "bad.json"
     bad.write_text("{}")
-    monkeypatch.setenv("AXALON_FUSION_CALIBRATION", str(bad))
+    monkeypatch.setenv("SOLARDOCTOR_FUSION_CALIBRATION", str(bad))
 
     active = resolve_active_calibration(session=db_session, settings={})
 
@@ -339,7 +339,7 @@ def test_resolve_reports_broken_env_file_without_silently_using_db(tmp_path, mon
 
 
 def test_resolve_nothing_configured(monkeypatch, db_session):
-    monkeypatch.delenv("AXALON_FUSION_CALIBRATION", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_FUSION_CALIBRATION", raising=False)
     active = resolve_active_calibration(session=db_session, settings={})
     assert active.calibration is None
     assert active.source is None

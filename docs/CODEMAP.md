@@ -58,7 +58,7 @@ thermal images ──▶ pipeline/ingest ──▶ core/detector (YOLO11m) ─�
 ```
 git push main ──▶ Vercel builds website/nextjs ──▶ axalonsystems.com
 HF Space (parakh20/axalon-api) ◀── huggingface_hub.upload_file (per changed backend file)
-Supabase Postgres ◀── AXALON_DB_URL secret on the Space (session pooler, aws-1-ap-south-1)
+Supabase Postgres ◀── SOLARDOCTOR_DB_URL secret on the Space (session pooler, aws-1-ap-south-1)
 ```
 
 See the `cloud-deployment` skill for the exact runbook and gotchas.

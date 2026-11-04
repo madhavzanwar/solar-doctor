@@ -5,7 +5,7 @@ Idempotent demo seed script for the Axalon solar inspection platform.
 Usage:
     python scripts/seed_demo_data.py
     # or, if DB is at a non-default location:
-    DB_URL=sqlite:///path/to/axalon.db python scripts/seed_demo_data.py
+    DB_URL=sqlite:///path/to/solardoctor.db python scripts/seed_demo_data.py
 
 Idempotency guarantee:
     Deletes the three demo inspections (and their detections), then the demo
@@ -33,13 +33,13 @@ if _REPO_ROOT not in sys.path:
     sys.path.append(_REPO_ROOT)
 
 try:
-    from axalon.db.session import init_db, session_scope
-    from axalon.db.models import Park, Inspection, Detection
+    from solardoctor.db.session import init_db, session_scope
+    from solardoctor.db.models import Park, Inspection, Detection
     # Canonical class/severity definitions — never redefine these locally.
     from ml.src.utils import CANONICAL_CLASSES, CLASS2ID, SEVERITY_MAP
 except ImportError as exc:
     sys.exit(
-        f"[seed_demo_data] Cannot import axalon package: {exc}\n"
+        f"[seed_demo_data] Cannot import solardoctor package: {exc}\n"
         f"Make sure you are running from the repository root or that "
         f"{_REPO_ROOT} is importable."
     )
@@ -91,7 +91,7 @@ def _pick_class_for_severity(rng: random.Random, severity: str) -> str:
 # Main seed logic
 # ---------------------------------------------------------------------------
 
-def seed(db_url: str = "sqlite:///axalon.db") -> None:
+def seed(db_url: str = "sqlite:///solardoctor.db") -> None:
     init_db(db_url)
 
     with session_scope() as session:
@@ -204,5 +204,5 @@ def seed(db_url: str = "sqlite:///axalon.db") -> None:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    db_url = os.environ.get("DB_URL", "sqlite:///axalon.db")
+    db_url = os.environ.get("DB_URL", "sqlite:///solardoctor.db")
     seed(db_url)

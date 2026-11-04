@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from axalon.core.fusion import ImageFusion
+from solardoctor.core.fusion import ImageFusion
 
 
 def _detection() -> dict:

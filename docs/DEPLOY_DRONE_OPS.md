@@ -237,7 +237,7 @@ Reuse the `axalon-drone-agent.service` from Phase 1 with the hardware env:
 > The capture handoff POSTs a ZIP of `CAPTURE_DIR` (frames + per-frame GPS sidecars)
 > to the platform's `POST /batch` (multipart: `images` ZIP + `park_id` + `altitude_m`,
 > `Authorization: Bearer PLATFORM_TOKEN`). `PLATFORM_TOKEN` must equal the backend's
-> `AXALON_API_KEY`.
+> `SOLARDOCTOR_API_KEY`.
 
 ### First-flight safety checklist
 1. Props OFF: confirm telemetry on `/platform` Live Ops, confirm ARM/DISARM acks.

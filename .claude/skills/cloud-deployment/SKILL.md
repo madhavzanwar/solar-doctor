@@ -10,7 +10,7 @@ Live stack: **Vercel** serves `axalonsystems.com` (+ `/platform`) → **HF Space
 ## Frontend — Vercel
 - Production project: **`axalon-systems`** (rootDir `website/nextjs`), GitHub-integrated.
 - **Deploy by `git push origin main`** → auto-build. Do **NOT** run `vercel --prod` from the repo root — it uploads the whole repo incl. `ml/Datasets` (~529 MB) and aborts ("Upload aborted").
-- Env: `NEXT_PUBLIC_AXALON_API_URL` = the HF backend URL. It's a `NEXT_PUBLIC_` var → **baked at build time**, so set it *before* the build and redeploy after changing it.
+- Env: `NEXT_PUBLIC_SOLARDOCTOR_API_URL` = the HF backend URL. It's a `NEXT_PUBLIC_` var → **baked at build time**, so set it *before* the build and redeploy after changing it.
 - Verify: `vercel ls axalon-systems` (newest = Ready), then `curl -I https://axalonsystems.com/platform`.
 
 ## Backend — Hugging Face Space (`parakh20/axalon-api`, Docker)
@@ -20,12 +20,12 @@ Live stack: **Vercel** serves `axalonsystems.com` (+ `/platform`) → **HF Space
   HfApi().upload_file(path_or_fileobj=…, path_in_repo=…, repo_id='parakh20/axalon-api', repo_type='space', token=…)
   ```
   Uploading a file triggers a rebuild.
-- Config: var `PORT=7860`; secrets `AXALON_API_KEY` (Bearer password), `AXALON_DB_URL` (Supabase). Changing a secret restarts the Space.
+- Config: var `PORT=7860`; secrets `SOLARDOCTOR_API_KEY` (Bearer password), `SOLARDOCTOR_DB_URL` (Supabase). Changing a secret restarts the Space.
 - Dockerfile gotcha: a multi-source `COPY a b ./` flattens basenames — copy `ml/requirements.txt` with its own `COPY` line or `pip install -r ml/requirements.txt` fails. `psycopg2-binary` must be installed for Postgres.
 - Tooling: `huggingface_hub` + `pg8000` in `~/.cloudtools/bin` (run from `/tmp` with `PYTHONSAFEPATH=1`). HF write token rotates per session.
 
 ## Database — Supabase
-- `AXALON_DB_URL` (secret on the Space):
+- `SOLARDOCTOR_DB_URL` (secret on the Space):
   `postgresql+psycopg2://postgres.<ref>:<PW with @→%40>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres`
 - Use the **session pooler** host (IPv4). Schema applied to alembic `0004`.
 

@@ -10,10 +10,10 @@ services:
       - axalon_data:/app/data
       - ./ml/checkpoints:/app/ml/checkpoints:ro
     environment:
-      - AXALON_DB_URL=sqlite:////app/data/axalon.db
-      - AXALON_API_KEY=${AXALON_API_KEY:-}
-      - AXALON_OUTPUT_DIR=/app/data/output
-      - AXALON_RESULTS_TTL_HOURS=${AXALON_RESULTS_TTL_HOURS:-0}
+      - SOLARDOCTOR_DB_URL=sqlite:////app/data/solardoctor.db
+      - SOLARDOCTOR_API_KEY=${SOLARDOCTOR_API_KEY:-}
+      - SOLARDOCTOR_OUTPUT_DIR=/app/data/output
+      - SOLARDOCTOR_RESULTS_TTL_HOURS=${SOLARDOCTOR_RESULTS_TTL_HOURS:-0}
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}
     restart: unless-stopped
     healthcheck:
@@ -30,7 +30,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_AXALON_API_URL=${NEXT_PUBLIC_AXALON_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_SOLARDOCTOR_API_URL=${NEXT_PUBLIC_SOLARDOCTOR_API_URL:-http://localhost:8000}
     depends_on:
       api:
         condition: service_healthy

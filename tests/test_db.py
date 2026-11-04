@@ -6,7 +6,7 @@ import pytest
 @pytest.fixture
 def db_session():
     """Provide an in-memory DB session with FK enforcement enabled."""
-    from axalon.db.session import init_db, get_session
+    from solardoctor.db.session import init_db, get_session
     init_db("sqlite:///:memory:")
     session = get_session()
     yield session
@@ -14,19 +14,19 @@ def db_session():
 
 
 def test_models_importable():
-    from axalon.db.models import Base, Park, Inspection, Detection
+    from solardoctor.db.models import Base, Park, Inspection, Detection
     assert Park.__tablename__ == "parks"
     assert Inspection.__tablename__ == "inspections"
     assert Detection.__tablename__ == "detections"
 
 
 def test_init_db_creates_tables(db_session):
-    from axalon.db.models import Park
+    from solardoctor.db.models import Park
     assert db_session.query(Park).count() == 0
 
 
 def test_create_park(db_session):
-    from axalon.db.models import Park
+    from solardoctor.db.models import Park
     park = Park(id="PARK_01", name="Test Farm", mode="auto", total_panels=120, rows=10, cols=12)
     db_session.add(park)
     db_session.commit()
@@ -37,7 +37,7 @@ def test_create_park(db_session):
 
 
 def test_create_inspection_and_detection(db_session):
-    from axalon.db.models import Park, Inspection, Detection
+    from solardoctor.db.models import Park, Inspection, Detection
     park = Park(id="PARK_02", name="Alpha Farm", mode="auto")
     db_session.add(park)
     db_session.flush()  # insert park before inspection references it
@@ -72,7 +72,7 @@ def test_create_inspection_and_detection(db_session):
 
 def test_get_session_auto_inits(monkeypatch):
     """get_session() auto-calls init_db() if not yet initialized."""
-    import axalon.db.session as sess_mod
+    import solardoctor.db.session as sess_mod
     # Patch default URL to in-memory so no file is written to disk
     original_init = sess_mod.init_db
     monkeypatch.setattr(sess_mod, "_engine", None)

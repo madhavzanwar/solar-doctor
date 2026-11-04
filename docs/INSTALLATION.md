@@ -38,8 +38,8 @@ brew install pango
 ## Verify installation
 
 ```bash
-python -c "import axalon; print('axalon package OK')"
-python -c "from axalon.api.app import app; print(app.title)"
+python -c "import solardoctor; print('axalon package OK')"
+python -c "from solardoctor.api.app import app; print(app.title)"
 python -c "from ml.src.utils import CANONICAL_CLASSES; print(len(CANONICAL_CLASSES))"
 ```
 

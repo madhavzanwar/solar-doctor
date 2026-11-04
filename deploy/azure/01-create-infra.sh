@@ -80,16 +80,16 @@ echo "[8] Storage: $SA / track-files"
 API_KEY=$(openssl rand -hex 32)
 
 cat > deploy/azure/.env.vm <<EOF
-AXALON_DB_URL=postgresql+psycopg2://${PG_USER}:${PG_PW}@${PG_HOST}:5432/${PG_DB}?sslmode=require
-AXALON_API_KEY=${API_KEY}
-AXALON_OUTPUT_DIR=/home/ubuntu/axalon-data/output
+SOLARDOCTOR_DB_URL=postgresql+psycopg2://${PG_USER}:${PG_PW}@${PG_HOST}:5432/${PG_DB}?sslmode=require
+SOLARDOCTOR_API_KEY=${API_KEY}
+SOLARDOCTOR_OUTPUT_DIR=/home/ubuntu/axalon-data/output
 PYTHONSAFEPATH=1
 AZURE_STORAGE_CONNECTION_STRING=${SA_CONN}
 AZURE_TRACK_CONTAINER=track-files
 # Fill these in from your existing Supabase project:
 SUPABASE_URL=
 SUPABASE_SERVICE_KEY=
-AXALON_TRACK_BUCKET=track-files
+SOLARDOCTOR_TRACK_BUCKET=track-files
 EOF
 
 cat > deploy/azure/.infra-state <<EOF

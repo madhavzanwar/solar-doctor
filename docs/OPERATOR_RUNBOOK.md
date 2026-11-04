@@ -141,10 +141,10 @@ The script starts the platform services itself if they're not already up, and st
 
 ### API key auth
 
-Set `AXALON_API_KEY` before starting services:
+Set `SOLARDOCTOR_API_KEY` before starting services:
 
 ```bash
-export AXALON_API_KEY=your-key
+export SOLARDOCTOR_API_KEY=your-key
 ./run.sh all
 ```
 

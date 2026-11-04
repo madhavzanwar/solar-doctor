@@ -7,7 +7,7 @@ import pytest
 # ── ParkLayoutDetector ────────────────────────────────────────────────────────
 
 def test_park_layout_detector_assigns_grid_ids():
-    from axalon.park.layout import ParkLayoutDetector
+    from solardoctor.park.layout import ParkLayoutDetector
     # assign_grid_ids expects panels with a "center" key [cx, cy], not x/y/w/h.
     # The plan had x/y/w/h format (raw detect_panels input) and assumed 2 rows,
     # but ParkLayoutDetector.row_cluster_tolerance_px defaults to 30px, so rows
@@ -25,7 +25,7 @@ def test_park_layout_detector_assigns_grid_ids():
 
 
 def test_park_layout_detector_handles_empty_panel_list():
-    from axalon.park.layout import ParkLayoutDetector
+    from solardoctor.park.layout import ParkLayoutDetector
     out = ParkLayoutDetector().assign_grid_ids([])
     assert out == []
 
@@ -43,7 +43,7 @@ def test_orchestrator_processes_a_batch_directly(fixture_dir, tmp_path):
     This is slow (~30-90s on CPU) but verifies the pipeline outside the API.
     Marker: this is the only unit test that actually runs YOLO inference.
     """
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
     orch = InspectionOrchestrator(conf=0.25, device="cpu", output_dir=str(tmp_path))
     result = orch.inspect_folder(
         folder=str(fixture_dir),
@@ -59,7 +59,7 @@ def test_orchestrator_processes_a_batch_directly(fixture_dir, tmp_path):
 
 def test_grid_aggregator_with_realistic_payload():
     from types import SimpleNamespace
-    from axalon.park.grid import build_grid
+    from solardoctor.park.grid import build_grid
 
     park = SimpleNamespace(id="REALISTIC", rows=3, cols=4)
     detections = [

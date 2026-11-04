@@ -4,7 +4,7 @@
 
 **Goal:** Make the platform production-ready. Job state survives API restarts, the UI is locked behind a configurable API key, every tab is fully usable on a phone (≥360px), the whole stack runs in Docker, and Playwright e2e joins GitHub Actions CI.
 
-**Architecture:** A new `Job` SQLAlchemy model replaces the in-memory job dict; the background worker writes state on each tick. Auth is a FastAPI dependency (`require_auth`) keyed on an `AXALON_API_KEY` env var; the Next.js frontend intercepts 401s and shows a one-time unlock screen storing the key in `sessionStorage`. Mobile layout is pure CSS (`@media (max-width: 767px)` additions to `platform.css`). Docker is a two-stage Python `Dockerfile` + Next.js `Dockerfile` wired via `docker-compose.yml`. The Playwright e2e job in CI spins up `docker-compose` as a service container.
+**Architecture:** A new `Job` SQLAlchemy model replaces the in-memory job dict; the background worker writes state on each tick. Auth is a FastAPI dependency (`require_auth`) keyed on an `SOLARDOCTOR_API_KEY` env var; the Next.js frontend intercepts 401s and shows a one-time unlock screen storing the key in `sessionStorage`. Mobile layout is pure CSS (`@media (max-width: 767px)` additions to `platform.css`). Docker is a two-stage Python `Dockerfile` + Next.js `Dockerfile` wired via `docker-compose.yml`. The Playwright e2e job in CI spins up `docker-compose` as a service container.
 
 **Tech Stack:** SQLAlchemy 2.x, FastAPI dependency injection, Next.js 14 (App Router), CSS media queries, Docker multi-stage builds, `docker compose v2`, GitHub Actions `services`, `@playwright/test`.
 
@@ -53,7 +53,7 @@ from sqlalchemy import create_engine, text
 
 @pytest.fixture
 def engine():
-    from axalon.db.session import init_db, get_engine
+    from solardoctor.db.session import init_db, get_engine
     init_db("sqlite:///:memory:")
     return get_engine()
 
@@ -67,8 +67,8 @@ def test_job_table_exists(engine):
 
 
 def test_job_row_survives_reconnect(engine):
-    from axalon.db.models import Job
-    from axalon.db.session import session_scope
+    from solardoctor.db.models import Job
+    from solardoctor.db.session import session_scope
     job_id = "persist-test-001"
     with session_scope(engine) as s:
         s.add(Job(id=job_id, state="succeeded", park_id="P1", total=20, processed=20))
@@ -115,7 +115,7 @@ Find the in-memory `_jobs` dict (search for `_jobs = {}` or similar). Replace al
 **Helper functions to add near the top of the handlers section:**
 
 ```python
-from axalon.db.models import Job as DbJob
+from solardoctor.db.models import Job as DbJob
 
 def _create_job(job_id: str, park_id: str) -> None:
     session = get_session()
@@ -203,7 +203,7 @@ git commit -m "feat(jobs): persist batch job state to SQLite; survives API resta
 - Modify: `website/nextjs/lib/api.ts`
 - Modify: `website/nextjs/app/platform/layout.tsx`
 
-When `AXALON_API_KEY` env var is set, every non-health endpoint requires `Authorization: Bearer <key>`. The frontend intercepts 401s and shows an unlock screen.
+When `SOLARDOCTOR_API_KEY` env var is set, every non-health endpoint requires `Authorization: Bearer <key>`. The frontend intercepts 401s and shows an unlock screen.
 
 - [ ] **Step 1: Write the backend auth dependency**
 
@@ -215,11 +215,11 @@ from fastapi import Security as _Security
 from fastapi.security import HTTPBearer as _HTTPBearer, HTTPAuthorizationCredentials as _HTTPAuthCreds
 
 _bearer = _HTTPBearer(auto_error=False)
-_API_KEY = _os.environ.get("AXALON_API_KEY", "").strip()
+_API_KEY = _os.environ.get("SOLARDOCTOR_API_KEY", "").strip()
 
 
 def require_auth(creds: _HTTPAuthCreds | None = _Security(_bearer)) -> None:
-    """FastAPI dependency — no-op when AXALON_API_KEY is unset."""
+    """FastAPI dependency — no-op when SOLARDOCTOR_API_KEY is unset."""
     if not _API_KEY:
         return
     if creds is None or creds.credentials != _API_KEY:
@@ -241,11 +241,11 @@ Do this for: `/batch`, `/inspect`, `/status/{job_id}`, `/map/{job_id}`, `/report
 - [ ] **Step 3: Verify auth locally**
 
 ```bash
-# Without key — should still work (AXALON_API_KEY not set)
+# Without key — should still work (SOLARDOCTOR_API_KEY not set)
 curl -fsS http://localhost:8000/parks
 
 # Set a key and restart
-AXALON_API_KEY=secret123 uvicorn platform.api.app:app --port 8000 &
+SOLARDOCTOR_API_KEY=secret123 uvicorn platform.api.app:app --port 8000 &
 sleep 2
 
 # Without key — should 401
@@ -404,7 +404,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
 ```bash
 # Restart API with a key
-AXALON_API_KEY=demo-key ./run.sh all
+SOLARDOCTOR_API_KEY=demo-key ./run.sh all
 ```
 
 Open `http://localhost:3000/platform`. The UI should load. Try any API call (switch to History tab — it fetches `/parks`). Confirm that without a stored key, the lock screen appears. Enter `demo-key`. Confirm calls succeed and the UI populates.
@@ -711,9 +711,9 @@ services:
       - axalon_data:/app/data          # SQLite DB + report outputs
       - ./ml/checkpoints:/app/ml/checkpoints:ro   # model weights (read-only)
     environment:
-      - AXALON_DB_URL=sqlite:////app/data/axalon.db
-      - AXALON_API_KEY=${AXALON_API_KEY:-}
-      - AXALON_OUTPUT_DIR=/app/data/output
+      - SOLARDOCTOR_DB_URL=sqlite:////app/data/solardoctor.db
+      - SOLARDOCTOR_API_KEY=${SOLARDOCTOR_API_KEY:-}
+      - SOLARDOCTOR_OUTPUT_DIR=/app/data/output
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
@@ -728,7 +728,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_AXALON_API_URL=http://api:8000
+      - NEXT_PUBLIC_SOLARDOCTOR_API_URL=http://api:8000
     depends_on:
       api:
         condition: service_healthy
@@ -915,7 +915,7 @@ cd tests/fixtures && zip -rq sample_mission.zip sample_mission/ && cd -
 python3 scripts/seed_demo_data.py
 
 # 4. Set an API key (optional — omit to run without auth)
-export AXALON_API_KEY=your-secret-key
+export SOLARDOCTOR_API_KEY=your-secret-key
 
 # 5. Build and start
 docker compose build
@@ -928,10 +928,10 @@ docker compose up -d
 
 | Variable | Service | Default | Description |
 |---|---|---|---|
-| `AXALON_API_KEY` | API | `` (empty = no auth) | Bearer key required on all non-health endpoints |
-| `AXALON_DB_URL` | API | `sqlite:////app/data/axalon.db` | SQLAlchemy DB URL |
-| `AXALON_OUTPUT_DIR` | API | `/app/data/output` | Directory for report outputs |
-| `NEXT_PUBLIC_AXALON_API_URL` | Next.js | `http://api:8000` | API base URL seen by the browser |
+| `SOLARDOCTOR_API_KEY` | API | `` (empty = no auth) | Bearer key required on all non-health endpoints |
+| `SOLARDOCTOR_DB_URL` | API | `sqlite:////app/data/solardoctor.db` | SQLAlchemy DB URL |
+| `SOLARDOCTOR_OUTPUT_DIR` | API | `/app/data/output` | Directory for report outputs |
+| `NEXT_PUBLIC_SOLARDOCTOR_API_URL` | Next.js | `http://api:8000` | API base URL seen by the browser |
 
 ## Render.com deployment
 
@@ -939,11 +939,11 @@ The `website/render.yaml` already configures a Web Service for the API. To updat
 
 1. In Render dashboard, create a new **Web Service** → **Docker**.
 2. Set build context to repo root, Dockerfile to `Dockerfile`.
-3. Set environment variables: `AXALON_API_KEY`, `AXALON_DB_URL` (use Render's managed disk for SQLite or switch to PostgreSQL).
+3. Set environment variables: `SOLARDOCTOR_API_KEY`, `SOLARDOCTOR_DB_URL` (use Render's managed disk for SQLite or switch to PostgreSQL).
 4. Add a **Static Site** for Next.js:
    - Build command: `cd website/nextjs && npm ci && npm run build`
    - Publish directory: `website/nextjs/.next`
-   - Set `NEXT_PUBLIC_AXALON_API_URL` to the Render API service URL.
+   - Set `NEXT_PUBLIC_SOLARDOCTOR_API_URL` to the Render API service URL.
 
 ## Model weights in CI
 
@@ -978,10 +978,10 @@ Append to `docs/OPERATOR_RUNBOOK.md`:
 
 ### API key auth
 
-Set `AXALON_API_KEY` before starting the services:
+Set `SOLARDOCTOR_API_KEY` before starting the services:
 
 ```bash
-export AXALON_API_KEY=your-key
+export SOLARDOCTOR_API_KEY=your-key
 ./run.sh all
 ```
 
@@ -1052,7 +1052,7 @@ sleep 20
 
 ```
 - [ ] /health returns 200 without auth
-- [ ] All other endpoints return 401 when AXALON_API_KEY is set and no key is sent
+- [ ] All other endpoints return 401 when SOLARDOCTOR_API_KEY is set and no key is sent
 - [ ] All other endpoints return 200 when correct Bearer key is sent
 - [ ] AuthGate unlock screen appears in browser when the API key is set and sessionStorage is empty
 - [ ] Entering the correct key dismisses the lock screen; UI loads and all tabs function

@@ -4,7 +4,7 @@ Revision ID: 0010
 Revises: 0009
 
 Nullable: images without a `_temp.raw` companion carry no temperatures.
-Idempotent because `axalon.db.migrate.run_migrations` adds the same columns on
+Idempotent because `solardoctor.db.migrate.run_migrations` adds the same columns on
 app startup — whichever runs first wins, the other is a no-op.
 """
 from alembic import op

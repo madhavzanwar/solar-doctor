@@ -5,7 +5,7 @@ real in-memory SQLite session from conftest (no mocked DB).
 """
 from __future__ import annotations
 
-from axalon.db.models import (
+from solardoctor.db.models import (
     Detection as DbDetection,
     FAULT_OPEN,
     FAULT_RESOLVED,
@@ -14,7 +14,7 @@ from axalon.db.models import (
     PanelFault,
     Park,
 )
-from axalon.pipeline.tracking import dedup_detections, reconcile_inspection
+from solardoctor.pipeline.tracking import dedup_detections, reconcile_inspection
 
 
 def _det(panel_id, cls, severity="HIGH", conf=0.8, bbox=None) -> dict:

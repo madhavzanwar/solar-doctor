@@ -35,7 +35,7 @@ openpyxl>=3.1.2                  # Excel .xlsx export
 # ── Database ──────────────────────────────────────────────────────────────────
 sqlalchemy>=2.0.29               # ORM (SQLite local, PostgreSQL production)
 alembic>=1.13.1                  # Database migrations
-psycopg2-binary>=2.9.9           # PostgreSQL driver (Supabase production via AXALON_DB_URL)
+psycopg2-binary>=2.9.9           # PostgreSQL driver (Supabase production via SOLARDOCTOR_DB_URL)
 
 # ── API utilities ─────────────────────────────────────────────────────────────
 pydantic>=2.7.0                  # Request/response validation (FastAPI uses this)

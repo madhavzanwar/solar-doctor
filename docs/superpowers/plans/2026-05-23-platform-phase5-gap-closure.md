@@ -17,7 +17,7 @@
 | Path | Responsibility | Action |
 |---|---|---|
 | `alembic.ini` | Alembic CLI config pointing at `alembic/` scripts | Create |
-| `alembic/env.py` | Alembic runtime: reads `AXALON_DB_URL`, imports `Base` | Create |
+| `alembic/env.py` | Alembic runtime: reads `SOLARDOCTOR_DB_URL`, imports `Base` | Create |
 | `alembic/script.py.mako` | Standard Alembic migration template | Create |
 | `alembic/versions/0001_initial_schema.py` | First migration — all tables up to and including Phase 4 | Create |
 | `platform/park/trend.py` | Pure `build_trend(rows)` — normalises SQLAlchemy rows → trend JSON | Create |
@@ -113,11 +113,11 @@ if config.config_file_name:
 # Import the metadata so Alembic can autogenerate migrations
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from axalon.db.models import Base
+from solardoctor.db.models import Base
 target_metadata = Base.metadata
 
 # Read DB URL from env, fall back to alembic.ini value
-_DB_URL = os.environ.get("AXALON_DB_URL", "sqlite:///axalon.db")
+_DB_URL = os.environ.get("SOLARDOCTOR_DB_URL", "sqlite:///solardoctor.db")
 
 
 def run_migrations_offline() -> None:
@@ -202,7 +202,7 @@ Edit the file header to fix the revision id (Alembic uses the hash; leave it —
 
 ```bash
 rm -f /tmp/alembic_test.db
-AXALON_DB_URL="sqlite:////tmp/alembic_test.db" alembic upgrade head
+SOLARDOCTOR_DB_URL="sqlite:////tmp/alembic_test.db" alembic upgrade head
 sqlite3 /tmp/alembic_test.db ".tables"
 ```
 
@@ -213,7 +213,7 @@ Expected: output lists all tables including `jobs`, `corrections`, `alembic_vers
 ```bash
 # Create an old-style DB (no jobs/corrections table)
 python3 -c "
-import os; os.environ['AXALON_DB_URL'] = 'sqlite:////tmp/old_test.db'
+import os; os.environ['SOLARDOCTOR_DB_URL'] = 'sqlite:////tmp/old_test.db'
 from sqlalchemy import create_engine, text
 e = create_engine('sqlite:////tmp/old_test.db')
 e.execute = lambda *a, **k: None  # placeholder
@@ -227,7 +227,7 @@ class Park(B):
 B.metadata.create_all(e)
 print('old DB created')
 "
-AXALON_DB_URL="sqlite:////tmp/old_test.db" alembic upgrade head
+SOLARDOCTOR_DB_URL="sqlite:////tmp/old_test.db" alembic upgrade head
 sqlite3 /tmp/old_test.db ".tables"
 ```
 
@@ -263,7 +263,7 @@ Add the helper near the top of `app.py`:
 ```python
 def _run_alembic_migrations() -> None:
     """Run Alembic migrations programmatically. No-op on in-memory SQLite (used by tests)."""
-    db_url = os.environ.get("AXALON_DB_URL", "sqlite:///axalon.db")
+    db_url = os.environ.get("SOLARDOCTOR_DB_URL", "sqlite:///solardoctor.db")
     if ":memory:" in db_url:
         return  # tests use create_all() directly
     try:
@@ -283,7 +283,7 @@ def _run_alembic_migrations() -> None:
 - [ ] **Step 9: Verify API starts cleanly**
 
 ```bash
-AXALON_DB_URL="sqlite:////tmp/alembic_live.db" uvicorn platform.api.app:app --port 8001 &
+SOLARDOCTOR_DB_URL="sqlite:////tmp/alembic_live.db" uvicorn platform.api.app:app --port 8001 &
 sleep 3
 curl -fsS http://localhost:8001/health
 pkill -f "port 8001"
@@ -338,7 +338,7 @@ def serve_result_image(job_id: str, filename: str):
     job_id = _validate_job_id(job_id)
     if ".." in filename or filename.startswith("/"):
         raise HTTPException(status_code=400, detail="Invalid filename")
-    output_dir = _os.environ.get("AXALON_OUTPUT_DIR", "output")
+    output_dir = _os.environ.get("SOLARDOCTOR_OUTPUT_DIR", "output")
     image_path = _Path(output_dir) / job_id / filename
     if not image_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")
@@ -361,7 +361,7 @@ In `website/nextjs/components/Platform/ParkPanelDetail.tsx`, change:
 
 - [ ] **Step 5: Smoke test**
 
-Start the API with `AXALON_OUTPUT_DIR` pointing at the existing output directory, then navigate to Park Map, click a panel cell with a detection. The thumbnail in the detail panel should load (or 404 cleanly if there's no image — either is correct; no infinite spinner).
+Start the API with `SOLARDOCTOR_OUTPUT_DIR` pointing at the existing output directory, then navigate to Park Map, click a panel cell with a detection. The thumbnail in the detail panel should load (or 404 cleanly if there's no image — either is correct; no infinite spinner).
 
 ### 2b — Results TTL cleanup
 
@@ -380,7 +380,7 @@ Add the helper:
 def _cleanup_old_results() -> None:
     import shutil as _shutil
     import datetime as _dt
-    ttl_hours = int(_os.environ.get("AXALON_RESULTS_TTL_HOURS", "0"))
+    ttl_hours = int(_os.environ.get("SOLARDOCTOR_RESULTS_TTL_HOURS", "0"))
     if ttl_hours <= 0:
         return  # TTL disabled (default)
     cutoff = _dt.datetime.utcnow() - _dt.timedelta(hours=ttl_hours)
@@ -390,7 +390,7 @@ def _cleanup_old_results() -> None:
             DbJob.created_at < cutoff,
             DbJob.state.in_(["succeeded", "failed"]),
         ).all()
-        output_dir = _os.environ.get("AXALON_OUTPUT_DIR", "output")
+        output_dir = _os.environ.get("SOLARDOCTOR_OUTPUT_DIR", "output")
         for job in old_jobs:
             job_dir = _Path(output_dir) / job.id
             if job_dir.exists():
@@ -401,7 +401,7 @@ def _cleanup_old_results() -> None:
         session.close()
 ```
 
-Set `AXALON_RESULTS_TTL_HOURS=0` in `docker-compose.yml` (disabled by default — operators enable it explicitly).
+Set `SOLARDOCTOR_RESULTS_TTL_HOURS=0` in `docker-compose.yml` (disabled by default — operators enable it explicitly).
 
 ### 2c — GPU in Docker
 
@@ -425,10 +425,10 @@ Also update the `api` service's `environment:` block to pass through the CUDA de
 
 ```yaml
     environment:
-      - AXALON_DB_URL=sqlite:////app/data/axalon.db
-      - AXALON_API_KEY=${AXALON_API_KEY:-}
-      - AXALON_OUTPUT_DIR=/app/data/output
-      - AXALON_RESULTS_TTL_HOURS=${AXALON_RESULTS_TTL_HOURS:-0}
+      - SOLARDOCTOR_DB_URL=sqlite:////app/data/solardoctor.db
+      - SOLARDOCTOR_API_KEY=${SOLARDOCTOR_API_KEY:-}
+      - SOLARDOCTOR_OUTPUT_DIR=/app/data/output
+      - SOLARDOCTOR_RESULTS_TTL_HOURS=${SOLARDOCTOR_RESULTS_TTL_HOURS:-0}
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 ```
 
@@ -464,22 +464,22 @@ import pytest
 
 @pytest.fixture
 def engine():
-    from axalon.db.session import init_db, get_engine
+    from solardoctor.db.session import init_db, get_engine
     init_db("sqlite:///:memory:")
     return get_engine()
 
 
 @pytest.fixture
 def client(engine):
-    from axalon.api.app import app
+    from solardoctor.api.app import app
     from fastapi.testclient import TestClient
     return TestClient(app)
 
 
 def test_json_report_includes_corrections(client):
     # Simulate a completed inspect job in the DB
-    from axalon.db.models import Correction
-    from axalon.db.session import session_scope, get_engine
+    from solardoctor.db.models import Correction
+    from solardoctor.db.session import session_scope, get_engine
     job_id = "test-inspect-001"
     with session_scope(get_engine()) as s:
         s.add(Correction(
@@ -1572,7 +1572,7 @@ Infrastructure
 - [ ] GET /results/{job_id}/{filename} returns 200 for a known annotated image
 - [ ] ParkPanelDetail thumbnail loads (no /image/ 404 in browser DevTools network tab)
 - [ ] docker compose up -d succeeds; docker compose logs api shows no GPU errors on CPU host
-- [ ] AXALON_RESULTS_TTL_HOURS=1 triggers cleanup on restart (set short TTL, create a job older than 1h via direct DB insert, restart API, verify output dir deleted)
+- [ ] SOLARDOCTOR_RESULTS_TTL_HOURS=1 triggers cleanup on restart (set short TTL, create a job older than 1h via direct DB insert, restart API, verify output dir deleted)
 
 Reports
 - [ ] After an inspect + drawn correction, GET /report/{inspect_job_id}?format=json returns {"corrections": [...]} with the saved box

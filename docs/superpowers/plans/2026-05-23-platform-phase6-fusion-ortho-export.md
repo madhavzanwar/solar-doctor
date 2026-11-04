@@ -775,7 +775,7 @@ from PIL import Image
 
 
 def test_render_returns_bytes():
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
     panels = [
         {"panel_id": "R1-C1", "row": 0, "col": 0, "worst_severity": "CRITICAL", "detection_count": 2},
         {"panel_id": "R1-C2", "row": 0, "col": 1, "worst_severity": "HIGH", "detection_count": 1},
@@ -787,7 +787,7 @@ def test_render_returns_bytes():
 
 
 def test_render_produces_valid_png():
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
     panels = [{"panel_id": "R1-C1", "row": 0, "col": 0, "worst_severity": "MEDIUM", "detection_count": 1}]
     result = render_grid_png(panels)
     img = Image.open(io.BytesIO(result))
@@ -796,14 +796,14 @@ def test_render_produces_valid_png():
 
 
 def test_render_empty_panels_returns_placeholder():
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
     result = render_grid_png([])
     img = Image.open(io.BytesIO(result))
     assert img.format == "PNG"
 
 
 def test_render_uses_severity_colors():
-    from axalon.core.map_renderer import render_grid_png, SEVERITY_COLORS
+    from solardoctor.core.map_renderer import render_grid_png, SEVERITY_COLORS
     assert "CRITICAL" in SEVERITY_COLORS
     assert "HIGH" in SEVERITY_COLORS
     assert "MEDIUM" in SEVERITY_COLORS
@@ -817,7 +817,7 @@ cd /home/parakh/Desktop/AxalonSystems
 PYTHONSAFEPATH=1 .venv/bin/python -m pytest tests/backend/test_map_renderer.py -v
 ```
 
-Expected: FAIL — `ModuleNotFoundError: No module named 'axalon.core.map_renderer'`.
+Expected: FAIL — `ModuleNotFoundError: No module named 'solardoctor.core.map_renderer'`.
 
 - [ ] **Step 3: Create map_renderer.py**
 
@@ -995,7 +995,7 @@ Add after the `list_orthos` endpoint (around line 1080) in `platform/api/app.py`
 @app.get("/park/{park_id}/grid/png")
 def export_park_grid_png(park_id: str, inspection_id: str | None = None):
     """Export the park fault grid as a PNG image for download."""
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
     park_id = _validate_park_id(park_id)
 
     try:
@@ -1140,7 +1140,7 @@ Run every test suite and verify the golden-path Playwright test still exercises 
 ```bash
 pkill -f "uvicorn\|next dev" 2>/dev/null || true
 sleep 2
-PYTHONSAFEPATH=1 .venv/bin/uvicorn axalon.api.app:app --host 0.0.0.0 --port 8000 > /tmp/axalon-api.log 2>&1 &
+PYTHONSAFEPATH=1 .venv/bin/uvicorn solardoctor.api.app:app --host 0.0.0.0 --port 8000 > /tmp/axalon-api.log 2>&1 &
 cd /home/parakh/Desktop/AxalonSystems/website/nextjs && npm run dev > /tmp/nextjs.log 2>&1 &
 ```
 

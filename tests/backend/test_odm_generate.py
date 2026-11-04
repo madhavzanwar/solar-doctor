@@ -14,10 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from axalon.api.support import odm_jobs
-from axalon.api.support.jobs import _create_job, _get_job, _update_job
-from axalon.api.support.paths import ORTHO_DIR, OUTPUT_DIR
-from axalon.core.odm_client import NodeODMClient
+from solardoctor.api.support import odm_jobs
+from solardoctor.api.support.jobs import _create_job, _get_job, _update_job
+from solardoctor.api.support.paths import ORTHO_DIR, OUTPUT_DIR
+from solardoctor.core.odm_client import NodeODMClient
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RGB_FIXTURES = REPO_ROOT / "tests" / "fixtures" / "sample_mission" / "rgb"
@@ -70,7 +70,7 @@ def _no_gps_zip(tmp_path) -> bytes:
 @pytest.fixture
 def odm_env(monkeypatch, odm_fakes):
     """Configure ODM and route the worker's client to a fresh FakeNodeODM."""
-    monkeypatch.setenv("AXALON_NODEODM_URL", "http://odm.test:3000")
+    monkeypatch.setenv("SOLARDOCTOR_NODEODM_URL", "http://odm.test:3000")
     fake = odm_fakes.FakeNodeODM(orthophoto=_geotiff_bytes())
     monkeypatch.setattr(
         odm_jobs, "get_odm_client",
@@ -90,23 +90,23 @@ def _post_zip(client, park_id: str, data: bytes, name: str = "flight.zip", **for
 
 # ── capability flag / disabled ───────────────────────────────────────────────
 def test_health_reports_odm_not_configured(client, monkeypatch):
-    monkeypatch.delenv("AXALON_NODEODM_URL", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_NODEODM_URL", raising=False)
     body = client.get("/health").json()
     assert body["capabilities"]["odm"]["configured"] is False
-    assert "AXALON_NODEODM_URL" in body["capabilities"]["odm"]["message"]
+    assert "SOLARDOCTOR_NODEODM_URL" in body["capabilities"]["odm"]["message"]
 
 
 def test_health_reports_odm_configured(client, monkeypatch):
-    monkeypatch.setenv("AXALON_NODEODM_URL", "http://odm.test:3000")
+    monkeypatch.setenv("SOLARDOCTOR_NODEODM_URL", "http://odm.test:3000")
     body = client.get("/health").json()
     assert body["capabilities"]["odm"] == {"configured": True, "message": None}
 
 
 def test_generate_is_disabled_when_unconfigured(client, monkeypatch):
-    monkeypatch.delenv("AXALON_NODEODM_URL", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_NODEODM_URL", raising=False)
     resp = _post_zip(client, _park(), _gps_zip())
     assert resp.status_code == 503
-    assert "AXALON_NODEODM_URL" in resp.json()["detail"]
+    assert "SOLARDOCTOR_NODEODM_URL" in resp.json()["detail"]
 
 
 # ── request validation ──────────────────────────────────────────────────────

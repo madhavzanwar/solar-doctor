@@ -1,4 +1,4 @@
-"""Tests for inspection fault alerts (axalon.core.alerts) and their wiring.
+"""Tests for inspection fault alerts (solardoctor.core.alerts) and their wiring.
 
 No network: webhook delivery goes through a patched `urlopen`, email through a
 patched `smtplib.SMTP`.
@@ -12,15 +12,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from axalon.core import alerts
+from solardoctor.core import alerts
 from ml.src.utils import SEVERITY_MAP
 
 
 _ALERT_ENV = (
-    "AXALON_ALERT_WEBHOOK_URL", "AXALON_SMTP_HOST", "AXALON_SMTP_PORT",
-    "AXALON_SMTP_USER", "AXALON_SMTP_PASSWORD", "AXALON_SMTP_STARTTLS",
-    "AXALON_ALERT_EMAIL_FROM", "AXALON_ALERT_EMAIL_TO",
-    "AXALON_ALERT_MIN_SEVERITY", "AXALON_PUBLIC_BASE_URL",
+    "SOLARDOCTOR_ALERT_WEBHOOK_URL", "SOLARDOCTOR_SMTP_HOST", "SOLARDOCTOR_SMTP_PORT",
+    "SOLARDOCTOR_SMTP_USER", "SOLARDOCTOR_SMTP_PASSWORD", "SOLARDOCTOR_SMTP_STARTTLS",
+    "SOLARDOCTOR_ALERT_EMAIL_FROM", "SOLARDOCTOR_ALERT_EMAIL_TO",
+    "SOLARDOCTOR_ALERT_MIN_SEVERITY", "SOLARDOCTOR_PUBLIC_BASE_URL",
 )
 
 
@@ -75,15 +75,15 @@ def test_config_unconfigured_by_default():
 
 
 def test_config_invalid_min_severity_falls_back_to_critical(monkeypatch):
-    monkeypatch.setenv("AXALON_ALERT_MIN_SEVERITY", "apocalyptic")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_MIN_SEVERITY", "apocalyptic")
     assert alerts.AlertConfig.from_env().min_severity == "CRITICAL"
 
 
 def test_config_parses_email_recipients(monkeypatch):
-    monkeypatch.setenv("AXALON_SMTP_HOST", "smtp.example.com")
-    monkeypatch.setenv("AXALON_ALERT_EMAIL_FROM", "alerts@example.com")
-    monkeypatch.setenv("AXALON_ALERT_EMAIL_TO", " a@x.com, ,b@x.com ")
-    monkeypatch.setenv("AXALON_ALERT_MIN_SEVERITY", "high")
+    monkeypatch.setenv("SOLARDOCTOR_SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_EMAIL_FROM", "alerts@example.com")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_EMAIL_TO", " a@x.com, ,b@x.com ")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_MIN_SEVERITY", "high")
     cfg = alerts.AlertConfig.from_env()
     assert cfg.email_to == ["a@x.com", "b@x.com"]
     assert cfg.email_enabled
@@ -275,7 +275,7 @@ def test_notify_survives_malformed_result():
 
 
 def test_run_batch_job_succeeds_when_alerting_throws(temp_db, tmp_path, monkeypatch):
-    from axalon.api.support import jobs
+    from solardoctor.api.support import jobs
 
     out_dir = tmp_path / "output"
     out_dir.mkdir()
@@ -304,7 +304,7 @@ def test_run_batch_job_succeeds_when_alerting_throws(temp_db, tmp_path, monkeypa
 
 
 def test_run_batch_job_alerts_after_success_is_committed(temp_db, tmp_path, monkeypatch):
-    from axalon.api.support import jobs
+    from solardoctor.api.support import jobs
 
     out_dir = tmp_path / "output"
     out_dir.mkdir()
@@ -343,8 +343,8 @@ def test_alerts_test_endpoint_not_configured(client):
 
 
 def test_alerts_test_endpoint_sends_through_configured_channels(client, monkeypatch):
-    monkeypatch.setenv("AXALON_ALERT_WEBHOOK_URL", "https://hooks.example/x")
-    monkeypatch.setenv("AXALON_ALERT_MIN_SEVERITY", "HIGH")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_WEBHOOK_URL", "https://hooks.example/x")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_MIN_SEVERITY", "HIGH")
     opener = MagicMock(return_value=_ok_response())
     monkeypatch.setattr(alerts, "urlopen", opener)
     resp = client.post("/alerts/test")
@@ -359,7 +359,7 @@ def test_alerts_test_endpoint_sends_through_configured_channels(client, monkeypa
 
 
 def test_alerts_test_endpoint_reports_failure(client, monkeypatch):
-    monkeypatch.setenv("AXALON_ALERT_WEBHOOK_URL", "https://hooks.example/x")
+    monkeypatch.setenv("SOLARDOCTOR_ALERT_WEBHOOK_URL", "https://hooks.example/x")
     monkeypatch.setattr(alerts, "urlopen", MagicMock(side_effect=urllib.error.URLError("no")))
     monkeypatch.setattr(alerts.time, "sleep", lambda _s: None)
     resp = client.post("/alerts/test")

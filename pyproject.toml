@@ -3,30 +3,29 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "axalon-systems"
-version = "1.0.0"
+name = "solardoctor"
+version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = []   # runtime deps in requirements_platform.txt
 
 [tool.setuptools.package-dir]
-# Map Python package name → directory on disk
-# NOTE: 'platform' dir registered as 'axalon' to avoid shadowing stdlib platform module
-# Sub-package dirs (axalon.core → platform/core/) are inferred automatically from root mapping
-"axalon" = "platform"
+# Package "solardoctor" lives in backend/solardoctor. The backend/ parent directory
+# (instead of Axalon's old platform/) no longer shadows the stdlib `platform` module.
+"solardoctor" = "backend/solardoctor"
 "ml" = "ml"
 
 [tool.setuptools]
 # packages.find cannot discover 'axalon*' because the disk dir is named 'platform/', not 'axalon/'
 # Explicit list required when package-dir renames a directory. Setuptools infers sub-package
-# paths from the root mapping ("axalon" = "platform"), so axalon.core → platform/core/ works.
+# paths from the root mapping ("solardoctor" = "backend/solardoctor"), so solardoctor.core → platform/core/ works.
 packages = [
-    "axalon",
-    "axalon.api",
-    "axalon.core",
-    "axalon.db",
-    "axalon.park",
-    "axalon.pipeline",
-    "axalon.reporting",
+    "solardoctor",
+    "solardoctor.api",
+    "solardoctor.core",
+    "solardoctor.db",
+    "solardoctor.park",
+    "solardoctor.pipeline",
+    "solardoctor.reporting",
     "ml",
     "ml.src",
     "drone",

@@ -14,20 +14,20 @@ def test_ml_utils_importable():
 
 
 def test_axalon_core_importable():
-    from axalon.core.detector import SolarDetector
-    from axalon.core.fusion import ImageFusion
-    from axalon.core.geo import extract_gps_exif
+    from solardoctor.core.detector import SolarDetector
+    from solardoctor.core.fusion import ImageFusion
+    from solardoctor.core.geo import extract_gps_exif
 
 
 def test_axalon_pipeline_importable():
-    from axalon.pipeline.ingest import find_image_pairs
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.pipeline.ingest import find_image_pairs
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
 
 
 def test_axalon_reporting_importable():
-    from axalon.reporting.report import generate_json_report, generate_excel_report
-    from axalon.reporting.geojson_writer import write_geojson
+    from solardoctor.reporting.report import generate_json_report, generate_excel_report
+    from solardoctor.reporting.geojson_writer import write_geojson
 
 
 def test_axalon_park_importable():
-    from axalon.park.layout import ParkLayoutDetector
+    from solardoctor.park.layout import ParkLayoutDetector

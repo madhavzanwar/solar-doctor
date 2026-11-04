@@ -31,9 +31,9 @@ def sample_mission_zip(tmp_path_factory) -> Path:
 def temp_db(monkeypatch, tmp_path) -> Path:
     """Point the app at a temp SQLite DB for the duration of one test."""
     db_path = tmp_path / "test_axalon.db"
-    monkeypatch.setenv("AXALON_DB_URL", f"sqlite:///{db_path}")
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", f"sqlite:///{db_path}")
     # Reset module-level engine caches if present
-    from axalon.db import session as _session
+    from solardoctor.db import session as _session
     if hasattr(_session, "_engine"):
         _session._engine = None
     if hasattr(_session, "_SessionLocal"):
@@ -44,22 +44,22 @@ def temp_db(monkeypatch, tmp_path) -> Path:
 @pytest.fixture(autouse=True)
 def _default_auth_mode(monkeypatch):
     """Tests default to the historical keyless behaviour unless they opt in, so
-    a developer shell with AXALON_AUTH_MODE exported cannot change results."""
-    monkeypatch.delenv("AXALON_AUTH_MODE", raising=False)
+    a developer shell with SOLARDOCTOR_AUTH_MODE exported cannot change results."""
+    monkeypatch.delenv("SOLARDOCTOR_AUTH_MODE", raising=False)
 
 
 @pytest.fixture
 def client(temp_db) -> TestClient:
     """FastAPI TestClient bound to a fresh in-test DB."""
-    # Import inside the fixture so AXALON_DB_URL is set first.
-    from axalon.api.app import app
+    # Import inside the fixture so SOLARDOCTOR_DB_URL is set first.
+    from solardoctor.api.app import app
     return TestClient(app)
 
 
 @pytest.fixture
 def db_session(temp_db):
     """SQLAlchemy session bound to the temp test DB."""
-    from axalon.db.session import get_session
+    from solardoctor.db.session import get_session
     session = get_session()
     yield session
     session.close()
@@ -117,7 +117,7 @@ def _fast_isolated_auth(monkeypatch):
     the format, not the cost. The login limiter is process-global, so each test
     starts from a clean slate.
     """
-    from axalon.core import auth as _auth
+    from solardoctor.core import auth as _auth
     monkeypatch.setattr(_auth, "USER_PBKDF2_ITERATIONS", 1_000)
     _auth.login_limiter.reset()
     yield
@@ -126,9 +126,9 @@ def _fast_isolated_auth(monkeypatch):
 
 @pytest.fixture
 def users_mode(monkeypatch):
-    """Switch the API into AXALON_AUTH_MODE=users for one test."""
-    monkeypatch.setenv("AXALON_AUTH_MODE", "users")
-    monkeypatch.delenv("AXALON_API_KEY", raising=False)
+    """Switch the API into SOLARDOCTOR_AUTH_MODE=users for one test."""
+    monkeypatch.setenv("SOLARDOCTOR_AUTH_MODE", "users")
+    monkeypatch.delenv("SOLARDOCTOR_API_KEY", raising=False)
     return "users"
 
 
@@ -138,7 +138,7 @@ PASSWORD = "correct-horse-battery"
 @pytest.fixture
 def make_user(db_session):
     """Factory: create a user directly in the DB and return its id."""
-    from axalon.core.auth import create_user
+    from solardoctor.core.auth import create_user
 
     def _make(email: str, role: str, password: str = PASSWORD, project_ids=()) -> int:
         user = create_user(
@@ -163,7 +163,7 @@ def two_projects(db_session):
     """Two projects with one park each plus an unassigned park. Every park gets
     an inspection, job, fault, comment, correction and mission so each scoped
     endpoint has something that could leak."""
-    from axalon.db.models import (
+    from solardoctor.db.models import (
         Correction, FaultComment, Inspection, Job, Mission, PanelFault, Park, Project,
     )
 

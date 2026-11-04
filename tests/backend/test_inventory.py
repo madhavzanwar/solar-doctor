@@ -1,5 +1,5 @@
 """Tests for the inventory / prototype tracking API (spec: 2026-06-12-inventory-page-design)."""
-from axalon.db.models import ComponentAssignment, InventoryComponent, Prototype
+from solardoctor.db.models import ComponentAssignment, InventoryComponent, Prototype
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

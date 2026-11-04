@@ -1,4 +1,4 @@
-from axalon.db.models import Mission, Park
+from solardoctor.db.models import Mission, Park
 
 
 def test_mission_model_persists(db_session):

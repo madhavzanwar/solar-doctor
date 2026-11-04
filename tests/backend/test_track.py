@@ -6,7 +6,7 @@ import pytest
 
 @pytest.fixture
 def track_password(monkeypatch):
-    monkeypatch.setenv("AXALON_TRACK_PASSWORD", "test-track-pw")
+    monkeypatch.setenv("SOLARDOCTOR_TRACK_PASSWORD", "test-track-pw")
     return "test-track-pw"
 
 
@@ -29,7 +29,7 @@ def test_track_login_missing_password_field(client, track_password):
 
 
 def test_track_login_unconfigured_returns_503(client, monkeypatch):
-    monkeypatch.delenv("AXALON_TRACK_PASSWORD", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_TRACK_PASSWORD", raising=False)
     resp = client.post("/track/login", json={"password": "anything"})
     assert resp.status_code == 503
 

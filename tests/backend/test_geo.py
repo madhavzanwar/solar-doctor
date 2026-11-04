@@ -7,7 +7,7 @@ import piexif
 import pytest
 from PIL import Image
 
-from axalon.core.geo import (
+from solardoctor.core.geo import (
     compute_gsd,
     detection_to_gps,
     extract_gps_exif,

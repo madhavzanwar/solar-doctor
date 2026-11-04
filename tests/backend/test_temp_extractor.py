@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from pathlib import Path
-from axalon.core.temp_extractor import (
+from solardoctor.core.temp_extractor import (
     load_temp_matrix,
     extract_bbox_temps,
     compute_delta_t,
@@ -94,7 +94,7 @@ def test_compute_delta_t_offscreen_bbox():
 
 
 import cv2
-from axalon.pipeline.ingest import find_image_pairs
+from solardoctor.pipeline.ingest import find_image_pairs
 
 
 def test_find_image_pairs_includes_temp_raw(tmp_path):

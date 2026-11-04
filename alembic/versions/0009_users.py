@@ -1,12 +1,12 @@
-"""users, user_sessions, project_members, share_links (AXALON_AUTH_MODE=users)
+"""users, user_sessions, project_members, share_links (SOLARDOCTOR_AUTH_MODE=users)
 
 Revision ID: 0009
 Revises: 0008
 
-Purely additive: nothing reads these tables unless AXALON_AUTH_MODE=users, so
+Purely additive: nothing reads these tables unless SOLARDOCTOR_AUTH_MODE=users, so
 applying it to an off/apikey deployment changes no behaviour.
 
-Idempotent: `axalon.db.session.init_db` runs `Base.metadata.create_all()`, which
+Idempotent: `solardoctor.db.session.init_db` runs `Base.metadata.create_all()`, which
 creates these tables whenever the app touches the database before migrations
 run. A bare CREATE TABLE then fails, the startup hook only logs it, and the
 database stays at 0008 with every later migration skipped.

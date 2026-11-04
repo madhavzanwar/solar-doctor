@@ -18,7 +18,7 @@ from drone.tests.relay_sync import sync_ops
 def relay_client(temp_db, monkeypatch):
     monkeypatch.setenv("DRONE_TOKENS", "drone-01:dtok")
     monkeypatch.setenv("OPS_TOKEN", "otok")
-    from axalon.api.app import app
+    from solardoctor.api.app import app
 
     # Context manager: one shared event loop for all WebSocket sessions (relay_sync.py).
     with TestClient(app) as c:
@@ -47,7 +47,7 @@ def test_relay_rejects_bad_ops_token(relay_client):
             pass
 
 
-@pytest.mark.parametrize("mode_env", [{"AXALON_API_KEY": "k"}, {"AXALON_AUTH_MODE": "users"}])
+@pytest.mark.parametrize("mode_env", [{"SOLARDOCTOR_API_KEY": "k"}, {"SOLARDOCTOR_AUTH_MODE": "users"}])
 def test_api_auth_does_not_gate_the_relay(relay_client, monkeypatch, mode_env):
     for key, value in mode_env.items():
         monkeypatch.setenv(key, value)

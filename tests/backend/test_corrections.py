@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 @pytest.fixture
 def engine(tmp_path):
-    from axalon.db.session import get_engine, init_db
+    from solardoctor.db.session import get_engine, init_db
 
     init_db(f"sqlite:///{tmp_path / 'corrections.db'}")
     return get_engine()
@@ -13,7 +13,7 @@ def engine(tmp_path):
 
 @pytest.fixture
 def client(engine):
-    from axalon.api.app import app
+    from solardoctor.api.app import app
 
     with TestClient(app) as c:
         yield c

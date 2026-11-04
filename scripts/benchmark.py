@@ -158,7 +158,7 @@ def ensure_fixture() -> Path:
 
 class Bench:
     def __init__(self, device: str, weights: Path, workdir: Path, warmup: int, runs: int, batch_runs: int):
-        from axalon.pipeline.orchestrator import InspectionOrchestrator
+        from solardoctor.pipeline.orchestrator import InspectionOrchestrator
 
         self.warmup, self.runs, self.batch_runs = warmup, runs, batch_runs
         self.fixture = ensure_fixture()
@@ -181,7 +181,7 @@ class Bench:
         return summarize(time_callable(run, self.warmup, self.runs))
 
     def batch(self) -> dict:
-        from axalon.pipeline.ingest import find_image_pairs
+        from solardoctor.pipeline.ingest import find_image_pairs
 
         n_pairs = len(find_image_pairs(self.fixture))
         results: list[dict] = []
@@ -194,7 +194,7 @@ class Bench:
         return stats
 
     def pdf(self) -> dict:
-        from axalon.reporting.report import generate_pdf_report
+        from solardoctor.reporting.report import generate_pdf_report
 
         source = self.batch_result or {
             "park_id": "BENCH",
@@ -211,7 +211,7 @@ class Bench:
         if importlib.util.find_spec("easyocr") is None:
             return {"skipped": "easyocr not installed"}
         from ml.src.utils import load_bgr
-        from axalon.park.numbering import PanelNumberOCR
+        from solardoctor.park.numbering import PanelNumberOCR
 
         try:
             reader = PanelNumberOCR(gpu=on_gpu)
@@ -276,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"Unknown stage(s): {sorted(unknown)}")
 
     logging.disable(logging.INFO)  # per-image INFO logs would drown the table
-    from axalon.core.model_info import describe_weights
+    from solardoctor.core.model_info import describe_weights
 
     device, on_gpu, device_name = resolve_device(args.device)
     results: dict[str, dict] = {}

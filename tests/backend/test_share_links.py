@@ -53,7 +53,7 @@ def test_invalid_share_token_is_401(client, users_mode, two_projects):
 
 
 def test_expired_share_link_is_401(client, share_token, db_session):
-    from axalon.db.models import ShareLink
+    from solardoctor.db.models import ShareLink
 
     db_session.query(ShareLink).update({ShareLink.expires_at: datetime.utcnow() - timedelta(seconds=1)})
     db_session.commit()
@@ -70,7 +70,7 @@ def test_revoked_share_link_is_401(client, operator, share_token):
 
 
 def test_share_token_stored_hashed(client, share_token, db_session):
-    from axalon.db.models import ShareLink
+    from solardoctor.db.models import ShareLink
 
     row = db_session.query(ShareLink).one()
     assert share_token not in row.token_hash

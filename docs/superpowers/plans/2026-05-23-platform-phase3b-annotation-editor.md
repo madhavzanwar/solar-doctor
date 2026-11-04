@@ -42,7 +42,7 @@ from sqlalchemy import create_engine, text
 
 @pytest.fixture
 def engine():
-    from axalon.db.session import init_db, get_engine
+    from solardoctor.db.session import init_db, get_engine
     init_db("sqlite:///:memory:")
     return get_engine()
 
@@ -119,9 +119,9 @@ from unittest.mock import patch
 
 @pytest.fixture
 def client(engine):
-    from axalon.db.session import _SessionLocal
-    with patch("axalon.api.app.get_session", lambda: _SessionLocal()):
-        from axalon.api.app import app
+    from solardoctor.db.session import _SessionLocal
+    with patch("solardoctor.api.app.get_session", lambda: _SessionLocal()):
+        from solardoctor.api.app import app
         with TestClient(app) as c:
             yield c
 
@@ -169,13 +169,13 @@ Expected: 4 FAILs (routes not implemented)
 Find the line in `platform/api/app.py` (~line 37) that reads:
 
 ```python
-from axalon.db.models import Park, Inspection, PanelFault, Detection as DbDetection, FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED
+from solardoctor.db.models import Park, Inspection, PanelFault, Detection as DbDetection, FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED
 ```
 
 Add `Correction` to it:
 
 ```python
-from axalon.db.models import Park, Inspection, PanelFault, Detection as DbDetection, FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED, Correction
+from solardoctor.db.models import Park, Inspection, PanelFault, Detection as DbDetection, FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED, Correction
 ```
 
 - [ ] **Step 4: Add `_serialize_correction` helper and the 3 new endpoints to app.py**

@@ -33,7 +33,7 @@ SYNTHETIC_PLAN = {
 @pytest.fixture
 def agents_client(temp_db, tmp_path, monkeypatch) -> TestClient:
     """TestClient with agents_router paths redirected to a temp sandbox."""
-    import axalon.api.agents_router as ar
+    import solardoctor.api.agents_router as ar
 
     plans_dir = tmp_path / "plans"
     plans_dir.mkdir()
@@ -54,7 +54,7 @@ def agents_client(temp_db, tmp_path, monkeypatch) -> TestClient:
     monkeypatch.setattr(ar, "_ensure_watcher", lambda *a, **k: None)
     monkeypatch.setattr(ar, "_spawn_plan_task", lambda task, model="x": "sess-fake-001")
 
-    from axalon.api.app import app
+    from solardoctor.api.app import app
     return TestClient(app)
 
 
@@ -181,7 +181,7 @@ def test_get_pipeline_missing_404(agents_client):
 
 def test_list_pipelines_reads_existing_files(agents_client, tmp_path):
     # Arrange — drop a synthetic pipeline file into the sandbox PIPELINES_DIR
-    import axalon.api.agents_router as ar
+    import solardoctor.api.agents_router as ar
     pl = {"id": "pl-1", "prompt": "demo", "status": "done", "phases": []}
     (ar.PIPELINES_DIR / "pl-1.json").write_text(json.dumps(pl))
 

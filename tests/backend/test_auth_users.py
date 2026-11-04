@@ -29,7 +29,7 @@ def test_login_me_logout_roundtrip(client, users_mode, make_user):
 
 
 def test_session_token_is_stored_hashed(client, users_mode, make_user, db_session):
-    from axalon.db.models import UserSession
+    from solardoctor.db.models import UserSession
 
     make_user("a@axalon.test", "viewer")
     token = client.post("/auth/login", json={"email": "a@axalon.test", "password": PASSWORD}).json()["token"]
@@ -65,7 +65,7 @@ def test_disabled_user_cannot_login_and_loses_sessions(client, users_mode, make_
 
 
 def test_expired_session_is_rejected(client, users_mode, make_user, login, db_session):
-    from axalon.db.models import UserSession
+    from solardoctor.db.models import UserSession
 
     make_user("a@axalon.test", "viewer")
     headers = login("a@axalon.test")
@@ -77,7 +77,7 @@ def test_expired_session_is_rejected(client, users_mode, make_user, login, db_se
 # ── rate limiting ─────────────────────────────────────────────────────────────
 
 def test_login_rate_limited_per_email(client, users_mode, make_user):
-    from axalon.core.auth import LOGIN_MAX_FAILURES_PER_EMAIL
+    from solardoctor.core.auth import LOGIN_MAX_FAILURES_PER_EMAIL
 
     make_user("a@axalon.test", "viewer")
     for _ in range(LOGIN_MAX_FAILURES_PER_EMAIL):
@@ -93,7 +93,7 @@ def test_login_rate_limited_per_email(client, users_mode, make_user):
 
 
 def test_login_rate_limited_per_client_ip(client, users_mode):
-    from axalon.core.auth import LOGIN_MAX_FAILURES_PER_IP
+    from solardoctor.core.auth import LOGIN_MAX_FAILURES_PER_IP
 
     for i in range(LOGIN_MAX_FAILURES_PER_IP):
         client.post("/auth/login", json={"email": f"spray{i}@axalon.test", "password": "x" * 10})
@@ -102,7 +102,7 @@ def test_login_rate_limited_per_client_ip(client, users_mode):
 
 
 def test_rate_limiter_window_expires():
-    from axalon.core.auth import LoginRateLimiter
+    from solardoctor.core.auth import LoginRateLimiter
 
     now = [1000.0]
     limiter = LoginRateLimiter(max_failures=2, window_s=60, clock=lambda: now[0])
@@ -116,13 +116,13 @@ def test_rate_limiter_window_expires():
 # ── bootstrap admin ───────────────────────────────────────────────────────────
 
 def _lifespan_client():
-    from axalon.api.app import app
+    from solardoctor.api.app import app
     return TestClient(app)
 
 
 def test_bootstrap_admin_created_on_startup(temp_db, users_mode, monkeypatch):
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_EMAIL", "Root@Axalon.test")
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD)
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_EMAIL", "Root@Axalon.test")
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD)
     with _lifespan_client() as c:
         r = c.post("/auth/login", json={"email": "root@axalon.test", "password": PASSWORD})
         assert r.status_code == 200, r.text
@@ -130,31 +130,31 @@ def test_bootstrap_admin_created_on_startup(temp_db, users_mode, monkeypatch):
 
 
 def test_bootstrap_is_noop_when_users_exist(temp_db, users_mode, monkeypatch, make_user, db_session):
-    from axalon.db.models import User
+    from solardoctor.db.models import User
 
     make_user("existing@axalon.test", "admin")
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_EMAIL", "root@axalon.test")
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD)
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_EMAIL", "root@axalon.test")
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD)
     with _lifespan_client():
         pass
     assert [u.email for u in db_session.query(User).all()] == ["existing@axalon.test"]
 
 
 def test_bootstrap_skipped_outside_users_mode(temp_db, monkeypatch, db_session):
-    from axalon.db.models import User
+    from solardoctor.db.models import User
 
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_EMAIL", "root@axalon.test")
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD)
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_EMAIL", "root@axalon.test")
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD)
     with _lifespan_client():
         pass
     assert db_session.query(User).count() == 0
 
 
 def test_bootstrap_rejects_weak_password(temp_db, users_mode, monkeypatch, db_session):
-    from axalon.db.models import User
+    from solardoctor.db.models import User
 
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_EMAIL", "root@axalon.test")
-    monkeypatch.setenv("AXALON_BOOTSTRAP_ADMIN_PASSWORD", "short")
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_EMAIL", "root@axalon.test")
+    monkeypatch.setenv("SOLARDOCTOR_BOOTSTRAP_ADMIN_PASSWORD", "short")
     with _lifespan_client():
         pass
     assert db_session.query(User).count() == 0
@@ -213,7 +213,7 @@ def test_user_create_validation(client, users_mode, make_user, login, payload):
 
 
 def test_cannot_remove_last_active_admin(client, users_mode, make_user, login, db_session):
-    from axalon.db.models import User
+    from solardoctor.db.models import User
 
     make_user("admin@axalon.test", "admin")
     admin = login("admin@axalon.test")
@@ -235,7 +235,7 @@ def test_password_change_revokes_sessions(client, users_mode, make_user, login):
 
 
 def test_password_is_never_returned(client, users_mode, make_user, login, db_session):
-    from axalon.db.models import User
+    from solardoctor.db.models import User
 
     make_user("admin@axalon.test", "admin")
     r_login = client.post("/auth/login", json={"email": "admin@axalon.test", "password": PASSWORD})
@@ -263,7 +263,7 @@ def test_password_is_never_returned(client, users_mode, make_user, login, db_ses
 
 
 def test_user_password_hash_uses_kdf(users_mode, make_user, db_session):
-    from axalon.db.models import User
+    from solardoctor.db.models import User
 
     make_user("a@axalon.test", "viewer")
     stored = db_session.query(User).one().password_hash

@@ -1,5 +1,5 @@
 """Tests for GET /analytics/overview — portfolio trend bundles in one call."""
-from axalon.db.models import Detection, Inspection, Park
+from solardoctor.db.models import Detection, Inspection, Park
 
 
 def _seed_park(session, park_id: str, severities: list[str]) -> None:

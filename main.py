@@ -66,9 +66,9 @@ def build_parser() -> argparse.ArgumentParser:
 # ── Command handlers ──────────────────────────────────────────────────────────
 
 def cmd_inspect(args):
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
-    from axalon.reporting.report import generate_json_report, generate_excel_report
-    from axalon.reporting.geojson_writer import write_geojson
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.reporting.report import generate_json_report, generate_excel_report
+    from solardoctor.reporting.geojson_writer import write_geojson
 
     print(f"Inspecting: {args.thermal}")
     orch = InspectionOrchestrator(
@@ -96,13 +96,13 @@ def cmd_inspect(args):
 
 
 def cmd_batch(args):
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
-    from axalon.reporting.report import (
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.reporting.report import (
         generate_excel_report,
         generate_json_report,
         generate_pdf_report,
     )
-    from axalon.reporting.geojson_writer import write_geojson
+    from solardoctor.reporting.geojson_writer import write_geojson
 
     print(f"Batch inspecting folder: {args.folder}")
     orch = InspectionOrchestrator(
@@ -148,7 +148,7 @@ def cmd_api(args):
     import uvicorn
     print(f"Starting API server on http://{args.host}:{args.port}")
     uvicorn.run(
-        "axalon.api.app:app",
+        "solardoctor.api.app:app",
         host=args.host,
         port=args.port,
         workers=args.workers,

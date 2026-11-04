@@ -5,7 +5,7 @@ calibrate_fusion.py — Build a thermal→RGB rig calibration file.
 The thermal and RGB cameras are rigidly mounted, so one homography measured
 on a calibration flight maps thermal pixels to RGB pixels for every frame.
 The output JSON is what `POST /settings/fusion-calibration` (Settings tab)
-accepts, or what `AXALON_FUSION_CALIBRATION` / settings.yaml
+accepts, or what `SOLARDOCTOR_FUSION_CALIBRATION` / settings.yaml
 `camera.fusion_calibration` can point at.
 
 Two ways to get correspondences:
@@ -51,7 +51,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from axalon.core.fusion_calibration import (
+from solardoctor.core.fusion_calibration import (
     CalibrationError,
     build_calibration,
     compute_homography_from_pairs,

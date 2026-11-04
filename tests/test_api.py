@@ -8,21 +8,21 @@ def client(monkeypatch, tmp_path):
     """FastAPI TestClient bound to a fresh temp SQLite DB.
 
     Jobs and parks are persisted in the DB (no in-memory job dict any more),
-    so each test gets its own database file via AXALON_DB_URL.
+    so each test gets its own database file via SOLARDOCTOR_DB_URL.
     """
-    monkeypatch.setenv("AXALON_DB_URL", f"sqlite:///{tmp_path / 'test_api.db'}")
-    monkeypatch.delenv("AXALON_AUTH_MODE", raising=False)
-    from axalon.db import session as _session
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", f"sqlite:///{tmp_path / 'test_api.db'}")
+    monkeypatch.delenv("SOLARDOCTOR_AUTH_MODE", raising=False)
+    from solardoctor.db import session as _session
     monkeypatch.setattr(_session, "_engine", None, raising=False)
     monkeypatch.setattr(_session, "_SessionLocal", None, raising=False)
 
-    from axalon.api.app import app
+    from solardoctor.api.app import app
     with TestClient(app) as test_client:
         yield test_client
 
 
 def _completed_job(job_id: str) -> None:
-    from axalon.api.support.jobs import _create_job, _update_job
+    from solardoctor.api.support.jobs import _create_job, _update_job
     _create_job(job_id, park_id="TEST_PARK")
     _update_job(job_id, state="succeeded")
 
@@ -48,7 +48,7 @@ def test_report_unknown_job(client):
 
 
 def test_report_pdf_download(client, tmp_path, monkeypatch):
-    import axalon.api.routers.inspection as inspection_router
+    import solardoctor.api.routers.inspection as inspection_router
     monkeypatch.setattr(inspection_router, "OUTPUT_DIR", tmp_path)
     job_id = "batch-testpdf"
     report_dir = tmp_path / job_id

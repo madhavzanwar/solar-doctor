@@ -8,7 +8,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from axalon.park.numbering import PanelNumberOCR
+from solardoctor.park.numbering import PanelNumberOCR
 
 
 @pytest.fixture

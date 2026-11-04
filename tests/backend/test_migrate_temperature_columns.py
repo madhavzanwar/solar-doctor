@@ -1,11 +1,11 @@
 """run_migrations must add the nullable temperature columns to pre-existing DBs."""
 from sqlalchemy import create_engine, inspect, text
 
-from axalon.core.temp_extractor import TEMP_FIELDS
+from solardoctor.core.temp_extractor import TEMP_FIELDS
 
 
 def test_run_migrations_adds_temperature_columns_to_legacy_detections(tmp_path):
-    from axalon.db.migrate import run_migrations
+    from solardoctor.db.migrate import run_migrations
 
     engine = create_engine(f"sqlite:///{tmp_path / 'legacy.db'}")
     with engine.begin() as conn:

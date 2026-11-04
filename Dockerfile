@@ -36,6 +36,6 @@ COPY . .
 RUN pip install --no-cache-dir -e .
 
 # Listen on $PORT (Cloud Run sets 8080; HF Spaces uses app_port; default 8000).
-# Run from /tmp so the repo's platform/ dir is never on sys.path (shadow fix).
+# Run from /tmp so the repo root never is never on sys.path (shadow fix).
 EXPOSE 8000
-CMD ["sh", "-c", "cd /tmp && exec python -m uvicorn axalon.api.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "cd /tmp && exec python -m uvicorn solardoctor.api.app:app --host 0.0.0.0 --port ${PORT:-8000}"]

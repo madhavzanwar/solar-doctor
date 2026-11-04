@@ -11,7 +11,7 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/AxalonSystems
 Environment=PYTHONSAFEPATH=1
 EnvironmentFile=/home/ubuntu/AxalonSystems/.env
-ExecStart=/home/ubuntu/AxalonSystems/.venv/bin/python -m uvicorn axalon.api.app:app --host 0.0.0.0 --port 8000
+ExecStart=/home/ubuntu/AxalonSystems/.venv/bin/python -m uvicorn solardoctor.api.app:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=5
 TimeoutStartSec=120

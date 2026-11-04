@@ -5,7 +5,7 @@ description: Use when touching SQLAlchemy models, sessions, or migrations in pla
 
 # Database (SQLAlchemy + Alembic, SQLite ↔ Supabase Postgres)
 
-Models and sessions live in `platform/db/`; migrations in `alembic/`. Local dev uses SQLite; production uses **Supabase Postgres** via `AXALON_DB_URL`.
+Models and sessions live in `platform/db/`; migrations in `alembic/`. Local dev uses SQLite; production uses **Supabase Postgres** via `SOLARDOCTOR_DB_URL`.
 
 ## Models & sessions
 - Models: `platform/db/models.py` (`Base`, e.g. `Mission`, parks, inspections, detections, panel_faults).
@@ -13,8 +13,8 @@ Models and sessions live in `platform/db/`; migrations in `alembic/`. Local dev 
 - `platform/db/migrate.py` runs idempotent startup checks; its table/column existence checks MUST be dialect-agnostic (`inspect(engine).has_table(...)` / `inspect(engine).get_columns(...)`) — **not** SQLite-only `sqlite_master` / `PRAGMA`, which crash on Postgres.
 
 ## Local vs production
-- **Local:** no `AXALON_DB_URL` → SQLite file. Conditional `connect_args` already handle the SQLite vs Postgres engine difference.
-- **Production (Supabase):** set `AXALON_DB_URL` (a secret on the HF Space):
+- **Local:** no `SOLARDOCTOR_DB_URL` → SQLite file. Conditional `connect_args` already handle the SQLite vs Postgres engine difference.
+- **Production (Supabase):** set `SOLARDOCTOR_DB_URL` (a secret on the HF Space):
   ```
   postgresql+psycopg2://postgres.<ref>:<URL-ENCODED-PW>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres
   ```
@@ -26,5 +26,5 @@ Models and sessions live in `platform/db/`; migrations in `alembic/`. Local dev 
 
 ## Gotchas (hard-won)
 - Anything importing the package needs `PYTHONSAFEPATH=1` (the `platform/` shadow) or SQLAlchemy crashes on import.
-- A wrong/missing `AXALON_DB_URL` (or a SQLite-only query) makes the backend boot-crash — check the Space runtime logs.
+- A wrong/missing `SOLARDOCTOR_DB_URL` (or a SQLite-only query) makes the backend boot-crash — check the Space runtime logs.
 - After changing a backend DB file, re-upload it to the HF Space (`huggingface_hub.upload_file`), not just `git push` (see `cloud-deployment`).

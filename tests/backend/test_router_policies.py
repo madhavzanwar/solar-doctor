@@ -7,8 +7,8 @@ silently shipping an unprotected endpoint.
 """
 import pkgutil
 
-import axalon.api.routers as routers_pkg
-from axalon.api import app as app_module
+import solardoctor.api.routers as routers_pkg
+from solardoctor.api import app as app_module
 
 
 def test_every_router_module_is_registered_with_a_policy():

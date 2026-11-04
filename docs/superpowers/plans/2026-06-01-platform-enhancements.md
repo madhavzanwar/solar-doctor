@@ -325,7 +325,7 @@ In `platform/pipeline/ingest.py`, add the import at the top and update the pair 
 
 ```python
 # Add at top of file, after existing imports:
-from axalon.core.temp_extractor import find_temp_companion
+from solardoctor.core.temp_extractor import find_temp_companion
 ```
 
 Replace the `pairs.append({...})` block (lines 71-78) with:
@@ -347,7 +347,7 @@ Replace the `pairs.append({...})` block (lines 71-78) with:
 Add the import after existing imports at the top of `platform/pipeline/orchestrator.py`:
 
 ```python
-from axalon.core.temp_extractor import load_temp_matrix, compute_delta_t, normalize_delta_t
+from solardoctor.core.temp_extractor import load_temp_matrix, compute_delta_t, normalize_delta_t
 ```
 
 Change `inspect_pair` signature (line 90):
@@ -1210,7 +1210,7 @@ Expected: `404 Not Found` — endpoints don't exist yet
 In `platform/api/app.py`, find the models import line and add `FaultComment`:
 
 ```python
-from axalon.db.models import (
+from solardoctor.db.models import (
     Park, Inspection, PanelFault, Detection as DbDetection,
     FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED, Correction, Job as DbJob, FaultComment
 )
@@ -2010,7 +2010,7 @@ In `platform/core/detector.py`, update `__init__` to support engine loading:
 
         # Prefer .engine file if it exists alongside the .pt and use_engine is true
         engine_path = self.weights_path.with_suffix(".engine")
-        if engine_path.exists() and os.environ.get("AXALON_USE_ENGINE", "").lower() == "true":
+        if engine_path.exists() and os.environ.get("SOLARDOCTOR_USE_ENGINE", "").lower() == "true":
             logger.info("TensorRT engine found — using %s", engine_path)
             self.weights_path = engine_path
         
@@ -2035,13 +2035,13 @@ In `platform/core/detector.py`, update `__init__` to support engine loading:
 
 Also add `import os` at the top of detector.py if not already present.
 
-On the Jetson, set `export AXALON_USE_ENGINE=true` before starting the API.
+On the Jetson, set `export SOLARDOCTOR_USE_ENGINE=true` before starting the API.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add ml/scripts/export_tensorrt.py platform/core/detector.py platform/config/settings.yaml
-git commit -m "feat(ml): TensorRT export script + AXALON_USE_ENGINE env flag for Jetson"
+git commit -m "feat(ml): TensorRT export script + SOLARDOCTOR_USE_ENGINE env flag for Jetson"
 ```
 
 ---
@@ -2052,7 +2052,7 @@ git commit -m "feat(ml): TensorRT export script + AXALON_USE_ENGINE env flag for
 |---|---|
 | **ML — Dataset** | `ml/scripts/prepare_dataset.py` merges InfraredSolarModules + PV-Hawk + Roboflow into 11-class canonical schema |
 | **ML — Training** | `ml/configs/thermal.yaml` tuned for YOLO11m — AdamW, scale jitter for 15-25m altitude, 150 epochs |
-| **ML — Export** | `ml/scripts/export_tensorrt.py` compiles TensorRT engine for Jetson; `AXALON_USE_ENGINE` env flag |
+| **ML — Export** | `ml/scripts/export_tensorrt.py` compiles TensorRT engine for Jetson; `SOLARDOCTOR_USE_ENGINE` env flag |
 | **ML — Weights** | `ml/checkpoints/best.pt` (PyTorch) + `best.engine` (Jetson TensorRT) |
 | `platform/core/temp_extractor.py` | RAW16 → °C matrix loader, per-bbox min/max/delta_T, IEC normalization |
 | `platform/pipeline/ingest.py` | Auto-discovers `_temp.raw` companions per image |
@@ -2073,4 +2073,4 @@ git commit -m "feat(ml): TensorRT export script + AXALON_USE_ENGINE env flag for
 
 **Deployment path after this plan:**
 1. Desktop: `best.pt` for development and testing
-2. Jetson: `best.engine` (TensorRT FP16) via `AXALON_USE_ENGINE=true` — 3-5× faster inference
+2. Jetson: `best.engine` (TensorRT FP16) via `SOLARDOCTOR_USE_ENGINE=true` — 3-5× faster inference

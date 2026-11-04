@@ -31,7 +31,7 @@ Vercel (axalonsystems.com/platform) → Azure VM B2ats v2 (FastAPI + YOLO, 2 vCP
 | Runtime | Python 3.12, FastAPI + Uvicorn, YOLO11m (CPU inference) |
 | Database | PostgreSQL (SQLAlchemy + psycopg2) |
 | File storage | Azure Blob Storage (for /track uploads) |
-| Auth | Bearer token (AXALON_API_KEY env var) |
+| Auth | Bearer token (SOLARDOCTOR_API_KEY env var) |
 | Frontend | Vercel-hosted Next.js — unchanged |
 | Budget | Free tier only (Azure for Students) |
 | Availability | 24/7 (750 h/month free covers full month) |
@@ -110,9 +110,9 @@ _To be populated by azure-validate_
 - [x] VM bootstrapped (Python, git, venv, matplotlib, azure-storage-blob)
 - [x] .env configured on VM (DB, API key, Supabase creds, blob storage conn string)
 - [x] alembic migrations run against Azure PostgreSQL (0001→0007)
-- [x] systemd service installed + enabled (axalon.api.app:app — NOT platform.api.app:app)
+- [x] systemd service installed + enabled (solardoctor.api.app:app — NOT platform.api.app:app)
 - [x] API health check passes: {"status":"ok","model":"YOLO11m","db":"ok"}
-- [x] NEXT_PUBLIC_AXALON_API_URL updated in Vercel → http://104.215.194.187:8000
+- [x] NEXT_PUBLIC_SOLARDOCTOR_API_URL updated in Vercel → http://104.215.194.187:8000
 - [x] /platform tested end-to-end (HTTP 200)
 - [x] /track password set (axalon1234 in Azure PG app_config)
 

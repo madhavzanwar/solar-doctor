@@ -69,4 +69,4 @@ curl -sf "http://${VM_IP}:8000/health" && echo "API is UP ✓" \
 
 echo ""
 echo "Set in Vercel dashboard → axalonsystems project → Environment Variables:"
-echo "  NEXT_PUBLIC_AXALON_API_URL = http://${VM_IP}:8000"
+echo "  NEXT_PUBLIC_SOLARDOCTOR_API_URL = http://${VM_IP}:8000"

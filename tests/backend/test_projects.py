@@ -1,5 +1,5 @@
 """Tests for Area C asset management: Projects → Sites (parks) → Missions/Inspections."""
-from axalon.db.models import Inspection, Mission, Park
+from solardoctor.db.models import Inspection, Mission, Park
 
 
 def _make_project(client, **overrides) -> dict:

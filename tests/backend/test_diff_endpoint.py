@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from axalon.db.models import Detection as DbDetection, Inspection, Park
+from solardoctor.db.models import Detection as DbDetection, Inspection, Park
 
 
 @pytest.fixture

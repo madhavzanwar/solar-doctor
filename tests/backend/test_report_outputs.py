@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from axalon.reporting.report import (
+from solardoctor.reporting.report import (
     compute_revenue_loss,
     generate_excel_report,
     generate_json_report,

@@ -20,7 +20,7 @@ from pathlib import Path
 import urllib.request, urllib.error
 
 OLLAMA_URL   = "http://127.0.0.1:11434/api/chat"
-MODEL        = os.environ.get("AXALON_MODEL", "qwen2.5-coder:7b")
+MODEL        = os.environ.get("SOLARDOCTOR_MODEL", "qwen2.5-coder:7b")
 REPO_ROOT    = Path(__file__).parent
 PLANS_DIR    = REPO_ROOT / "docs" / "plans"
 AGENTS_DIR   = REPO_ROOT / "docs" / "agents"

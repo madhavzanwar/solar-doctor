@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from axalon.core.odm_client import (
+from solardoctor.core.odm_client import (
     NodeODMClient,
     NodeODMError,
     TaskStatus,
@@ -34,13 +34,13 @@ def _images(tmp_path, n: int) -> list:
 
 
 def test_client_from_env_returns_none_when_unset(monkeypatch):
-    monkeypatch.delenv("AXALON_NODEODM_URL", raising=False)
+    monkeypatch.delenv("SOLARDOCTOR_NODEODM_URL", raising=False)
     assert client_from_env() is None
 
 
 def test_client_from_env_reads_url_and_token(monkeypatch):
-    monkeypatch.setenv("AXALON_NODEODM_URL", "http://odm:3000/")
-    monkeypatch.setenv("AXALON_NODEODM_TOKEN", "sekret")
+    monkeypatch.setenv("SOLARDOCTOR_NODEODM_URL", "http://odm:3000/")
+    monkeypatch.setenv("SOLARDOCTOR_NODEODM_TOKEN", "sekret")
     client = client_from_env()
     assert client is not None
     assert client.base_url == "http://odm:3000"

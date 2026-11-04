@@ -16,9 +16,9 @@ def run_migrations_for_real(monkeypatch, tmp_path):
     pytest re-sets PYTEST_CURRENT_TEST when the test body starts, so the variable
     has to be removed inside the call, not during fixture setup.
     """
-    from axalon.api import deps
+    from solardoctor.api import deps
 
-    monkeypatch.setenv("AXALON_DB_URL", f"sqlite:///{tmp_path / 'status.db'}")
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", f"sqlite:///{tmp_path / 'status.db'}")
     # Restore the process-global status afterwards so other tests see the default.
     monkeypatch.setitem(deps.MIGRATION_STATUS, "state", deps.MIGRATION_STATUS["state"])
 
@@ -31,7 +31,7 @@ def run_migrations_for_real(monkeypatch, tmp_path):
 
 def test_failed_migration_is_reported_on_health(client, monkeypatch, run_migrations_for_real):
     from alembic import command
-    from axalon.api import deps
+    from solardoctor.api import deps
 
     def boom(*_a, **_k):
         raise RuntimeError("table users already exists")
@@ -47,7 +47,7 @@ def test_failed_migration_is_reported_on_health(client, monkeypatch, run_migrati
 
 def test_successful_migration_is_reported_on_health(client, monkeypatch, run_migrations_for_real):
     from alembic import command
-    from axalon.api import deps
+    from solardoctor.api import deps
 
     monkeypatch.setattr(command, "upgrade", lambda *_a, **_k: None)
 
@@ -65,14 +65,14 @@ def test_url_encoded_password_does_not_break_startup_migrations(client, monkeypa
     while the same upgrade run by hand succeeded.
     """
     from alembic import command
-    from axalon.api import deps
+    from solardoctor.api import deps
 
     seen = {}
 
     def fake_upgrade(cfg, _rev):
         seen["url"] = cfg.get_main_option("sqlalchemy.url")
 
-    monkeypatch.setenv("AXALON_DB_URL", "postgresql+psycopg2://user:p%40ss%2Fword@db.example.com:5432/postgres")
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", "postgresql+psycopg2://user:p%40ss%2Fword@db.example.com:5432/postgres")
     monkeypatch.setattr(command, "upgrade", fake_upgrade)
 
     run_migrations_for_real()

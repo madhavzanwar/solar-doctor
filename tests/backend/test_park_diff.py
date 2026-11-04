@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from axalon.db.models import Park, Inspection, Detection
+from solardoctor.db.models import Park, Inspection, Detection
 
 
 def _seed_diff_park(db_session):

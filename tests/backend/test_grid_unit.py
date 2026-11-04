@@ -1,7 +1,7 @@
 """Unit tests for the panel-grid aggregator."""
 from types import SimpleNamespace
 
-from axalon.park.grid import build_grid
+from solardoctor.park.grid import build_grid
 
 
 def _det(panel_id, severity, class_="hot-spot-low", confidence=0.5, image_id="img_001", bbox=None, gps=None):

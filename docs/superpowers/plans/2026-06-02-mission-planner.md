@@ -14,7 +14,7 @@
 
 ## Important Conventions (read before starting)
 
-- **Python imports use the `axalon.*` namespace**, not `platform.*`. E.g. `from axalon.db.models import ...`. The `platform/` directory is mapped to the `axalon` package. Tests and app code both use `axalon`.
+- **Python imports use the `axalon.*` namespace**, not `platform.*`. E.g. `from solardoctor.db.models import ...`. The `platform/` directory is mapped to the `axalon` package. Tests and app code both use `axalon`.
 - **Frontend tests use Vitest.** Test files live next to `lib/` as `lib/<name>.test.ts`. Run with `cd website/nextjs && npm run test`.
 - **Backend tests use pytest** with fixtures from `tests/backend/conftest.py` (`client`, `db_session`, `temp_db`). Run with `source .venv/bin/activate && pytest tests/backend/...`.
 - **Alembic migrations** are linear: current head is `0003`. The new migration is `0004` with `down_revision = '0003'`.
@@ -670,7 +670,7 @@ git commit -m "feat(plan): add ArduPilot QGC WPL 110 waypoint exporter"
 
 ```python
 # tests/backend/test_missions.py  (create this file)
-from axalon.db.models import Mission, Park
+from solardoctor.db.models import Mission, Park
 
 
 def test_mission_model_persists(db_session):
@@ -898,7 +898,7 @@ Expected: 404s — endpoints don't exist yet
 In `platform/api/app.py`, update the models import line (line 46) to add `Mission`:
 
 ```python
-from axalon.db.models import Park, Inspection, PanelFault, Detection as DbDetection, FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED, Correction, Job as DbJob, FaultComment, Mission
+from solardoctor.db.models import Park, Inspection, PanelFault, Detection as DbDetection, FAULT_OPEN, FAULT_STALE, FAULT_RESOLVED, Correction, Job as DbJob, FaultComment, Mission
 ```
 
 - [ ] **Step 4: Add _serialize_mission helpers near the other serializers**
@@ -1887,7 +1887,7 @@ Expected: `0004 (head)`
 
 ```bash
 # Terminal 1
-cd /home/parakh/Desktop/AxalonSystems && source .venv/bin/activate && uvicorn axalon.api.app:app --port 8000
+cd /home/parakh/Desktop/AxalonSystems && source .venv/bin/activate && uvicorn solardoctor.api.app:app --port 8000
 # Terminal 2
 cd website/nextjs && npm run dev
 # Open http://localhost:3000/platform → Plan tab → draw a polygon →

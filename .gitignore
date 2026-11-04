@@ -104,10 +104,10 @@ agenthub/agents/youtube/db
 android-sdk/
 
 # Axalon platform — runtime artifacts
-axalon.db
+solardoctor.db
 # SQLite WAL sidecar files (PRAGMA journal_mode=WAL in platform/db/session.py)
-axalon.db-shm
-axalon.db-wal
+solardoctor.db-shm
+solardoctor.db-wal
 axalon_systems.egg-info/
 logs/
 output/

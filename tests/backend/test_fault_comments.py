@@ -5,13 +5,13 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(temp_db):
-    from axalon.api.app import app
+    from solardoctor.api.app import app
     return TestClient(app)
 
 
 @pytest.fixture
 def existing_fault(db_session):
-    from axalon.db.models import Park, PanelFault, FAULT_OPEN
+    from solardoctor.db.models import Park, PanelFault, FAULT_OPEN
     park = Park(id="PARK_CMT", name="Comment Park")
     db_session.add(park)
     db_session.flush()

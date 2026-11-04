@@ -42,8 +42,8 @@ error()   { echo -e "${RED}[axalon]${RESET} $*" >&2; }
 check_deps() {
     local missing=()
     (cd /tmp && "$PYTHON" -c "import uvicorn") 2>/dev/null || missing+=("uvicorn (pip install uvicorn[standard])")
-    (PYTHONSAFEPATH=1 cd /tmp && "$PYTHON" -c "import axalon") 2>/dev/null || \
-        PYTHONSAFEPATH=1 "$PYTHON" -c "import axalon" 2>/dev/null || missing+=("axalon package (pip install -e .)")
+    (PYTHONSAFEPATH=1 cd /tmp && "$PYTHON" -c "import solardoctor") 2>/dev/null || \
+        PYTHONSAFEPATH=1 "$PYTHON" -c "import solardoctor" 2>/dev/null || missing+=("axalon package (pip install -e .)")
 
     if [ ${#missing[@]} -gt 0 ]; then
         error "Missing dependencies:"
@@ -90,7 +90,7 @@ start_api() {
     # stdlib's 'platform' module (which uuid, uvicorn/websockets, etc. depend on).
     # PYTHONSAFEPATH=1 alone is insufficient because uvicorn loads websockets lazily
     # after startup; the CWD must not contain a 'platform/' entry in sys.path.
-    nohup bash -c "cd /tmp && exec env PYTHONSAFEPATH=1 '$PYTHON' -m uvicorn axalon.api.app:app \
+    nohup bash -c "cd /tmp && exec env PYTHONSAFEPATH=1 '$PYTHON' -m uvicorn solardoctor.api.app:app \
         --host '$HOST' --port '$PORT' --reload" \
         > "${REPO_ROOT}/logs/api.log" 2>&1 &
     echo $! > "$API_PID_FILE"

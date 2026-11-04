@@ -1,6 +1,6 @@
 """Alembic must reach head on a database whose tables the app already created.
 
-`axalon.db.session.init_db` runs `Base.metadata.create_all()`, so any process that
+`solardoctor.db.session.init_db` runs `Base.metadata.create_all()`, so any process that
 touches the database before migrations run (a request, a script, an earlier app
 version) creates tables for every model. A migration that then issues a bare
 CREATE TABLE fails, `_run_alembic_migrations` only logs the error, and the
@@ -29,12 +29,12 @@ def _head_revision(cfg: Config) -> str:
 
 
 def test_upgrade_reaches_head_when_create_all_ran_first(tmp_path, monkeypatch):
-    from axalon.db.models import Base
+    from solardoctor.db.models import Base
 
     # Arrange: schema at 0007 via alembic, then the app's create_all adds every
     # newer model table before the newer migrations get a chance to run.
     db_url = f"sqlite:///{tmp_path / 'pre_created.db'}"
-    monkeypatch.setenv("AXALON_DB_URL", db_url)
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", db_url)
     cfg = _alembic_cfg(db_url)
     command.upgrade(cfg, "0007")
     engine = sa.create_engine(db_url)
@@ -51,7 +51,7 @@ def test_upgrade_reaches_head_when_create_all_ran_first(tmp_path, monkeypatch):
 
 def test_upgrade_and_downgrade_round_trip_on_fresh_database(tmp_path, monkeypatch):
     db_url = f"sqlite:///{tmp_path / 'fresh.db'}"
-    monkeypatch.setenv("AXALON_DB_URL", db_url)
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", db_url)
     cfg = _alembic_cfg(db_url)
 
     command.upgrade(cfg, "head")

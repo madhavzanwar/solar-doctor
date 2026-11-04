@@ -5,7 +5,7 @@ from PIL import Image
 
 
 def test_render_returns_bytes():
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
 
     panels = [
         {"panel_id": "R1-C1", "row": 0, "col": 0, "worst_severity": "CRITICAL", "detection_count": 2},
@@ -18,7 +18,7 @@ def test_render_returns_bytes():
 
 
 def test_render_produces_valid_png():
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
 
     panels = [{"panel_id": "R1-C1", "row": 0, "col": 0, "worst_severity": "MEDIUM", "detection_count": 1}]
     result = render_grid_png(panels)
@@ -28,7 +28,7 @@ def test_render_produces_valid_png():
 
 
 def test_render_empty_panels_returns_placeholder():
-    from axalon.core.map_renderer import render_grid_png
+    from solardoctor.core.map_renderer import render_grid_png
 
     result = render_grid_png([])
     img = Image.open(io.BytesIO(result))
@@ -36,7 +36,7 @@ def test_render_empty_panels_returns_placeholder():
 
 
 def test_render_uses_severity_colors():
-    from axalon.core.map_renderer import SEVERITY_COLORS
+    from solardoctor.core.map_renderer import SEVERITY_COLORS
 
     assert "CRITICAL" in SEVERITY_COLORS
     assert "HIGH" in SEVERITY_COLORS

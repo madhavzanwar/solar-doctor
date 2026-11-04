@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from axalon.core.object_store import SupabaseStorage, get_track_store
+from solardoctor.core.object_store import SupabaseStorage, get_track_store
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def test_get_track_store_builds_from_env(monkeypatch):
 
 
 def test_upload_posts_to_object_endpoint(store):
-    with patch("axalon.core.object_store.requests") as req:
+    with patch("solardoctor.core.object_store.requests") as req:
         req.post.return_value = MagicMock(status_code=200)
         store.upload("abc_bracket.stl", io.BytesIO(b"solid"), "model/stl")
         url = req.post.call_args[0][0]
@@ -43,14 +43,14 @@ def test_upload_posts_to_object_endpoint(store):
 
 
 def test_upload_raises_on_error(store):
-    with patch("axalon.core.object_store.requests") as req:
+    with patch("solardoctor.core.object_store.requests") as req:
         req.post.return_value = MagicMock(status_code=403, text="denied")
         with pytest.raises(RuntimeError):
             store.upload("x.pdf", io.BytesIO(b"%PDF"), "application/pdf")
 
 
 def test_download_streams_object(store):
-    with patch("axalon.core.object_store.requests") as req:
+    with patch("solardoctor.core.object_store.requests") as req:
         resp = MagicMock(status_code=200)
         resp.iter_content.return_value = iter([b"so", b"lid"])
         req.get.return_value = resp
@@ -59,13 +59,13 @@ def test_download_streams_object(store):
 
 
 def test_download_missing_returns_none(store):
-    with patch("axalon.core.object_store.requests") as req:
+    with patch("solardoctor.core.object_store.requests") as req:
         req.get.return_value = MagicMock(status_code=404)
         assert store.download("nope.pdf") is None
 
 
 def test_delete_ignores_missing(store):
-    with patch("axalon.core.object_store.requests") as req:
+    with patch("solardoctor.core.object_store.requests") as req:
         req.delete.return_value = MagicMock(status_code=404)
         store.delete("nope.pdf")  # must not raise
         assert req.delete.call_args[0][0].endswith("/storage/v1/object/track-files/nope.pdf")
@@ -75,7 +75,7 @@ def test_delete_ignores_missing(store):
 
 def _azure_store():
     """Build an AzureBlobStorageStore with the SDK fully mocked."""
-    from axalon.core.object_store import AzureBlobStorageStore
+    from solardoctor.core.object_store import AzureBlobStorageStore
     return AzureBlobStorageStore(connection_string="UseDevelopmentStorage=true",
                                  container="track-files")
 
@@ -116,6 +116,6 @@ def test_azure_store_delete_ignores_missing():
 def test_get_track_store_prefers_azure(monkeypatch):
     monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", "UseDevelopmentStorage=true")
     with patch("azure.storage.blob.BlobServiceClient"):
-        from axalon.core.object_store import AzureBlobStorageStore
+        from solardoctor.core.object_store import AzureBlobStorageStore
         s = get_track_store()
         assert isinstance(s, AzureBlobStorageStore)

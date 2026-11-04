@@ -371,7 +371,7 @@ git commit -m "feat(platform): minimal toast surface for error visibility"
 
 ```ts
 export const API_BASE =
-  process.env.NEXT_PUBLIC_AXALON_API_URL || 'http://localhost:8000'
+  process.env.NEXT_PUBLIC_SOLARDOCTOR_API_URL || 'http://localhost:8000'
 
 export class ApiError extends Error {
   status: number

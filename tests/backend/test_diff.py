@@ -1,7 +1,7 @@
 """Unit tests for platform/park/diff.py — build_diff() comparison logic."""
 from __future__ import annotations
 
-from axalon.park.diff import build_diff
+from solardoctor.park.diff import build_diff
 
 
 def _det(panel_id: str, cls: str, severity: str) -> dict:

@@ -21,7 +21,7 @@ def _no_real_sentry(monkeypatch):
 
 def test_init_is_a_no_op_without_dsn(monkeypatch):
     import sentry_sdk
-    from axalon.core import observability
+    from solardoctor.core import observability
 
     calls = []
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: calls.append(kw))
@@ -32,7 +32,7 @@ def test_init_is_a_no_op_without_dsn(monkeypatch):
 
 def test_init_reads_config_from_env(monkeypatch):
     import sentry_sdk
-    from axalon.core import observability
+    from solardoctor.core import observability
 
     calls = []
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: calls.append(kw))
@@ -51,7 +51,7 @@ def test_init_reads_config_from_env(monkeypatch):
 
 def test_invalid_sample_rate_falls_back_to_default(monkeypatch):
     import sentry_sdk
-    from axalon.core import observability
+    from solardoctor.core import observability
 
     calls = []
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: calls.append(kw))
@@ -74,13 +74,13 @@ def test_invalid_sample_rate_falls_back_to_default(monkeypatch):
     ],
 )
 def test_scrub_query(raw, expected):
-    from axalon.core.observability import scrub_query
+    from solardoctor.core.observability import scrub_query
 
     assert scrub_query(raw) == expected
 
 
 def test_scrub_event_covers_request_breadcrumbs_and_spans():
-    from axalon.core.observability import scrub_event
+    from solardoctor.core.observability import scrub_event
 
     event = {
         "request": {
@@ -104,7 +104,7 @@ def test_real_error_event_contains_no_query_token():
     import sentry_sdk
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from axalon.core import observability
+    from solardoctor.core import observability
 
     envelopes = []
 
@@ -134,7 +134,7 @@ def test_real_error_event_contains_no_query_token():
 
 
 def test_deep_scrub_masks_whole_token_inside_free_text():
-    from axalon.core.observability import scrub_event
+    from solardoctor.core.observability import scrub_event
 
     event = {"exception": {"values": [{"value": "upstream rejected share=sss_secret_value for P1"}]},
              "logentry": {"message": "GET /x?token=ssXss&y=1"}}

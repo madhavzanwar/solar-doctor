@@ -303,9 +303,9 @@ def sample_mission_zip(tmp_path_factory) -> Path:
 def temp_db(monkeypatch, tmp_path) -> Path:
     """Point the app at a temp SQLite DB for the duration of one test."""
     db_path = tmp_path / "test_axalon.db"
-    monkeypatch.setenv("AXALON_DB_URL", f"sqlite:///{db_path}")
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", f"sqlite:///{db_path}")
     # Reset module-level engine caches if present
-    from axalon.db import session as _session
+    from solardoctor.db import session as _session
     if hasattr(_session, "_engine"):
         _session._engine = None
     yield db_path
@@ -314,8 +314,8 @@ def temp_db(monkeypatch, tmp_path) -> Path:
 @pytest.fixture
 def client(temp_db) -> TestClient:
     """FastAPI TestClient bound to a fresh in-test DB."""
-    # Import inside the fixture so AXALON_DB_URL is set first.
-    from axalon.api.app import app
+    # Import inside the fixture so SOLARDOCTOR_DB_URL is set first.
+    from solardoctor.api.app import app
     return TestClient(app)
 
 
@@ -411,8 +411,8 @@ Find the existing `@app.get("/park/{park_id}")` handler in `platform/api/app.py`
 def get_park_grid(park_id: str, inspection_id: str | None = None):
     """Per-panel grid summary for a park's most recent (or specified) inspection."""
     from platform.park.grid import build_grid
-    from axalon.db.models import Park, Inspection, Detection
-    from axalon.db.session import session_scope as _session_scope, get_engine as _get_engine
+    from solardoctor.db.models import Park, Inspection, Detection
+    from solardoctor.db.session import session_scope as _session_scope, get_engine as _get_engine
     import json as _json
 
     engine = _get_engine()
@@ -708,7 +708,7 @@ def test_orchestrator_processes_a_batch_directly(fixture_dir, tmp_path):
     This is slow (~30-90s on CPU) but verifies the pipeline outside the API.
     Marker: this is the only unit test that actually runs YOLO inference.
     """
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
     orch = InspectionOrchestrator(conf=0.25, device="cpu", output_dir=str(tmp_path))
     result = orch.inspect_folder(
         folder=str(fixture_dir),

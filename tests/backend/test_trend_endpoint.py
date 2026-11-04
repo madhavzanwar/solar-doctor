@@ -6,9 +6,9 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(tmp_path):
-    from axalon.db.models import Detection, Inspection, Park
-    from axalon.db.session import get_engine, init_db, session_scope
-    from axalon.api.app import app
+    from solardoctor.db.models import Detection, Inspection, Park
+    from solardoctor.db.session import get_engine, init_db, session_scope
+    from solardoctor.api.app import app
 
     init_db(f"sqlite:///{tmp_path / 'trend_endpoint.db'}")
     with session_scope(get_engine()) as s:

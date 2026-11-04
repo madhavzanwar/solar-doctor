@@ -1,7 +1,7 @@
 """In-memory stand-in for the NodeODM REST API (no network).
 
 Implements the `request(method, url, **kwargs)` surface of `requests.Session`
-that `axalon.core.odm_client.NodeODMClient` uses, and records every call so
+that `solardoctor.core.odm_client.NodeODMClient` uses, and records every call so
 tests can assert on request sequencing.
 """
 from __future__ import annotations

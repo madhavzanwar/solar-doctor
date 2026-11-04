@@ -16,7 +16,7 @@ JPEG_BYTES = b"\xff\xd8\xff\xe0" + b"\x00" * 64
 
 def _seed_fault(session, park_id="PARK_WF", panel_id="R1-C1", cls="bypass-diode",
                 status="open", gps='{"lat": 18.5, "lon": 73.8}', **extra) -> int:
-    from axalon.db.models import PanelFault, Park
+    from solardoctor.db.models import PanelFault, Park
 
     if session.query(Park).filter_by(id=park_id).first() is None:
         session.add(Park(id=park_id, name="Workflow Park"))
@@ -46,7 +46,7 @@ def local_store(monkeypatch, tmp_path):
     """Force the local-disk object-store fallback into a temp directory."""
     for var in ("AZURE_STORAGE_CONNECTION_STRING", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"):
         monkeypatch.delenv(var, raising=False)
-    from axalon.api.routers import faults as faults_router
+    from solardoctor.api.routers import faults as faults_router
 
     photos_dir = tmp_path / "fault_photos"  # tmp_path also holds the test DB
     photos_dir.mkdir()
@@ -197,8 +197,8 @@ def test_resolved_at_set_on_resolve_and_cleared_on_reopen(client, fault_id):
 
 
 def test_redetection_keeps_in_flight_work_but_reopens_resolved(db_session):
-    from axalon.db.models import Inspection, PanelFault
-    from axalon.pipeline.tracking import reconcile_inspection
+    from solardoctor.db.models import Inspection, PanelFault
+    from solardoctor.pipeline.tracking import reconcile_inspection
 
     busy = _seed_fault(db_session, panel_id="R1-C1", cls="bypass-diode",
                        status="in_progress", assignee="crew-a")
@@ -274,7 +274,7 @@ def test_photo_rejects_spoofed_image(client, fault_id, local_store):
 
 
 def test_photo_rejects_oversize(client, fault_id, local_store, monkeypatch):
-    from axalon.api.routers import faults as faults_router
+    from solardoctor.api.routers import faults as faults_router
 
     monkeypatch.setattr(faults_router, "_MAX_FAULT_PHOTO_BYTES", 100)
     r = client.post(
@@ -291,7 +291,7 @@ def test_photo_upload_unknown_fault_404(client, local_store):
 
 
 def test_photo_uses_object_store_when_configured(client, fault_id, local_store, monkeypatch):
-    from axalon.api.routers import faults as faults_router
+    from solardoctor.api.routers import faults as faults_router
 
     stored: dict[str, bytes] = {}
 
@@ -412,7 +412,7 @@ def test_migration_0008_applies_on_sqlite_and_preserves_data(tmp_path, monkeypat
     from alembic import command
 
     db_url = f"sqlite:///{tmp_path / 'mig.db'}"
-    monkeypatch.setenv("AXALON_DB_URL", db_url)
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", db_url)
     cfg = _alembic_cfg(db_url)
 
     command.upgrade(cfg, "0007")
@@ -443,7 +443,7 @@ def test_migration_0008_applies_on_sqlite_and_preserves_data(tmp_path, monkeypat
 def test_startup_migrate_adds_workflow_columns_to_old_local_db(tmp_path):
     import sqlalchemy as sa
 
-    from axalon.db.migrate import run_migrations
+    from solardoctor.db.migrate import run_migrations
 
     engine = sa.create_engine(f"sqlite:///{tmp_path / 'old.db'}")
     with engine.begin() as conn:

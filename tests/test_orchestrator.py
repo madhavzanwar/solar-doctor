@@ -27,8 +27,8 @@ def mock_detector():
 @pytest.fixture
 def orchestrator(tmp_path, mock_detector):
     """Orchestrator with mocked detector and in-memory DB. Resets global DB state on teardown."""
-    with patch("axalon.pipeline.orchestrator.SolarDetector", return_value=mock_detector):
-        from axalon.pipeline.orchestrator import InspectionOrchestrator
+    with patch("solardoctor.pipeline.orchestrator.SolarDetector", return_value=mock_detector):
+        from solardoctor.pipeline.orchestrator import InspectionOrchestrator
         orch = InspectionOrchestrator(
             output_dir=tmp_path / "output",
             db_url="sqlite:///:memory:",
@@ -36,13 +36,13 @@ def orchestrator(tmp_path, mock_detector):
     orch.detector = mock_detector
     yield orch
     # Reset global engine so subsequent tests start with a clean slate
-    import axalon.db.session as _sess
+    import solardoctor.db.session as _sess
     _sess._engine = None
     _sess._SessionLocal = None
 
 
 def test_match_panel_id_nearest():
-    from axalon.pipeline.orchestrator import _match_panel_id
+    from solardoctor.pipeline.orchestrator import _match_panel_id
     panel_map = {
         "R1-C1": {"center": [10, 10], "bbox_image": [0, 0, 20, 20], "gps": None},
         "R1-C2": {"center": [100, 10], "bbox_image": [80, 0, 120, 20], "gps": None},
@@ -55,7 +55,7 @@ def test_match_panel_id_nearest():
 
 
 def test_match_panel_id_empty_map():
-    from axalon.pipeline.orchestrator import _match_panel_id
+    from solardoctor.pipeline.orchestrator import _match_panel_id
     assert _match_panel_id({"bbox": [0, 0, 10, 10]}, {}) == "R?-C?"
 
 
@@ -80,9 +80,9 @@ def test_inspect_pair_assigns_panel_id(orchestrator, tmp_path):
 
 def test_ensure_park_idempotent(orchestrator):
     """_ensure_park must not raise or double-insert when called twice for the same park_id."""
-    from axalon.pipeline.orchestrator import _ensure_park
-    from axalon.db.session import get_session
-    from axalon.db.models import Park
+    from solardoctor.pipeline.orchestrator import _ensure_park
+    from solardoctor.db.session import get_session
+    from solardoctor.db.models import Park
 
     layout = {"rows": 4, "total_panels": 20, "mode": "auto", "panel_map": {}}
     session = get_session()
@@ -101,8 +101,8 @@ def test_inspect_pair_persists_to_db(orchestrator, tmp_path):
     """inspect_pair writes Detection rows when inspection_id is provided."""
     import cv2
     import numpy as np
-    from axalon.db.session import get_session
-    from axalon.db.models import Park, Inspection, Detection as DbDetection
+    from solardoctor.db.session import get_session
+    from solardoctor.db.models import Park, Inspection, Detection as DbDetection
 
     img = np.zeros((100, 100, 3), dtype=np.uint8)
     thermal = tmp_path / "thermal_002.jpg"
@@ -184,8 +184,8 @@ def test_inspect_pair_gps_uses_image_heading(orchestrator, tmp_path):
 
 
 def _seed_inspection(park_id: str, inspection_id: str) -> None:
-    from axalon.db.session import get_session
-    from axalon.db.models import Park, Inspection
+    from solardoctor.db.session import get_session
+    from solardoctor.db.models import Park, Inspection
 
     session = get_session()
     session.add(Park(id=park_id, name="Test", mode="auto"))
@@ -199,8 +199,8 @@ def test_inspect_pair_persists_temperatures(orchestrator, tmp_path):
     """Temperatures from a _temp.raw companion reach the Detection row."""
     import cv2
     import numpy as np
-    from axalon.db.session import get_session
-    from axalon.db.models import Detection as DbDetection
+    from solardoctor.db.session import get_session
+    from solardoctor.db.models import Detection as DbDetection
 
     thermal = tmp_path / "thermal_003.jpg"
     cv2.imwrite(str(thermal), np.zeros((512, 640, 3), dtype=np.uint8))
@@ -230,8 +230,8 @@ def test_inspect_pair_persists_temperatures(orchestrator, tmp_path):
 def test_inspect_pair_without_temp_raw_leaves_temperatures_null(orchestrator, tmp_path):
     import cv2
     import numpy as np
-    from axalon.db.session import get_session
-    from axalon.db.models import Detection as DbDetection
+    from solardoctor.db.session import get_session
+    from solardoctor.db.models import Detection as DbDetection
 
     thermal = tmp_path / "thermal_004.jpg"
     cv2.imwrite(str(thermal), np.zeros((100, 100, 3), dtype=np.uint8))

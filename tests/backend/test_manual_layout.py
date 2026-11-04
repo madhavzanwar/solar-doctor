@@ -12,8 +12,8 @@ import math
 
 import pytest
 
-from axalon.park.locator import PANEL_ID_UNKNOWN, locate_faults
-from axalon.park.manual_layout import (
+from solardoctor.park.locator import PANEL_ID_UNKNOWN, locate_faults
+from solardoctor.park.manual_layout import (
     LAYOUT_FORMAT,
     LayoutError,
     delete_park_layout,
@@ -280,7 +280,7 @@ class _StubGridDetector:
 
 
 def _bare_orchestrator():
-    from axalon.pipeline.orchestrator import InspectionOrchestrator
+    from solardoctor.pipeline.orchestrator import InspectionOrchestrator
 
     orch = object.__new__(InspectionOrchestrator)
     orch.layout_detector = _StubGridDetector()
@@ -311,7 +311,7 @@ def test_orchestrator_falls_back_to_auto_grid_without_manual_layout(db_session):
 
 
 def test_orchestrator_does_not_silently_fall_back_on_corrupt_manual_layout(db_session):
-    from axalon.core.app_config import set_config
+    from solardoctor.core.app_config import set_config
 
     set_config(db_session, "park_layout:BROKEN_01", json.dumps({"format": "axalon-park-layout"}))
     orch = _bare_orchestrator()
@@ -321,7 +321,7 @@ def test_orchestrator_does_not_silently_fall_back_on_corrupt_manual_layout(db_se
 
 
 def test_manual_panel_id_not_overwritten_by_pixel_fallback():
-    from axalon.pipeline.orchestrator import assign_panel_ids
+    from solardoctor.pipeline.orchestrator import assign_panel_ids
 
     doc = _curved_hillside_layout()
     layout = parse_layout(doc).to_locator_layout()

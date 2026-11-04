@@ -1,4 +1,4 @@
-"""Tests for axalon.core.model_info and the /health model payload.
+"""Tests for solardoctor.core.model_info and the /health model payload.
 
 /health used to return the literal "YOLO11m" while production ran different
 weights. These tests pin that the reported model comes from the checkpoint
@@ -49,7 +49,7 @@ def _write_fake_checkpoint(path: Path, yaml: dict) -> Path:
     ],
 )
 def test_model_display_name(yaml_file, scale, expected):
-    from axalon.core.model_info import model_display_name
+    from solardoctor.core.model_info import model_display_name
 
     assert model_display_name(yaml_file, scale) == expected
 
@@ -57,7 +57,7 @@ def test_model_display_name(yaml_file, scale, expected):
 # ── describe_weights ──────────────────────────────────────────────────────────
 
 def test_describe_weights_missing_file_returns_unknown_fields(tmp_path):
-    from axalon.core.model_info import UNKNOWN, describe_weights
+    from solardoctor.core.model_info import UNKNOWN, describe_weights
 
     info = describe_weights(tmp_path / "nope.pt")
 
@@ -68,7 +68,7 @@ def test_describe_weights_missing_file_returns_unknown_fields(tmp_path):
 
 
 def test_describe_weights_reads_checkpoint_metadata(tmp_path):
-    from axalon.core.model_info import describe_weights
+    from solardoctor.core.model_info import describe_weights
 
     ckpt = _write_fake_checkpoint(
         tmp_path / "fake.pt",
@@ -91,7 +91,7 @@ def test_describe_weights_reads_checkpoint_metadata(tmp_path):
 
 
 def test_describe_weights_non_checkpoint_keeps_file_facts(tmp_path):
-    from axalon.core.model_info import UNKNOWN, describe_weights
+    from solardoctor.core.model_info import UNKNOWN, describe_weights
 
     junk = tmp_path / "model.engine"
     junk.write_bytes(b"not a zip checkpoint")
@@ -106,7 +106,7 @@ def test_describe_weights_non_checkpoint_keeps_file_facts(tmp_path):
 
 @pytest.mark.skipif(not REAL_WEIGHTS.exists(), reason="checked-in weights absent")
 def test_describe_weights_real_checkpoint_is_yolo11():
-    from axalon.core.model_info import describe_weights
+    from solardoctor.core.model_info import describe_weights
 
     info = describe_weights(REAL_WEIGHTS)
 
@@ -117,7 +117,7 @@ def test_describe_weights_real_checkpoint_is_yolo11():
 # ── get_model_info caching ────────────────────────────────────────────────────
 
 def test_get_model_info_caches_until_file_changes(tmp_path, monkeypatch):
-    from axalon.core import model_info
+    from solardoctor.core import model_info
 
     ckpt = _write_fake_checkpoint(tmp_path / "c.pt", {"scale": "m", "yaml_file": "yolo11m.yaml"})
     model_info.clear_cache()
@@ -159,7 +159,7 @@ def test_health_reports_model_info_fields(client):
 
 
 def test_health_falls_back_when_weights_missing(client, monkeypatch, tmp_path):
-    from axalon.api.routers import health
+    from solardoctor.api.routers import health
 
     monkeypatch.setattr(health, "MODEL_WEIGHTS", tmp_path / "missing.pt")
 
@@ -174,7 +174,7 @@ def test_health_falls_back_when_weights_missing(client, monkeypatch, tmp_path):
 
 
 def test_health_never_fails_when_model_info_raises(client, monkeypatch):
-    from axalon.api.routers import health
+    from solardoctor.api.routers import health
 
     def boom(_path):
         raise RuntimeError("disk on fire")

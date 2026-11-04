@@ -4,7 +4,7 @@ Revision ID: 0008
 Revises: 0007
 
 Idempotent on purpose: local SQLite DBs built by `Base.metadata.create_all` +
-`axalon.db.migrate` may already carry these columns/tables before Alembic runs.
+`solardoctor.db.migrate` may already carry these columns/tables before Alembic runs.
 Existing rows are untouched — every new column is nullable and the status
 column keeps its values (the new statuses are additive).
 """

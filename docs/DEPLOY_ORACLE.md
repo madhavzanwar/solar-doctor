@@ -71,9 +71,9 @@ cp .env.example .env
 nano .env
 ```
 Set at minimum:
-- `AXALON_DB_URL=postgresql+psycopg2://postgres:PW@db.REF.supabase.co:5432/postgres`
-- `AXALON_API_KEY=<long-random-secret>`
-- `AXALON_USE_ENGINE=false`
+- `SOLARDOCTOR_DB_URL=postgresql+psycopg2://postgres:PW@db.REF.supabase.co:5432/postgres`
+- `SOLARDOCTOR_API_KEY=<long-random-secret>`
+- `SOLARDOCTOR_USE_ENGINE=false`
 
 Create the tables in Supabase (once):
 ```bash
@@ -139,9 +139,9 @@ sudo systemctl restart caddy
 
 In Vercel → Project → Settings → Environment Variables:
 ```
-NEXT_PUBLIC_AXALON_API_URL = https://api.axalonsystems.com
+NEXT_PUBLIC_SOLARDOCTOR_API_URL = https://api.axalonsystems.com
 ```
-Redeploy. Open `axalonsystems.com/platform`, enter the `AXALON_API_KEY` in the login
+Redeploy. Open `axalonsystems.com/platform`, enter the `SOLARDOCTOR_API_KEY` in the login
 gate, and teammates anywhere can use it.
 
 ---

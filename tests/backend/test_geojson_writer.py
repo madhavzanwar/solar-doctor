@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from axalon.reporting.geojson_writer import write_geojson
+from solardoctor.reporting.geojson_writer import write_geojson
 
 
 def _batch_result_with_gps() -> dict:

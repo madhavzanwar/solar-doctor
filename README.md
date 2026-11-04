@@ -23,7 +23,7 @@ The repository holds the full stack:
 ```
  drone / mission folder                 Next.js dashboard (:3000/platform)
  thermal + RGB JPEGs (EXIF GPS)          upload, job queue, park map, reports
-            │                                        │  HTTP (NEXT_PUBLIC_AXALON_API_URL)
+            │                                        │  HTTP (NEXT_PUBLIC_SOLARDOCTOR_API_URL)
             ▼                                        ▼
  ┌──────────────────────────────────────────────────────────────────┐
  │ FastAPI  (platform/api, :8000)                                   │
@@ -46,7 +46,7 @@ The repository holds the full stack:
   jobs in the database. `GET /health` reports the model actually on disk
   (architecture, size, sha256 prefix), the DB state and migration status.
 - The **dashboard** is a pure client of the REST API. It talks to the backend
-  at `NEXT_PUBLIC_AXALON_API_URL` (default `http://localhost:8000`).
+  at `NEXT_PUBLIC_SOLARDOCTOR_API_URL` (default `http://localhost:8000`).
 
 ## Model
 
@@ -128,7 +128,7 @@ inference notebook. The stock COCO-pretrained base weights it starts from
 
 ```bash
 pip install -r requirements_platform.txt -r ml/requirements.txt -e .
-./run.sh api                        # or: cd /tmp && PYTHONSAFEPATH=1 python -m uvicorn axalon.api.app:app --port 8000
+./run.sh api                        # or: cd /tmp && PYTHONSAFEPATH=1 python -m uvicorn solardoctor.api.app:app --port 8000
 curl http://localhost:8000/health
 ```
 
@@ -140,7 +140,7 @@ python main.py inspect --thermal t.jpg --rgb r.jpg --park-id PARK_01
 python main.py batch --folder tests/fixtures/sample_mission --park-id PARK_01 --altitude 45 --device cpu
 ```
 
-Reports land in `output/{batch_id}/` (override with `AXALON_OUTPUT_DIR`).
+Reports land in `output/{batch_id}/` (override with `SOLARDOCTOR_OUTPUT_DIR`).
 Schema migrations run automatically on API startup (Alembic, `alembic/`).
 
 ### Layer 3: Operator dashboard only
@@ -162,11 +162,11 @@ reports. See [docs/HOW_TO_USE.md](docs/HOW_TO_USE.md) and
 All settings are environment variables with defaults. Copy the templates and
 fill in only what you need:
 
-- [`.env.example`](.env.example): backend (`AXALON_DB_URL`,
-  `AXALON_API_KEY`, `AXALON_USE_ENGINE`, CORS, output dir/TTL, alert
+- [`.env.example`](.env.example): backend (`SOLARDOCTOR_DB_URL`,
+  `SOLARDOCTOR_API_KEY`, `SOLARDOCTOR_USE_ENGINE`, CORS, output dir/TTL, alert
   webhook/SMTP, NodeODM orthomosaics, Sentry).
 - [`website/nextjs/.env.example`](website/nextjs/.env.example): dashboard
-  (`NEXT_PUBLIC_AXALON_API_URL`, optional Mapbox / Google Maps keys).
+  (`NEXT_PUBLIC_SOLARDOCTOR_API_URL`, optional Mapbox / Google Maps keys).
 - [`deploy/env.relay.example`](deploy/env.relay.example): drone relay tokens.
 
 Never commit real `.env` files; they are gitignored.

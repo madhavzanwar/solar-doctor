@@ -46,10 +46,10 @@ Move these shared helpers out of app.py:
 import os
 from fastapi import Security, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from axalon.pipeline.orchestrator import InspectionOrchestrator
+from solardoctor.pipeline.orchestrator import InspectionOrchestrator
 
 _bearer = HTTPBearer(auto_error=False)
-_API_KEY: str = os.environ.get("AXALON_API_KEY", "")
+_API_KEY: str = os.environ.get("SOLARDOCTOR_API_KEY", "")
 _orchestrator: InspectionOrchestrator | None = None
 
 def require_auth(creds: HTTPAuthorizationCredentials | None = Security(_bearer)) -> None:

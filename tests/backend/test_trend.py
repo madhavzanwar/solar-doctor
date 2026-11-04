@@ -1,8 +1,8 @@
 """Unit tests for trend and recurring-fault aggregators."""
 from types import SimpleNamespace
 
-from axalon.park.recurring import build_recurring
-from axalon.park.trend import build_trend
+from solardoctor.park.recurring import build_recurring
+from solardoctor.park.trend import build_trend
 
 
 def _row(id_, date, critical, high, medium, low):

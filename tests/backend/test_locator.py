@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from axalon.park.locator import (
+from solardoctor.park.locator import (
     PANEL_ID_UNKNOWN,
     LocatedFault,
     locate_faults,

@@ -3,7 +3,7 @@
 
 Contract (verified Phase 6 Task 1 against platform/api/app.py:445 `inspect_batch`):
   POST {BASE}/batch                       -> 202
-  Authorization: Bearer {token}           (HTTPBearer; enforced when AXALON_API_KEY set)
+  Authorization: Bearer {token}           (HTTPBearer; enforced when SOLARDOCTOR_API_KEY set)
   multipart/form-data:
     images:     ZIP archive of thermal+RGB image pairs (required, <=2 GB)
     park_id:    str
