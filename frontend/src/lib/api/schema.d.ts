@@ -1665,6 +1665,401 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all active plants */
+        get: operations["list_plants_api_v1_plants_get"];
+        put?: never;
+        /** Create a new solar plant */
+        post: operations["create_plant_api_v1_plants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plants/{plant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a plant by ID */
+        get: operations["get_plant_api_v1_plants__plant_id__get"];
+        /** Update a plant */
+        put: operations["update_plant_api_v1_plants__plant_id__put"];
+        post?: never;
+        /** Deactivate a plant (soft delete) */
+        delete: operations["delete_plant_api_v1_plants__plant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plants/{plant_id}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get plant configuration */
+        get: operations["get_plant_config_api_v1_plants__plant_id__config_get"];
+        /** Update plant configuration */
+        put: operations["update_plant_config_api_v1_plants__plant_id__config_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forecast/{plant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get forecast records for a plant */
+        get: operations["get_forecasts_api_v1_forecast__plant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forecast/{plant_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get forecast summary statistics for a plant */
+        get: operations["get_forecast_summary_api_v1_forecast__plant_id__summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forecast/{plant_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger an on-demand forecast for a plant */
+        post: operations["generate_forecast_api_v1_forecast__plant_id__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forecast/{plant_id}/probabilistic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Probabilistic forecast with P10/P50/P90 bands and ramp/cloud-passage risk metrics */
+        get: operations["get_probabilistic_forecast_api_v1_forecast__plant_id__probabilistic_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forecast/{plant_id}/online-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Online residual adapter status for a plant (scaling factor, bias, RMSE) */
+        get: operations["get_online_adapter_status_api_v1_forecast__plant_id__online_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnosis/taxonomy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Root-cause diagnostic taxonomy and supported inverter error codes */
+        get: operations["get_taxonomy_api_v1_diagnosis_taxonomy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnosis/diagnose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rule-based root-cause diagnosis from telemetry or inverter error codes */
+        post: operations["run_diagnosis_api_v1_diagnosis_diagnose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnosis/alert/{alert_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Run or retrieve the root-cause diagnosis for a plant alert */
+        get: operations["diagnose_alert_api_v1_diagnosis_alert__alert_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diagnosis/plant/{plant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List root-cause diagnoses for a plant */
+        get: operations["list_plant_diagnoses_api_v1_diagnosis_plant__plant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weather/{plant_id}/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current weather conditions at a plant location */
+        get: operations["get_current_weather_api_v1_weather__plant_id__current_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weather/{plant_id}/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Multi-day hourly weather forecast at a plant location */
+        get: operations["get_forecast_weather_api_v1_weather__plant_id__forecast_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scada/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingest one telemetry reading */
+        post: operations["ingest_reading_api_v1_scada_readings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scada/readings/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingest a batch of telemetry readings */
+        post: operations["ingest_batch_api_v1_scada_readings_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scada/{plant_id}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent telemetry (newest first) or a time range */
+        get: operations["get_readings_api_v1_scada__plant_id__readings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scada/{plant_id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Basic telemetry statistics for a plant */
+        get: operations["get_stats_api_v1_scada__plant_id__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List plant alerts with optional filters */
+        get: operations["list_alerts_api_v1_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts/{alert_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specific plant alert */
+        get: operations["get_alert_api_v1_alerts__alert_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts/{alert_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mark a plant alert resolved */
+        patch: operations["resolve_alert_api_v1_alerts__alert_id__resolve_patch"];
+        trace?: never;
+    };
+    "/api/v1/anomaly/{plant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Anomaly alerts for a plant */
+        get: operations["get_plant_anomalies_api_v1_anomaly__plant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/anomaly/threshold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Configure anomaly detection thresholds for a plant */
+        post: operations["set_anomaly_threshold_api_v1_anomaly_threshold_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1681,6 +2076,39 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** AlertResponse */
+        AlertResponse: {
+            /** Id */
+            id: number;
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** Alert Type */
+            alert_type: string;
+            /** Severity */
+            severity: string;
+            /** Message */
+            message: string;
+            /** Expected Power Kw */
+            expected_power_kw?: number | null;
+            /** Actual Power Kw */
+            actual_power_kw?: number | null;
+            /** Deviation Percent */
+            deviation_percent?: number | null;
+            /** Is Resolved */
+            is_resolved: boolean;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** AlertTestOut */
         AlertTestOut: {
             /** Configured */
@@ -1693,6 +2121,21 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /** AlertThresholdRequest */
+        AlertThresholdRequest: {
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Warning Threshold Percent
+             * @default 10
+             */
+            warning_threshold_percent: number;
+            /**
+             * Critical Threshold Percent
+             * @default 25
+             */
+            critical_threshold_percent: number;
         };
         /** AssignmentBody */
         AssignmentBody: {
@@ -2079,6 +2522,114 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DiagnosisRequest */
+        DiagnosisRequest: {
+            /** Plant Id */
+            plant_id: number;
+            /** Alert Id */
+            alert_id?: number | null;
+            /**
+             * Inverter Error Code
+             * @description Inverter fault code (e.g. F056, F034, E003, AFCI, ISO_FAULT)
+             */
+            inverter_error_code?: string | null;
+            /** Expected Power Kw */
+            expected_power_kw?: number | null;
+            /** Actual Power Kw */
+            actual_power_kw?: number | null;
+            /**
+             * Allow Simulated
+             * @description Permit the telemetry fallback to use rows whose source is SIMULATED
+             * @default false
+             */
+            allow_simulated: boolean;
+            /** Irradiance W M2 */
+            irradiance_w_m2?: number | null;
+            /** Temperature C */
+            temperature_c?: number | null;
+            /** Module Temp C */
+            module_temp_c?: number | null;
+            /** Days Since Cleaning */
+            days_since_cleaning?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** DiagnosisResponse */
+        DiagnosisResponse: {
+            /** Id */
+            id?: number | null;
+            /** Plant Id */
+            plant_id: number;
+            /** Plant Name */
+            plant_name?: string | null;
+            /** Alert Id */
+            alert_id?: number | null;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** Root Cause Category */
+            root_cause_category: string;
+            /** Root Cause Title */
+            root_cause_title: string;
+            /**
+             * Confidence Score
+             * @description Diagnostic certainty score (0-100%)
+             */
+            confidence_score: number;
+            /** Inverter Error Code */
+            inverter_error_code?: string | null;
+            /** Estimated Loss Kw */
+            estimated_loss_kw: number;
+            /**
+             * Financial Impact Per Day
+             * @description Estimated revenue loss in USD/day
+             */
+            financial_impact_per_day: number;
+            /**
+             * Currency
+             * @description Currency of financial_impact_per_day: INR with a plant tariff, 'unset' when none is configured
+             * @default USD
+             */
+            currency: string;
+            /**
+             * Financial Assumption
+             * @description Set when the financial figure is a placeholder
+             */
+            financial_assumption?: string | null;
+            /** Urgency Level */
+            urgency_level: string;
+            /** Summary */
+            summary: string;
+            /** Root Cause Details */
+            root_cause_details: string;
+            /** Technician Steps */
+            technician_steps: components["schemas"]["TechnicianStep"][];
+            /** Safety Warning */
+            safety_warning?: string | null;
+            /** Preventative Advice */
+            preventative_advice?: string | null;
+            /** Telemetry Evidence */
+            telemetry_evidence?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Telemetry Ts
+             * @description Timestamp of the telemetry row used (when power values came from telemetry)
+             */
+            telemetry_ts?: string | null;
+            /**
+             * Telemetry Source
+             * @description source of that row, e.g. USER, SIMULATED
+             */
+            telemetry_source?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** FaultOut */
         FaultOut: {
             /** Id */
@@ -2167,6 +2718,64 @@ export interface components {
             faults: components["schemas"]["FaultOut"][];
         } & {
             [key: string]: unknown;
+        };
+        /** ForecastResponse */
+        ForecastResponse: {
+            /** Id */
+            id: number;
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Forecast Time
+             * Format: date-time
+             */
+            forecast_time: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Predicted Power Kw */
+            predicted_power_kw: number;
+            /** Actual Power Kw */
+            actual_power_kw?: number | null;
+            /** Confidence Lower */
+            confidence_lower?: number | null;
+            /** Confidence Upper */
+            confidence_upper?: number | null;
+            /** Model Name */
+            model_name: string;
+            /** Model Version */
+            model_version: string;
+            /** Physics Power Kw */
+            physics_power_kw?: number | null;
+            /** Ml Power Kw */
+            ml_power_kw?: number | null;
+        };
+        /** ForecastSummary */
+        ForecastSummary: {
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /** Total Predicted Kwh */
+            total_predicted_kwh: number;
+            /** Total Actual Kwh */
+            total_actual_kwh?: number | null;
+            /** Mean Absolute Error Kw */
+            mean_absolute_error_kw?: number | null;
+            /** Record Count */
+            record_count: number;
+            /** Model Name */
+            model_name: string;
         };
         /**
          * GridOut
@@ -2406,6 +3015,59 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * OnlineAdapterStatusResponse
+         * @description Real-time status of the OnlineResidualAdapter for a plant.
+         *
+         *     Returned by GET /api/v1/forecast/{plant_id}/online-status.
+         */
+        OnlineAdapterStatusResponse: {
+            /**
+             * Plant Id
+             * @description Solar plant identifier
+             */
+            plant_id: string;
+            /**
+             * Scaling Factor
+             * @description Current multiplicative correction γ applied to base forecasts (1.0 = no correction)
+             */
+            scaling_factor: number;
+            /**
+             * Bias Kw
+             * @description Current additive residual bias tracked by the adapter (kW)
+             */
+            bias_kw: number;
+            /**
+             * Samples Observed Today
+             * @description Number of SCADA telemetry readings processed by the adapter
+             */
+            samples_observed_today: number;
+            /**
+             * Recent Rmse Kw
+             * @description Running RMSE of prediction residuals (kW)
+             */
+            recent_rmse_kw: number;
+            /**
+             * Status
+             * @description Adapter status label: BASELINE_OPTIMAL | ADAPTING_SOILING_HAZE | ADAPTING_ABOVE_NWP
+             */
+            status: string;
+            /**
+             * Last Updated
+             * @description ISO-8601 UTC timestamp of the most recent adapter update
+             */
+            last_updated?: string | null;
+            /**
+             * Alpha
+             * @description Exponential smoothing learning rate
+             */
+            alpha: number;
+            /**
+             * Decay Factor
+             * @description Per-step horizon decay factor λ
+             */
+            decay_factor: number;
+        };
         /** OrderBody */
         OrderBody: {
             /** Component Id */
@@ -2548,6 +3210,271 @@ export interface components {
              */
             phases: string[];
         };
+        /** PlantConfigResponse */
+        PlantConfigResponse: {
+            /** Id */
+            id: number;
+            /** Plant Id */
+            plant_id: number;
+            /** Tilt */
+            tilt: number;
+            /** Azimuth */
+            azimuth: number;
+            /** Efficiency */
+            efficiency: number;
+            /** Soiling Threshold */
+            soiling_threshold: number;
+            /** Clipping Threshold */
+            clipping_threshold: number;
+            /** Forecast Horizon Minutes */
+            forecast_horizon_minutes: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PlantConfigUpdate */
+        PlantConfigUpdate: {
+            /** Tilt */
+            tilt?: number | null;
+            /** Azimuth */
+            azimuth?: number | null;
+            /** Efficiency */
+            efficiency?: number | null;
+            /** Soiling Threshold */
+            soiling_threshold?: number | null;
+            /** Clipping Threshold */
+            clipping_threshold?: number | null;
+            /** Forecast Horizon Minutes */
+            forecast_horizon_minutes?: number | null;
+        };
+        /** PlantCreate */
+        PlantCreate: {
+            /** Name */
+            name: string;
+            /** Location */
+            location?: string | null;
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /**
+             * Timezone
+             * @default UTC
+             */
+            timezone: string;
+            /** Capacity Kw */
+            capacity_kw: number;
+            /** Inverter Capacity Kw */
+            inverter_capacity_kw: number;
+            /** Module Count */
+            module_count?: number | null;
+            /**
+             * Park Id
+             * @description Axalon Park to link 1:1
+             */
+            park_id?: string | null;
+            /**
+             * Altitude M
+             * @default 0
+             */
+            altitude_m: number;
+            /**
+             * Tilt
+             * @default 20
+             */
+            tilt: number;
+            /**
+             * Azimuth
+             * @default 180
+             */
+            azimuth: number;
+            /** Module Wp */
+            module_wp?: number | null;
+            /**
+             * Temp Coeff
+             * @description Pmp temperature coefficient, 1/degC
+             * @default -0.004
+             */
+            temp_coeff: number;
+            /** Tariff Inr Kwh */
+            tariff_inr_kwh?: number | null;
+            /**
+             * Source
+             * @default USER
+             */
+            source: string;
+        };
+        /** PlantResponse */
+        PlantResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Location */
+            location?: string | null;
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /** Timezone */
+            timezone: string;
+            /** Capacity Kw */
+            capacity_kw: number;
+            /** Inverter Capacity Kw */
+            inverter_capacity_kw: number;
+            /** Module Count */
+            module_count?: number | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Park Id */
+            park_id?: string | null;
+            /**
+             * Source
+             * @default USER
+             */
+            source: string;
+            /** Tariff Inr Kwh */
+            tariff_inr_kwh?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PlantUpdate */
+        PlantUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Latitude */
+            latitude?: number | null;
+            /** Longitude */
+            longitude?: number | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Capacity Kw */
+            capacity_kw?: number | null;
+            /** Inverter Capacity Kw */
+            inverter_capacity_kw?: number | null;
+            /** Module Count */
+            module_count?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Park Id */
+            park_id?: string | null;
+            /** Altitude M */
+            altitude_m?: number | null;
+            /** Module Wp */
+            module_wp?: number | null;
+            /** Temp Coeff */
+            temp_coeff?: number | null;
+            /** Tariff Inr Kwh */
+            tariff_inr_kwh?: number | null;
+        };
+        /** ProbabilisticForecastPoint */
+        ProbabilisticForecastPoint: {
+            /**
+             * Forecast Time
+             * Format: date-time
+             */
+            forecast_time: string;
+            /**
+             * P10 Kw
+             * @description 10th percentile conservative lower bound
+             */
+            p10_kw: number;
+            /**
+             * P50 Kw
+             * @description 50th percentile median expected forecast
+             */
+            p50_kw: number;
+            /**
+             * P90 Kw
+             * @description 90th percentile optimistic upper bound
+             */
+            p90_kw: number;
+            /**
+             * Uncertainty Band Kw
+             * @description P90 - P10 prediction interval width
+             */
+            uncertainty_band_kw: number;
+            /**
+             * Relative Uncertainty Pct
+             * @description Spread as percentage of power/capacity
+             */
+            relative_uncertainty_pct: number;
+            /**
+             * Ramp Rate Kw Per Min
+             * @description Expected rate of power change (kW/min)
+             */
+            ramp_rate_kw_per_min: number;
+            /**
+             * Ramp Rate Pct Per Min
+             * @description Rate of change relative to plant capacity (%/min)
+             */
+            ramp_rate_pct_per_min: number;
+            /**
+             * Ramp Direction
+             * @description 'up', 'down', or 'stable'
+             */
+            ramp_direction: string;
+            /**
+             * Ramp Risk Level
+             * @description 'low', 'medium', 'high', or 'critical'
+             */
+            ramp_risk_level: string;
+            /**
+             * Cloud Impact Factor
+             * @description Cloud passage impact index (0.0 - 1.0)
+             */
+            cloud_impact_factor: number;
+            /**
+             * Bess Reserve Recommendation Kw
+             * @description Recommended BESS reserve buffering
+             */
+            bess_reserve_recommendation_kw: number;
+            /**
+             * Reserve Action
+             * @description Operational recommendation for plant operators
+             */
+            reserve_action: string;
+        };
+        /** ProbabilisticForecastResponse */
+        ProbabilisticForecastResponse: {
+            /** Plant Id */
+            plant_id: number;
+            /** Plant Name */
+            plant_name: string;
+            /** Capacity Kw */
+            capacity_kw: number;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Horizon Minutes */
+            horizon_minutes: number;
+            /** Interval Minutes */
+            interval_minutes: number;
+            /** Model Name */
+            model_name: string;
+            /** Points */
+            points: components["schemas"]["ProbabilisticForecastPoint"][];
+            summary: components["schemas"]["RampRiskSummarySchema"];
+        };
         /** ProjectBody */
         ProjectBody: {
             /** Name */
@@ -2617,6 +3544,32 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** RampRiskSummarySchema */
+        RampRiskSummarySchema: {
+            /** Max Ramp Rate Kw Per Min */
+            max_ramp_rate_kw_per_min: number;
+            /** Max Ramp Down Kw Per Min */
+            max_ramp_down_kw_per_min: number;
+            /** Max Ramp Up Kw Per Min */
+            max_ramp_up_kw_per_min: number;
+            /**
+             * Ramp Risk Score
+             * @description Overall risk index (0 to 100)
+             */
+            ramp_risk_score: number;
+            /** Highest Risk Level */
+            highest_risk_level: string;
+            /** High Risk Event Count */
+            high_risk_event_count: number;
+            /** Critical Risk Event Count */
+            critical_risk_event_count: number;
+            /** Avg Uncertainty Band Kw */
+            avg_uncertainty_band_kw: number;
+            /** Recommended Bess Capacity Kw */
+            recommended_bess_capacity_kw: number;
+            /** Primary Action Advisory */
+            primary_action_advisory: string;
+        };
         /**
          * RecurringOut
          * @description Recurring-fault report.
@@ -2628,6 +3581,19 @@ export interface components {
         RefreshRequest: {
             /** Refresh Token */
             refresh_token?: unknown | null;
+        };
+        /** RootCauseTaxonomyItem */
+        RootCauseTaxonomyItem: {
+            /** Category */
+            category: string;
+            /** Title */
+            title: string;
+            /** Common Error Codes */
+            common_error_codes: string[];
+            /** Description */
+            description: string;
+            /** Typical Urgency */
+            typical_urgency: string;
         };
         /** RunNextRequest */
         RunNextRequest: {
@@ -2657,6 +3623,83 @@ export interface components {
              */
             auto_yes: boolean;
         };
+        /** ScadaBatchCreate */
+        ScadaBatchCreate: {
+            /** Readings */
+            readings: components["schemas"]["ScadaReadingCreate"][];
+        };
+        /** ScadaReadingCreate */
+        ScadaReadingCreate: {
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** Power Kw */
+            power_kw?: number | null;
+            /** Irradiance W M2 */
+            irradiance_w_m2?: number | null;
+            /** Temperature C */
+            temperature_c?: number | null;
+            /** Wind Speed M S */
+            wind_speed_m_s?: number | null;
+            /** Module Temperature C */
+            module_temperature_c?: number | null;
+            /** Inverter Power Kw */
+            inverter_power_kw?: number | null;
+            /** Expected Power Kw */
+            expected_power_kw?: number | null;
+            /** Poa Wm2 */
+            poa_wm2?: number | null;
+            /** P Dc Kw */
+            p_dc_kw?: number | null;
+            /** V */
+            v?: number | null;
+            /** I */
+            i?: number | null;
+            /** Inverter Id */
+            inverter_id?: number | null;
+            /** String Id */
+            string_id?: number | null;
+            /**
+             * Source
+             * @default USER
+             */
+            source: string;
+        };
+        /** ScadaReadingResponse */
+        ScadaReadingResponse: {
+            /** Id */
+            id: number;
+            /** Plant Id */
+            plant_id: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** Power Kw */
+            power_kw?: number | null;
+            /** Irradiance W M2 */
+            irradiance_w_m2?: number | null;
+            /** Temperature C */
+            temperature_c?: number | null;
+            /** Wind Speed M S */
+            wind_speed_m_s?: number | null;
+            /** Module Temperature C */
+            module_temperature_c?: number | null;
+            /** Inverter Power Kw */
+            inverter_power_kw?: number | null;
+            /** Expected Power Kw */
+            expected_power_kw?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** SettingsOut */
         SettingsOut: {
             /** Settings */
@@ -2682,6 +3725,17 @@ export interface components {
              * @default 7
              */
             expires_in_days: unknown | null;
+        };
+        /** TechnicianStep */
+        TechnicianStep: {
+            /** Step Number */
+            step_number: number;
+            /** Action */
+            action: string;
+            /** Required Tools */
+            required_tools?: string[];
+            /** Safety Note */
+            safety_note?: string | null;
         };
         /** TrackFileOut */
         TrackFileOut: {
@@ -6085,6 +7139,898 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_plants_api_v1_plants_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_plant_api_v1_plants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlantCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plant_api_v1_plants__plant_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_plant_api_v1_plants__plant_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlantUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_plant_api_v1_plants__plant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plant_config_api_v1_plants__plant_id__config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_plant_config_api_v1_plants__plant_id__config_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlantConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_forecasts_api_v1_forecast__plant_id__get: {
+        parameters: {
+            query?: {
+                /** @description Start datetime (ISO 8601) */
+                start?: string | null;
+                /** @description End datetime (ISO 8601) */
+                end?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_forecast_summary_api_v1_forecast__plant_id__summary_get: {
+        parameters: {
+            query?: {
+                start?: string | null;
+                end?: string | null;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_forecast_api_v1_forecast__plant_id__generate_post: {
+        parameters: {
+            query?: {
+                horizon_minutes?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_probabilistic_forecast_api_v1_forecast__plant_id__probabilistic_get: {
+        parameters: {
+            query?: {
+                /** @description Forecast horizon in minutes */
+                horizon_minutes?: number;
+                /** @description Interval resolution in minutes */
+                interval_minutes?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProbabilisticForecastResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_online_adapter_status_api_v1_forecast__plant_id__online_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnlineAdapterStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_taxonomy_api_v1_diagnosis_taxonomy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RootCauseTaxonomyItem"][];
+                };
+            };
+        };
+    };
+    run_diagnosis_api_v1_diagnosis_diagnose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnose_alert_api_v1_diagnosis_alert__alert_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_plant_diagnoses_api_v1_diagnosis_plant__plant_id__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_weather_api_v1_weather__plant_id__current_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_forecast_weather_api_v1_weather__plant_id__forecast_get: {
+        parameters: {
+            query?: {
+                /** @description Forecast days (1-3) */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_reading_api_v1_scada_readings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScadaReadingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScadaReadingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_batch_api_v1_scada_readings_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScadaBatchCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScadaReadingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_readings_api_v1_scada__plant_id__readings_get: {
+        parameters: {
+            query?: {
+                start?: string | null;
+                end?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScadaReadingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_stats_api_v1_scada__plant_id__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number | null;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_alerts_api_v1_alerts_get: {
+        parameters: {
+            query?: {
+                plant_id?: number | null;
+                /** @description INFO | WARNING | CRITICAL */
+                severity?: string | null;
+                is_resolved?: boolean | null;
+                start?: string | null;
+                end?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_alert_api_v1_alerts__alert_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_alert_api_v1_alerts__alert_id__resolve_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plant_anomalies_api_v1_anomaly__plant_id__get: {
+        parameters: {
+            query?: {
+                severity?: string | null;
+                is_resolved?: boolean | null;
+                start?: string | null;
+                end?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_anomaly_threshold_api_v1_anomaly_threshold_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertThresholdRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

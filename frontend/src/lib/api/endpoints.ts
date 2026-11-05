@@ -1,5 +1,5 @@
 /**
- * Endpoint wrappers in SolarPulseAI's shapes. Response types come from ../api.types.pending.ts until the backend
+ * Endpoint wrappers in SolarPulseAI's shapes. Response types come from ../api.types.ts until the backend
  * OpenAPI schema (src/lib/api/schema.d.ts) includes these routes; then swap the imports to `components["schemas"]`.
  */
 import type {
@@ -15,7 +15,7 @@ import type {
   ProbabilisticForecastResponse,
   RootCauseTaxonomyItem,
   WeatherData,
-} from "../api.types.pending";
+} from "../api.types";
 import { apiFetch } from "./http";
 
 // ── Plant endpoints ────────────────────────────────────────────────────────────
