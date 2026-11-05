@@ -1,4 +1,5 @@
 /** Thin fetch wrapper: bearer token, one-shot refresh on 401, normalised errors. */
+import type { components } from "./schema";
 import { ApiError, errorFromResponse, networkError } from "./errors";
 import { clearSession, getAccessToken, getRefreshToken, saveTokens } from "./storage";
 
@@ -20,11 +21,12 @@ export function pickAccessToken(data: TokenPayload | null | undefined): string |
 export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
+  const refreshBody: components["schemas"]["RefreshRequest"] = { refresh_token: refreshToken };
   try {
     const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify(refreshBody),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as TokenPayload;

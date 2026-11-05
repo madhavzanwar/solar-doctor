@@ -1352,9 +1352,71 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description Exchange email + password for an opaque session token.
+         * @description Exchange email + password (JSON) for an access + refresh token pair.
          */
         post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login Form
+         * @description OAuth2-password-style login the SolarPulse frontend uses:
+         *     `application/x-www-form-urlencoded` with `username` (the email) and `password`.
+         */
+        post: operations["login_form_api_v1_auth_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register
+         * @description Self-service signup. Always a `viewer` with no project access; an admin
+         *     promotes/assigns later. Disable with SOLARDOCTOR_ALLOW_REGISTRATION=0.
+         */
+        post: operations["register_api_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh
+         * @description Rotate: a live refresh token is consumed and a new access + refresh pair returned.
+         */
+        post: operations["refresh_api_v1_auth_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1372,7 +1434,8 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description Revoke the caller's session. Share links and keyless modes have none.
+         * @description Revoke the bearer session and, if supplied, the refresh token. Idempotent:
+         *     public in users mode so a client holding only a refresh token can sign out.
          */
         post: operations["logout_api_v1_auth_logout_post"];
         delete?: never;
@@ -2185,6 +2248,11 @@ export interface components {
             /** Password */
             password?: string | null;
         };
+        /** LogoutRequest */
+        LogoutRequest: {
+            /** Refresh Token */
+            refresh_token?: unknown | null;
+        };
         /** MissionCreate */
         MissionCreate: {
             /** Name */
@@ -2556,6 +2624,11 @@ export interface components {
         RecurringOut: {
             [key: string]: unknown;
         };
+        /** RefreshRequest */
+        RefreshRequest: {
+            /** Refresh Token */
+            refresh_token?: unknown | null;
+        };
         /** RunNextRequest */
         RunNextRequest: {
             /**
@@ -2653,6 +2726,21 @@ export interface components {
             email?: unknown | null;
             /** Password */
             password?: unknown | null;
+        };
+        /**
+         * UserRegister
+         * @description SolarPulse-shaped signup. `username`/`full_name` are accepted for client
+         *     compatibility and ignored: accounts are keyed by email.
+         */
+        UserRegister: {
+            /** Email */
+            email?: unknown | null;
+            /** Password */
+            password?: unknown | null;
+            /** Username */
+            username?: unknown | null;
+            /** Full Name */
+            full_name?: unknown | null;
         };
         /** UserUpdate */
         UserUpdate: {
@@ -5390,7 +5478,7 @@ export interface operations {
             };
         };
     };
-    logout_api_v1_auth_logout_post: {
+    login_form_api_v1_auth_token_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -5400,11 +5488,110 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    register_api_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRegister"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_api_v1_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LogoutRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

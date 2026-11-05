@@ -6,7 +6,8 @@ import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSessi
 export type UserLoginBody = components["schemas"]["UserLogin"];
 
 /** Contract in docs/solardoctor/API_AUTH.md: `username`/`full_name` are accepted and ignored by the backend. */
-export interface RegisterBody {
+export type UserRegisterBody = components["schemas"]["UserRegister"];
+export interface RegisterBody extends UserRegisterBody {
   email: string;
   password: string;
   full_name?: string;
@@ -77,10 +78,11 @@ export function me() {
 export async function logout(): Promise<void> {
   try {
     const refreshToken = getRefreshToken();
+    const logoutBody: components["schemas"]["LogoutRequest"] = refreshToken ? { refresh_token: refreshToken } : {};
     if (getAccessToken() || refreshToken) {
       await apiFetch<void>("/api/v1/auth/logout", {
         method: "POST",
-        body: JSON.stringify(refreshToken ? { refresh_token: refreshToken } : {}),
+        body: JSON.stringify(logoutBody),
         skipAuthRetry: true,
       });
     }
