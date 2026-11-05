@@ -1,6 +1,6 @@
 # SolarDoctor build prompts — how to use them
 
-> **Status (see `../HANDOVER.md`, written when Prompt 1 completes):** Prompt 1 (foundation) is being finalised. Prompts 2 and 3 now start with an *Operating notes* block with
+> **Status (see `../HANDOVER.md`):** Prompt 1 (foundation) is complete and tagged `v0.1.0-foundation`. Prompts 2 and 3 now start with an *Operating notes* block with
 > lessons learned and the current state of the code. Prefer running Prompt 2 as several sessions, one per workstream.
 
 Three prompts build SolarDoctor end to end. Run them **in order**, each in a **fresh Claude Code session** attached
