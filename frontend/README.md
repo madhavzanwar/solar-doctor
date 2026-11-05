@@ -35,6 +35,7 @@ navigation after the server answered 2xx, as for the 204 logout, is not a failur
 ```bash
 SOLARDOCTOR_AUTH_MODE=users SOLARDOCTOR_DB_URL=sqlite:////tmp/smoke.db SOLARDOCTOR_SEED_ADMIN_PASSWORD=... \
   PYTHONPATH=backend:. python scripts/seed.py --offline
+SOLARDOCTOR_DB_URL=sqlite:////tmp/smoke.db python scripts/seed_smoke_tracker.py   # tracker fixture the smoke test needs
 SOLARDOCTOR_AUTH_MODE=users SOLARDOCTOR_DB_URL=sqlite:////tmp/smoke.db uvicorn solardoctor.api.app:app --port 8000 &
 cd frontend && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run build && npm run start &
 SMOKE_BASE_URL=http://localhost:3000 SMOKE_API_URL=http://localhost:8000 \

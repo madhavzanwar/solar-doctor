@@ -86,25 +86,10 @@ async function main() {
   if (!apiPlants.length) return;
   const firstId = apiPlants[0].id;
 
-  // Ensure a PVDAQ-style tracker plant exists (the real PVDAQ import is not part of the offline seed). The frontend
-  // recognises it by the marker the importer writes at the end of `location`. Idempotent; created through the API.
-  let trackerPlant = apiPlants.find((p) => p.name === TRACKER_NAME);
-  if (!trackerPlant) {
-    const created = await apiJson("/api/v1/plants", {
-      method: "POST",
-      headers: { authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        name: TRACKER_NAME,
-        latitude: 39.74,
-        longitude: -105.18,
-        capacity_kw: 100,
-        inverter_capacity_kw: 90,
-        location: "Golden, CO [single-axis tracker, fixed-tilt baseline invalid]",
-      }),
-    });
-    check("create PVDAQ-style tracker plant", created.status >= 200 && created.status < 300, `status ${created.status}`);
-    trackerPlant = created.body;
-  }
+  // The PVDAQ-style tracker plant is created by `python scripts/seed_smoke_tracker.py` (the API refuses the marker on
+  // purpose: only the importer/seed may set it). The smoke test fails, not skips, when it is missing.
+  const trackerPlant = apiPlants.find((p) => p.name === TRACKER_NAME);
+  check("tracker fixture plant present (run scripts/seed_smoke_tracker.py)", Boolean(trackerPlant), "missing");
   if (!trackerPlant?.id) return;
   const trackerId = trackerPlant.id;
 
