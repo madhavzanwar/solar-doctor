@@ -10,6 +10,7 @@ import {
   type DiagnosisResponse,
   type RootCauseTaxonomyItem,
 } from "@/lib/api";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 import DiagnosisModal from "@/components/diagnosis/DiagnosisModal";
 
 export default function AlertsPage() {
@@ -210,7 +211,8 @@ export default function AlertsPage() {
                             ` · ${a.deviation_percent.toFixed(1)}% shortfall`}
                           {a.expected_power_kw != null &&
                             a.actual_power_kw != null &&
-                            ` · ${a.actual_power_kw.toFixed(0)} / ${a.expected_power_kw.toFixed(0)} kW`}
+                            ` · ${a.actual_power_kw.toFixed(0)} / ${a.expected_power_kw.toFixed(0)} kW`}{" "}
+                          <SourceBadge source={a.source} />
                         </div>
                       </div>
                       <span className="dash-alert-time">
