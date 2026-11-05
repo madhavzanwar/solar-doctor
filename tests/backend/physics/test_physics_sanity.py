@@ -151,7 +151,8 @@ def test_alert_worker_flags_shortfall_against_pvlib_baseline(db_session):
     p = Plant(name="P", lat=18.52, lon=73.86, dc_kw=120, ac_kw=100, tilt=18, azimuth=180, altitude_m=560)
     db_session.add(p)
     db_session.commit()
-    now = datetime.now(tz=timezone.utc).replace(microsecond=0)
+    # Fixed daytime instant (12:30 IST, Pune solar noon): the sun must be up for a non-zero expected power.
+    now = datetime(2026, 3, 20, 7, 0, tzinfo=timezone.utc)
     # Measured irradiance 800 W/m2 but only 10 kW delivered: a gross shortfall vs expected power.
     db_session.add(Telemetry(plant_id=p.id, ts=now, p_ac_kw=10.0, ghi_wm2=800.0, source="SIMULATED"))
     db_session.commit()
@@ -161,6 +162,6 @@ def test_alert_worker_flags_shortfall_against_pvlib_baseline(db_session):
         def send(self, message, severity, plant_id):
             sent.append((severity, plant_id))
 
-    assert alert_worker.run_alert_check(db_session, p.id, adapter=Spy()) == 1
+    assert alert_worker.run_alert_check(db_session, p.id, adapter=Spy(), now=now + timedelta(minutes=5)) == 1
     alert = db_session.query(PlantAlert).one()
     assert alert.severity == "CRITICAL" and alert.source == "SIMULATED" and sent == [("CRITICAL", p.id)]
