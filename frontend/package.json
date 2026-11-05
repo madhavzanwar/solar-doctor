@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test:visual": "node tests/visual/run.mjs",
     "test:a11y": "node tests/a11y/run.mjs",
-    "test:overflow": "node tests/overflow/run.mjs"
+    "test:overflow": "node tests/overflow/run.mjs",
+    "test:smoke": "node tests/smoke/run.mjs"
   },
   "dependencies": {
     "next": "15.5.27",

@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from solardoctor.physics import solar
 from solardoctor.physics.anomaly_service import detect_and_persist_anomaly
 from solardoctor.physics.models import Forecast, Plant, Telemetry
+from solardoctor.physics.tracker import is_tracker_plant
 
 logger = logging.getLogger("solardoctor.physics.alerts")
 
@@ -44,6 +45,10 @@ def run_alert_check(db: Session, plant_id: int, lookback_minutes: int = 60,
         .order_by(Telemetry.ts.desc()).limit(1)
     ).scalar_one_or_none()
     if plant is None or tel is None or tel.p_ac_kw is None:
+        return 0
+    if is_tracker_plant(plant):
+        # Fixed-tilt baseline (and any forecast derived from it) is invalid for trackers: never alert on it.
+        logger.info("Alert check skipped: plant %s is a single-axis tracker (baseline unsupported)", plant_id)
         return 0
 
     forecast = db.execute(

@@ -82,7 +82,8 @@ export default function AlertsPage() {
   };
 
   const handleRunSandbox = async () => {
-    if (!customPlantId) return;
+    // aria-disabled (not `disabled`) keeps the button focusable so focus can return to it after the modal closes
+    if (!customPlantId || runningSandbox) return;
     setRunningSandbox(true);
     setError(null);
     try {
@@ -384,7 +385,8 @@ export default function AlertsPage() {
           <button
             className="dash-btn dash-btn-primary"
             onClick={handleRunSandbox}
-            disabled={runningSandbox || !customPlantId}
+            aria-disabled={runningSandbox || !customPlantId}
+            aria-busy={runningSandbox}
           >
             {runningSandbox ? "Running…" : "Run diagnosis"}
           </button>

@@ -14,6 +14,9 @@ import {
   type PlantConfig,
   type WeatherData,
 } from "@/lib/api";
+import { isTrackerUnsupported } from "@/lib/api/errors";
+import { isTrackerPlant } from "@/lib/tracker";
+import { TrackerUnsupported } from "@/components/ui/TrackerUnsupported";
 import { SourceBadge } from "@/components/ui/SourceBadge";
 
 function ForecastChart({ records }: { records: ForecastRecord[] }) {
@@ -244,15 +247,26 @@ export default function PlantDetailPage({
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unsupportedMsg, setUnsupportedMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [p, fc, sum, al] = await Promise.all([
-        plantsApi.get(plantId),
-        forecastApi.list(plantId, 48),
-        forecastApi.summary(plantId).catch(() => null),
+      const p = await plantsApi.get(plantId);
+      // Trackers are known from the plant record: skip forecast endpoints that answer 422 for them.
+      const tracker = isTrackerPlant(p);
+      const [fc, sum, al] = await Promise.all([
+        tracker
+          ? Promise.resolve([] as ForecastRecord[])
+          : forecastApi.list(plantId, 48).catch((e: unknown) => {
+              if (isTrackerUnsupported(e)) {
+                setUnsupportedMsg((e as Error).message);
+                return [] as ForecastRecord[];
+              }
+              throw e;
+            }),
+        tracker ? Promise.resolve(null) : forecastApi.summary(plantId).catch(() => null),
         alertsApi.list(plantId, 30),
       ]);
       setPlant(p);
@@ -284,6 +298,10 @@ export default function PlantDetailPage({
       const record = await forecastApi.generate(plantId);
       setForecasts((prev) => [record, ...prev].slice(0, 48));
     } catch (err: unknown) {
+      if (isTrackerUnsupported(err)) {
+        setUnsupportedMsg((err as Error).message);
+        return;
+      }
       setError(err instanceof Error ? err.message : "Forecast failed.");
     } finally {
       setGenerating(false);
@@ -322,6 +340,7 @@ export default function PlantDetailPage({
   }
 
   const openAlerts = alerts.filter((a) => !a.is_resolved);
+  const unsupported = isTrackerPlant(plant) || unsupportedMsg !== null;
 
   return (
     <>
@@ -349,7 +368,8 @@ export default function PlantDetailPage({
         <button
           className="dash-btn dash-btn-primary"
           onClick={handleGenerate}
-          disabled={generating}
+          disabled={generating || unsupported}
+          title={unsupported ? "Not supported for single-axis trackers" : undefined}
         >
           {generating ? "Generating…" : "Run forecast"}
         </button>
@@ -399,7 +419,7 @@ export default function PlantDetailPage({
       <div className="dash-split">
         <div className="dash-card">
           <div className="dash-card-title">Yield forecast vs actuals</div>
-          <ForecastChart records={forecasts} />
+          {unsupported ? <TrackerUnsupported detail={unsupportedMsg} /> : <ForecastChart records={forecasts} />}
         </div>
 
         <div className="dash-card">
