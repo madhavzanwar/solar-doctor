@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { ScopeProvider } from "@/components/dashboard/scope";
+import { TopbarControls } from "@/components/dashboard/TopbarControls";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser, isLoggedIn, logout } from "@/lib/api";
@@ -34,6 +36,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   return (
+    <ScopeProvider>
     <div className="dash-root site-grid">
       <aside className={`dash-sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="dash-sidebar-header">
@@ -104,11 +107,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             ☰
           </button>
           <div className="dash-topbar-right">
+            <TopbarControls />
             <span className="dash-topbar-user">{user ?? ""}</span>
           </div>
         </header>
         <main id="main" tabIndex={-1} className="dash-content">{children}</main>
       </div>
     </div>
+    </ScopeProvider>
   );
 }

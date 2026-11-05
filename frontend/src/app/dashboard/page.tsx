@@ -13,6 +13,7 @@ import {
   type WeatherData,
 } from "@/lib/api";
 import { SourceBadge } from "@/components/ui/SourceBadge";
+import { useScope } from "@/components/dashboard/scope";
 import ForecastActualChart from "@/components/forecast/ForecastActualChart";
 import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
 
@@ -114,6 +115,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadingPlantData, setLoadingPlantData] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scope = useScope();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,6 +166,15 @@ export default function DashboardPage() {
       setLoadingPlantData(false);
     }
   };
+
+  // The topbar plant switcher drives this page's plant selection.
+  const scopePlantId = scope.plantId;
+  useEffect(() => {
+    if (scopePlantId != null && plants.some((p) => p.id === scopePlantId) && scopePlantId !== selectedPlantId) {
+      handleSelectPlant(scopePlantId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopePlantId, plants]);
 
   const handleResolve = async (id: number) => {
     try {
@@ -253,7 +264,10 @@ export default function DashboardPage() {
                   {plants.length > 0 && (
                     <select
                       value={selectedPlantId ?? plants[0].id}
-                      onChange={(e) => handleSelectPlant(Number(e.target.value))}
+                      onChange={(e) => {
+                        scope.setPlantId(Number(e.target.value));
+                        handleSelectPlant(Number(e.target.value));
+                      }}
                       aria-label="Select active solar plant"
                       className="dash-input"
                       style={{
