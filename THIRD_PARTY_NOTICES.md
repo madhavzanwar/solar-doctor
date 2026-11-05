@@ -53,3 +53,23 @@ Instrument Serif: SIL OFL 1.1).
   Geist Mono, Instrument Serif; Syne and Source Sans 3 for `NEXT_PUBLIC_FONT_MODE=clone`.
 - **Photography**: Unsplash License, per-photo credits in `docs/IMAGE_CREDITS.md`.
 - **Dev tooling** (MIT/Apache-2.0): openapi-typescript, Vitest, jsdom, Playwright (Apache-2.0), pixelmatch (ISC), pngjs (MIT), sharp (Apache-2.0).
+
+## Datasets (seed and PVDAQ import)
+
+- **PVDAQ Public Datasets** (used by `scripts/import_pvdaq.py`; imported rows carry `source="PVDAQ"`): Deline, C.,
+  Perry, K., Deceglie, M., Muller, M., Sekulic, W., Jordan, D. (NREL), "Photovoltaic Data Acquisition (PVDAQ) Public
+  Datasets", Open Energy Data Initiative (OEDI), DOI [10.25984/1846021](https://doi.org/10.25984/1846021), licensed
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). We use system 9068 (DOE 2023 Solar Data Prize prefix
+  `pvdaq/2023-solar-data-prize/9068_OEDI/`). **Changes made:** subset of dates; 5-minute samples averaged to 15 minutes
+  (>= 2 of 3 samples); timestamps converted from the logger's local wall clock (America/Denver, DST-aware) to UTC with
+  ambiguous DST rows dropped; negative night readings clipped to 0; plant AC = sum of the inverter AC channels.
+  Licence check (2026-11-05): the OEDI submission page data.openei.org/submissions/4568 lists the "2023 DOE Solar Data
+  Prize" prefix as a resource of the same CC BY 4.0 submission and shows no additional terms; no separate Solar Data
+  Prize licence page was reviewed, so absence of extra terms there is not independently confirmed. Display attribution
+  wherever PVDAQ data is shown.
+- **NASA POWER** (used by `scripts/seed.py` through `pvlib.iotools.get_nasa_power`): hourly irradiance, temperature and
+  wind from the NASA Langley Research Center POWER Project, funded through the NASA Earth Science Applied Sciences
+  Program (https://power.larc.nasa.gov). Open data; NASA asks users to acknowledge POWER. Seeded rows derived from it are
+  simulations (`source="SIMULATED"`), not NASA measurements.
+- **pvdaq_access** (BSD 3-Clause, NREL; `pip install pvdaq_access`): optional dependency; we reuse its anonymous-S3
+  access pattern (boto3) but not its code.
