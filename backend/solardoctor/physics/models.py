@@ -94,6 +94,27 @@ class Plant(Base):
         UTCDateTime, default=utcnow, onupdate=utcnow, nullable=False
     )
 
+    # SolarPulse field names, kept as read aliases so the cloned frontend's shapes work unchanged.
+    @property
+    def latitude(self) -> float:
+        return self.lat
+
+    @property
+    def longitude(self) -> float:
+        return self.lon
+
+    @property
+    def timezone(self) -> str:
+        return self.tz
+
+    @property
+    def capacity_kw(self) -> float:
+        return self.dc_kw
+
+    @property
+    def inverter_capacity_kw(self) -> float:
+        return self.ac_kw
+
     park = relationship("Park", backref=backref("plant", uselist=False))
     inverters = relationship("Inverter", back_populates="plant", cascade="all, delete-orphan")
     strings = relationship("PvString", back_populates="plant", cascade="all, delete-orphan")
