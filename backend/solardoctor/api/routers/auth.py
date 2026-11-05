@@ -114,11 +114,13 @@ def register(payload: UserRegister, request: Request):
     try:
         try:
             user = register_user(session, email=data.get("email"), password=data.get("password"))
+            email = user.email
         except AuthValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
-        except LookupError as exc:
-            raise HTTPException(status_code=409, detail=str(exc))
-        return _serialize_user(user, project_ids_for(session, user.id))
+        except LookupError:
+            # Same answer as a fresh signup: do not reveal which emails have accounts.
+            email = normalize_email(data.get("email"))
+        return {"email": email, "role": "viewer", "status": "registered"}
     finally:
         session.close()
 

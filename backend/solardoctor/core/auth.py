@@ -94,12 +94,17 @@ def validate_email(raw: object) -> str:
     return email
 
 
-def validate_password(raw: object) -> str:
+def validate_password(raw: object, email: object = None) -> str:
     password = raw if isinstance(raw, str) else ""
     if not (MIN_PASSWORD_LEN <= len(password) <= MAX_PASSWORD_LEN):
         raise AuthValidationError(
             f"Password must be {MIN_PASSWORD_LEN}–{MAX_PASSWORD_LEN} characters"
         )
+    if len(set(password)) == 1:
+        raise AuthValidationError("Password is too weak: do not repeat a single character")
+    local = normalize_email(email).split("@")[0]
+    if local and password.strip().lower() == local:
+        raise AuthValidationError("Password is too weak: it must not equal your email name")
     return password
 
 
@@ -160,7 +165,7 @@ def project_ids_for(session, user_id: int) -> list[int]:
 def create_user(session, *, email, password, role, project_ids=()) -> User:
     """Validate and insert a user. Raises AuthValidationError; LookupError on duplicate."""
     email = validate_email(email)
-    password = validate_password(password)
+    password = validate_password(password, email)
     role = validate_role(role)
     if session.query(User.id).filter(User.email == email).first() is not None:
         raise LookupError("A user with that email already exists")
@@ -221,8 +226,13 @@ def _session_ttl() -> timedelta:
     return timedelta(hours=min(max(hours, 0.25), 24 * 30))
 
 
-def create_session(session, user: User) -> tuple[str, datetime]:
+def create_session(session, user: User, family: str | None = None) -> tuple[str, datetime]:
+    """Issue an access token. With `family`, the token is `<random>.<family>` so
+    a bearer-only logout can find (and kill) the refresh family of this login."""
     token, digest = _new_token()
+    if family:
+        token = f"{token}.{family}"
+        digest = _token_hash(token)
     expires_at = datetime.utcnow() + _session_ttl()
     session.add(UserSession(user_id=user.id, token_hash=digest, expires_at=expires_at))
     session.commit()
@@ -245,13 +255,48 @@ class TokenPair:
     refresh_expires_at: datetime
 
 
-def create_token_pair(session, user: User) -> TokenPair:
-    """Issue an access session plus a single-use refresh token (stored hashed in
-    `user_sessions`, so no schema change; see _refresh_hash)."""
-    access, access_exp = create_session(session, user)
-    refresh = secrets.token_urlsafe(32)
+# A login owns a "family": a random id `fid` carried by its access tokens
+# (`<random>.<fid>`) and refresh tokens (`<fid>.<random>`), plus one marker row
+# in user_sessions (hash of "family:<fid>"). A refresh token is only honoured
+# while its marker exists, so deleting the marker (bearer logout, reuse of an
+# already-rotated token) kills every descendant refresh token. All of this fits
+# the existing user_sessions columns: no migration.
+
+def _family_hash(fid: str) -> str:
+    return hashlib.sha256(b"family:" + fid.encode()).hexdigest()
+
+
+def _family_of_refresh(token: str) -> str:
+    fid, sep, rest = (token or "").partition(".")
+    return fid if sep and rest and fid.isalnum() else ""
+
+
+def _family_of_access(token: str) -> str:
+    rest, sep, fid = (token or "").rpartition(".")
+    return fid if sep and rest and fid.isalnum() else ""
+
+
+def revoke_family(session, fid: str) -> None:
+    if fid:
+        session.query(UserSession).filter(UserSession.token_hash == _family_hash(fid)).delete(
+            synchronize_session=False
+        )
+        session.commit()
+
+
+def create_token_pair(session, user: User, family: str | None = None) -> TokenPair:
+    """Issue an access session plus a single-use refresh token. Pass the existing
+    `family` when rotating so the chain stays one revocable unit."""
+    fid = family or secrets.token_hex(8)
+    access, access_exp = create_session(session, user, family=fid)
+    refresh = f"{fid}.{secrets.token_urlsafe(32)}"
     refresh_exp = datetime.utcnow() + _refresh_ttl()
     session.add(UserSession(user_id=user.id, token_hash=_refresh_hash(refresh), expires_at=refresh_exp))
+    marker = session.query(UserSession).filter(UserSession.token_hash == _family_hash(fid)).first()
+    if marker is None:
+        session.add(UserSession(user_id=user.id, token_hash=_family_hash(fid), expires_at=refresh_exp))
+    else:
+        marker.expires_at = refresh_exp
     session.commit()
     return TokenPair(access, access_exp, refresh, refresh_exp)
 
@@ -260,33 +305,48 @@ def rotate_refresh_token(session, refresh_token: str) -> tuple[User, TokenPair] 
     """Exchange a live refresh token for a new pair; the old one dies atomically.
 
     Returns None for unknown, expired, already-used, or disabled-user tokens.
+    Presenting an already-rotated token of a live family is treated as theft:
+    the whole family is revoked, so the legitimate holder must log in again.
     """
-    if not refresh_token:
+    fid = _family_of_refresh(refresh_token)
+    if not fid:
         return None
-    digest = _refresh_hash(refresh_token)
-    row = session.query(UserSession).filter(UserSession.token_hash == digest).first()
+    marker = session.query(UserSession).filter(UserSession.token_hash == _family_hash(fid)).first()
+    if marker is None or marker.expires_at <= datetime.utcnow():
+        return None
+    row = session.query(UserSession).filter(
+        UserSession.token_hash == _refresh_hash(refresh_token)
+    ).first()
     if row is None:
+        revoke_family(session, fid)          # reuse of a rotated token
         return None
     # Single-use: only the caller whose DELETE hits the row may proceed.
     deleted = session.query(UserSession).filter(UserSession.id == row.id).delete(
         synchronize_session=False
     )
     session.commit()
-    if deleted != 1 or row.expires_at <= datetime.utcnow():
+    if deleted != 1:
+        return None
+    if row.expires_at <= datetime.utcnow():
+        revoke_family(session, fid)
         return None
     user = session.query(User).filter(User.id == row.user_id).first()
     if user is None or user.disabled:
         return None
-    return user, create_token_pair(session, user)
+    return user, create_token_pair(session, user, family=fid)
 
 
 def revoke_refresh_token(session, refresh_token: str) -> None:
-    if not refresh_token:
-        return
-    session.query(UserSession).filter(
-        UserSession.token_hash == _refresh_hash(refresh_token)
-    ).delete(synchronize_session=False)
+    revoke_family(session, _family_of_refresh(refresh_token))
+
+
+def revoke_session(session, token: str) -> None:
+    """Log out: drop the access session and the refresh family of that login."""
+    session.query(UserSession).filter(UserSession.token_hash == _token_hash(token)).delete(
+        synchronize_session=False
+    )
     session.commit()
+    revoke_family(session, _family_of_access(token))
 
 
 def register_user(session, *, email, password) -> User:
@@ -311,13 +371,6 @@ def resolve_session(session, token: str) -> User | None:
     if user is None or user.disabled:
         return None
     return user
-
-
-def revoke_session(session, token: str) -> None:
-    session.query(UserSession).filter(UserSession.token_hash == _token_hash(token)).delete(
-        synchronize_session=False
-    )
-    session.commit()
 
 
 def revoke_user_sessions(session, user_id: int) -> None:
