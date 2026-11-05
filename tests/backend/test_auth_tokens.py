@@ -16,6 +16,14 @@ def _reset_register_limiter():
     _auth.register_limiter.reset()
 
 
+def _real_png() -> bytes:
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), (200, 30, 30)).save(buf, "PNG")
+    return buf.getvalue()
+
+
 def _login(client, email, prefix=""):
     r = client.post(f"{prefix}/auth/login", json={"email": email, "password": PASSWORD})
     assert r.status_code == 200, r.text
@@ -304,17 +312,16 @@ def test_technician_can_work_own_fault(client, tech_world):
     assert r.status_code == 200 and r.json()["status"] == "in_progress"
     c = client.post(f"/api/v1/faults/{fid}/comments", json={"body": "replaced string fuse", "author": "spoof"}, headers=h)
     assert c.status_code == 201 and c.json()["author"] == "t@example.test"
-    png = b"\x89PNG\r\n\x1a\n" + b"\0" * 32
-    # upload is permitted by policy and ownership; image validation is the faults router's business
-    p = client.post(f"/faults/{fid}/photos", files={"file": ("p.png", png, "image/png")}, headers=h)
-    assert p.status_code not in (403, 404), p.text
+    p = client.post(f"/faults/{fid}/photos", files={"file": ("p.png", _real_png(), "image/png")}, headers=h)
+    assert p.status_code == 201, p.text
+    assert [x["id"] for x in client.get(f"/faults/{fid}/photos", headers=h).json()] == [p.json()["id"]]
     r = client.patch(f"/faults/{fid}", json={"status": "resolved", "resolution_note": "fixed"}, headers=h)
     assert r.status_code == 200 and r.json()["status"] == "resolved"
 
 
 def test_technician_cannot_touch_others_faults(client, tech_world):
     h = tech_world["h"]
-    png = b"\x89PNG\r\n\x1a\n" + b"\0" * 32
+    png = _real_png()
     for fid in (tech_world["other"], tech_world["unassigned"]):
         assert client.patch(f"/faults/{fid}", json={"status": "in_progress"}, headers=h).status_code == 404
         assert client.post(f"/faults/{fid}/comments", json={"body": "x"}, headers=h).status_code == 404
@@ -352,3 +359,66 @@ def test_operator_and_viewer_unchanged_on_faults(client, users_mode, make_user, 
     assert client.patch(f"/faults/{fid}", json={"assignee": "x@y.test", "status": "assigned"}, headers=op).status_code == 200
     assert client.patch(f"/faults/{fid}", json={"status": "resolved"}, headers=v).status_code == 403
     assert client.post(f"/faults/{fid}/comments", json={"body": "x"}, headers=v).status_code == 403
+
+
+# ── token-namespace separation, register timing, anonymous logout ───────────
+
+def test_family_and_refresh_strings_are_not_bearer_tokens(client, users_mode, make_user):
+    make_user("a@example.test", "viewer")
+    body = _login(client, "a@example.test")
+    fid = body["access_token"].rsplit(".", 1)[1]
+    for bad in (f"family:{fid}", f"refresh:{body['refresh_token']}", body["refresh_token"]):
+        r = client.get("/auth/me", headers={"Authorization": f"Bearer {bad}"})
+        assert r.status_code == 401, bad
+        assert client.get("/auth/me", params={"api_key": bad}).status_code == 401
+    # the genuine access token still works, and the refresh token still refreshes
+    assert client.get("/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"}).status_code == 200
+    assert client.post("/auth/refresh", json={"refresh_token": body["refresh_token"]}).status_code == 200
+
+
+def test_leaked_access_token_cannot_outlive_its_ttl(client, users_mode, make_user, db_session):
+    """Expire the access row; nothing derivable from the token string may still authenticate."""
+    from datetime import datetime, timedelta
+    from solardoctor.core.auth import _token_hash
+    from solardoctor.db.models import UserSession
+    make_user("a@example.test", "viewer")
+    body = _login(client, "a@example.test")
+    tok = body["access_token"]
+    fid = tok.rsplit(".", 1)[1]
+    db_session.query(UserSession).filter(UserSession.token_hash == _token_hash(tok)).update(
+        {UserSession.expires_at: datetime.utcnow() - timedelta(seconds=1)})
+    db_session.commit()
+    for cand in (tok, f"family:{fid}", f"refresh:{fid}", fid):
+        assert client.get("/auth/me", headers={"Authorization": f"Bearer {cand}"}).status_code == 401
+
+
+def test_register_runs_hasher_for_fresh_and_duplicate(client, users_mode, make_user, monkeypatch):
+    from solardoctor.core import auth as core_auth
+    calls = []
+    real = core_auth.hash_user_password
+    monkeypatch.setattr(core_auth, "hash_user_password", lambda p: (calls.append(1), real(p))[1])
+    make_user("dup@example.test", "viewer")
+    calls.clear()
+    assert client.post("/auth/register", json={"email": "fresh@example.test", "password": PASSWORD}).status_code == 201
+    fresh_calls = len(calls)
+    calls.clear()
+    assert client.post("/auth/register", json={"email": "dup@example.test", "password": PASSWORD}).status_code == 201
+    assert fresh_calls == len(calls) == 1
+
+
+def test_anonymous_logout_needs_proof_to_revoke_family(client, users_mode, make_user):
+    make_user("a@example.test", "viewer")
+    body = _login(client, "a@example.test")
+    fid = body["access_token"].rsplit(".", 1)[1]
+    # guessed/known fid with junk credentials: 204 but nothing is revoked
+    assert client.post("/auth/logout", headers={"Authorization": f"Bearer junkjunkjunkjunkjunkjunk.{fid}"}).status_code == 204
+    assert client.post("/auth/logout", json={"refresh_token": f"{fid}.junk"}).status_code == 204
+    assert client.post("/auth/logout", headers={"Authorization": f"Bearer family:{fid}"}).status_code == 204
+    assert client.post("/auth/refresh", json={"refresh_token": body["refresh_token"]}).status_code == 200
+
+
+def test_technician_write_allowlist_is_exact(client, tech_world):
+    h, fid = tech_world["h"], tech_world["mine"]
+    # near-misses must not be treated as the allowed fault routes
+    for path in (f"/faults/{fid}/", f"/faults/{fid}x", f"//faults/{fid}"):
+        assert client.patch(path, json={"status": "in_progress"}, headers=h, follow_redirects=False).status_code in (307, 403, 404, 405), path
