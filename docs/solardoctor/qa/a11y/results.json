@@ -147,39 +147,19 @@
     "route": "/dashboard/performance",
     "viewport": "desktop",
     "critical": 0,
-    "serious": 1,
+    "serious": 0,
     "moderate": 0,
     "minor": 0,
-    "violations": [
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1,
-        "targets": [
-          "div:nth-child(1) > div:nth-child(1) > button[type=\"button\"]:nth-child(1)"
-        ]
-      }
-    ]
+    "violations": []
   },
   {
     "route": "/dashboard/performance",
     "viewport": "mobile",
     "critical": 0,
-    "serious": 1,
+    "serious": 0,
     "moderate": 0,
     "minor": 0,
-    "violations": [
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1,
-        "targets": [
-          "div:nth-child(1) > div:nth-child(1) > button[type=\"button\"]:nth-child(1)"
-        ]
-      }
-    ]
+    "violations": []
   },
   {
     "route": "/dashboard/inspections",
