@@ -68,11 +68,30 @@ drone/  alembic/  scripts/  deploy/  tests/  docs/solardoctor/
 Python 3.11+, Node 20+.
 
 ```bash
-make setup        # venv, backend + frontend deps, .env from .env.example
-make seed         # demo plants + 30 days of SIMULATED telemetry
-make dev          # API http://localhost:8000/docs  +  UI http://localhost:3000
-make test
+git clone https://github.com/madhavzanwar/solar-doctor && cd solar-doctor
+make setup        # venv, backend + frontend deps, .env from .env.example (first run is slow: ~9 min measured)
+SOLARDOCTOR_SEED_ADMIN_PASSWORD='choose-a-long-password' make seed
+                  # migrates the DB, then 3 demo plants + 30 days of SIMULATED telemetry and 2 users
+make dev          # API http://localhost:8000/docs  +  UI http://localhost:3000   (Ctrl-C stops both)
+make test         # backend pytest + frontend lint/tsc/vitest
+make lint         # ruff + eslint
 ```
+
+Log in at http://localhost:3000/login as `admin@solardoctor.example` with the password you set (without
+`SOLARDOCTOR_SEED_ADMIN_PASSWORD` one is generated and printed once; `technician@solardoctor.example` works the same via
+`SOLARDOCTOR_SEED_TECH_PASSWORD`). `.env` is created from `.env.example` and is loaded by `make seed`, `make dev`,
+`make api`; it sets `SOLARDOCTOR_AUTH_MODE=users`. No network? `make seed SEED_ARGS=--offline`. Other ports:
+`make dev API_PORT=8010 WEB_PORT=3010`.
+
+### Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `dev.sh: port 8000 is already in use` | Another process holds the port. Stop it or run `make dev API_PORT=8010 WEB_PORT=3010`. |
+| API answers 401 / "Invalid email or password" for the seeded admin | The API is not in `users` mode (a `.env` without `SOLARDOCTOR_AUTH_MODE=users`; the app does not read `.env` itself, `make` sources it) or the password differs from the one used at seed time. Start the API with `make dev`/`make api`, not bare `uvicorn`, or export the variable. |
+| `/api/v1/health` shows `"migrations": {"state": "failed"}`, log says `duplicate column name` | The DB was created by seeding an un-migrated database (older `make seed`). Delete `solardoctor.db` and run `make seed` again; it now runs `alembic upgrade head` first. |
+| `make test` prints "WEIGHTS-DEPENDENT TESTS DESELECTED" | Expected until `ml/thermal/checkpoints/best.pt` exists (`make weights`; the Hugging Face repo is not published yet). 10 tests are deselected, all others must pass. |
+| Seed cannot reach NASA POWER | `make seed SEED_ARGS=--offline` uses the labelled synthetic cloud model instead. |
 
 Thermal detection is off by default (`ENABLE_THERMAL=false`). Weights are **not** in git:
 
