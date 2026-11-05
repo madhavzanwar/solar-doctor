@@ -17,6 +17,7 @@ import pvlib
 
 from ml.forecast.config import PlantConfig
 from ml.forecast.features.pvlib_features import compute_pvlib_features
+from solardoctor.physics.tracker import require_fixed_tilt_baseline
 
 # PVWatts default aggregate DC system losses (soiling excluded, handled separately) and inverter.
 SYSTEM_LOSS_FRACTION = 0.14
@@ -62,7 +63,9 @@ def expected_power(
     ``ghi`` (W/m2, indexed like ``times``) overrides clear-sky when measured/forecast irradiance
     is available; otherwise the result is the clear-sky ceiling. Returns columns
     ``ghi, poa_global, cell_temp, solar_elevation, p_dc_kw, p_ac_kw``. Night -> 0.
+    Raises ``BaselineUnsupportedForTrackers`` (HTTP 422) for single-axis tracker plants.
     """
+    require_fixed_tilt_baseline(plant)
     idx = _utc_index(times)
     cfg = plant_config_from_orm(plant)
     cs = clearsky_irradiance(cfg.latitude, cfg.longitude, idx, cfg.altitude)

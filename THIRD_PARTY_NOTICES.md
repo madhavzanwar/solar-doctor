@@ -73,3 +73,9 @@ Instrument Serif: SIL OFL 1.1).
   simulations (`source="SIMULATED"`), not NASA measurements.
 - **pvdaq_access** (BSD 3-Clause, NREL; `pip install pvdaq_access`): optional dependency; we reuse its anonymous-S3
   access pattern (boto3) but not its code.
+
+## Dev-only tooling under MPL-2.0
+
+- **axe-core** 4.14.0 and **@axe-core/playwright** 4.14.0 (MPL-2.0, Deque Systems; https://github.com/dequelabs/axe-core,
+  https://github.com/dequelabs/axe-core-npm). Used only by `frontend/tests/a11y/run.mjs` as `devDependencies`. They are
+  unmodified, installed from npm, not copied into this repository and not shipped in the production bundle.

@@ -16,7 +16,8 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from solardoctor.physics.models import PlantAlert
+from solardoctor.physics.models import Plant, PlantAlert
+from solardoctor.physics.tracker import is_tracker_plant
 from solardoctor.physics.schemas.alert import AlertThresholdRequest
 
 logger = logging.getLogger("solardoctor.physics.anomaly")
@@ -67,6 +68,11 @@ def detect_and_persist_anomaly(
     alert_type: str = "shortfall",
     source: str = "USER",
 ) -> Optional[PlantAlert]:
+    plant = db.get(Plant, plant_id)
+    if plant is not None and is_tracker_plant(plant):
+        # Callers pass a fixed-tilt baseline/forecast as "expected"; a deficit against it is meaningless here.
+        logger.info("No anomaly alert for tracker plant %s (fixed-tilt baseline invalid)", plant_id)
+        return None
     deviation = calculate_deviation(expected_power_kw, actual_power_kw)
     if deviation is None:
         return None

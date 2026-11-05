@@ -62,7 +62,7 @@ export default function PlantsPage() {
           <div className="dash-spinner" />
           <div>Loading plants…</div>
         </div>
-      ) : plants.length === 0 ? (
+      ) : error ? null : plants.length === 0 ? (
         <div className="dash-card dash-empty">
           <p>No plants registered yet.</p>
           <Link

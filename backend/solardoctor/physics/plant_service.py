@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from solardoctor.db.models import Park
 from solardoctor.physics.models import Plant
+from solardoctor.physics.tracker import has_tracker_marker, is_tracker_plant, with_marker
 from solardoctor.physics.schemas.plant import (
     PlantConfigCreate, PlantConfigResponse, PlantConfigUpdate, PlantCreate, PlantUpdate,
 )
@@ -57,8 +58,17 @@ def _commit(db: Session, park_id: str | None) -> None:
         raise HTTPException(status.HTTP_409_CONFLICT, f"Park {park_id} is already linked to another plant")
 
 
+def _reject_marker(location: object) -> None:
+    if has_tracker_marker(location):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "The single-axis tracker marker is reserved: it is set only by the PVDAQ importer / seed, "
+            "not through the plants API.")
+
+
 def create_plant(db: Session, data: PlantCreate) -> Plant:
     fields = _map(data.model_dump())
+    _reject_marker(fields.get("location"))
     _check_park(db, fields.get("park_id"))
     plant = Plant(**fields)
     db.add(plant)
@@ -85,6 +95,11 @@ def list_plants(db: Session, skip: int = 0, limit: int = 100, active_only: bool 
 def update_plant(db: Session, plant_id: int, data: PlantUpdate) -> Plant:
     plant = get_plant(db, plant_id)
     fields = _map(data.model_dump(exclude_unset=True))
+    if "location" in fields:
+        if is_tracker_plant(plant):
+            fields["location"] = with_marker(fields["location"])  # API users cannot strip the marker
+        else:
+            _reject_marker(fields["location"])
     if "park_id" in fields:
         _check_park(db, fields["park_id"], plant_id)
     for k, v in fields.items():
