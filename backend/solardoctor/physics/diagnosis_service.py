@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from solardoctor.physics.models import Diagnosis, Plant, PlantAlert, Telemetry
+from solardoctor.physics.tracker import BaselineUnsupportedForTrackers, is_tracker_plant
 from solardoctor.physics.schemas.diagnosis import (
     DiagnosisRequest,
     DiagnosisResponse,
@@ -29,10 +30,29 @@ from solardoctor.physics.schemas.diagnosis import (
 
 logger = logging.getLogger("solardoctor.physics.diagnosis")
 
-# Standard Commercial PPA Energy Rate ($/kWh)
+# SolarPulse's default energy rate (USD/kWh). Only the golden-tested engine default uses it; the API
+# always passes the plant's INR tariff or currency="unset".
 DEFAULT_PPA_TARIFF_PER_KWH = 0.08
 DEFAULT_PEAK_SUN_HOURS = 5.5
 CURRENCY_UNSET = "unset"
+
+_CURRENCY_SYMBOL = {"USD": "$", "INR": "₹"}
+_COST_PLACEHOLDER = "($/kW)"  # as written in the SolarPulse taxonomy text (kept verbatim for golden parity)
+
+
+def currency_for_plant(plant: Optional[Plant]) -> str:
+    """INR when the plant has a tariff, else 'unset' (no currency or price is ever assumed)."""
+    return "INR" if plant is not None and plant.tariff_inr_kwh is not None else CURRENCY_UNSET
+
+
+def localize_money_text(text: str, currency: str) -> str:
+    """Make ``($/kW)`` in taxonomy step text currency-aware. USD keeps SolarPulse's text unchanged."""
+    if _COST_PLACEHOLDER not in text or currency == "USD":
+        return text
+    if currency == CURRENCY_UNSET:
+        return text.replace(_COST_PLACEHOLDER, "(cost per kW; currency not configured, not estimated)")
+    sym = _CURRENCY_SYMBOL.get(currency, currency + " ")
+    return text.replace(_COST_PLACEHOLDER, f"({sym}/kW)")
 
 
 class InsufficientDataError(ValueError):
@@ -449,7 +469,7 @@ def diagnose_root_cause(
     tariff = DEFAULT_PPA_TARIFF_PER_KWH if tariff_per_kwh is None else tariff_per_kwh
     unpriced = currency == CURRENCY_UNSET  # no plant tariff: do not invent a price
     daily_revenue_loss = 0.0 if unpriced else round(loss_kw * DEFAULT_PEAK_SUN_HOURS * tariff, 2)
-    sym = {"USD": "$", "INR": "₹"}.get(currency, currency + " ")
+    sym = _CURRENCY_SYMBOL.get(currency, currency + " ")
 
     category: str
     confidence: float
@@ -493,7 +513,7 @@ def diagnose_root_cause(
     steps = [
         TechnicianStep(
             step_number=s["step_number"],
-            action=s["action"],
+            action=localize_money_text(s["action"], currency),
             required_tools=s.get("required_tools", []),
             safety_note=s.get("safety_note"),
         )
@@ -551,9 +571,15 @@ def diagnose_root_cause(
 
 # ── Database Persistence Helpers (sync SQLAlchemy 2.0) ───────────────────────
 
-def _record_to_response(r: Diagnosis, plant_name: Optional[str] = None) -> DiagnosisResponse:
+def _record_to_response(r: Diagnosis, plant_name: Optional[str] = None,
+                        currency: str = CURRENCY_UNSET) -> DiagnosisResponse:
+    # The diagnoses table has no currency column: the caller derives it from the plant tariff.
     steps = [TechnicianStep(**s) for s in json.loads(r.technician_steps_json)]
     return DiagnosisResponse(
+        currency=currency,
+        financial_assumption=(
+            "No tariff configured: financial impact not estimated (0.0 is a placeholder, not a value)."
+            if currency == CURRENCY_UNSET else None),
         id=r.id,
         plant_id=r.plant_id,
         plant_name=plant_name,
@@ -612,7 +638,10 @@ def get_diagnosis_by_alert_id(db: Session, alert_id: int) -> Optional[DiagnosisR
         .order_by(Diagnosis.created_at.desc())
         .limit(1)
     ).scalar_one_or_none()
-    return _record_to_response(record) if record else None
+    if record is None:
+        return None
+    plant = db.get(Plant, record.plant_id)
+    return _record_to_response(record, plant.name if plant else None, currency_for_plant(plant))
 
 
 MAX_TELEMETRY_AGE_HOURS_ENV = "SOLARDOCTOR_DIAGNOSIS_MAX_TELEMETRY_AGE_H"
@@ -632,7 +661,10 @@ def resolve_power_inputs(db: Session, plant: Plant, expected: Optional[float], a
     Raises InsufficientDataError with the reason otherwise (callers return 422 and persist nothing).
     """
     if expected is not None and actual is not None:
-        return expected, actual, None
+        return expected, actual, None  # caller-supplied values are not baseline output
+    if is_tracker_plant(plant):
+        # Stored telemetry expected power is the fixed-tilt baseline, which is invalid for trackers.
+        raise BaselineUnsupportedForTrackers(plant)
     if expected is not None or actual is not None:
         raise InsufficientDataError(
             "Provide both expected_power_kw and actual_power_kw, or neither (to use recent telemetry); "
@@ -704,7 +736,7 @@ def run_diagnosis_for_alert(db: Session, alert_id: int) -> DiagnosisResponse:
         module_temp_c=mod_temp,
         timestamp=alert.timestamp,
         tariff_per_kwh=plant.tariff_inr_kwh if plant else None,
-        currency="INR" if plant and plant.tariff_inr_kwh is not None else CURRENCY_UNSET,
+        currency=currency_for_plant(plant),
     )
     saved = persist_diagnosis(db, diagnosis)
     diagnosis.id = saved.id
@@ -718,4 +750,6 @@ def list_diagnoses_by_plant(db: Session, plant_id: int, limit: int = 50) -> List
         .order_by(Diagnosis.created_at.desc(), Diagnosis.id.desc())
         .limit(limit)
     ).scalars().all()
-    return [_record_to_response(r) for r in records]
+    plant = db.get(Plant, plant_id)
+    cur = currency_for_plant(plant)
+    return [_record_to_response(r, plant.name if plant else None, cur) for r in records]
