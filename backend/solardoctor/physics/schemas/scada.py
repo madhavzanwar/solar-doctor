@@ -25,6 +25,14 @@ class ScadaReadingCreate(BaseModel):
     module_temperature_c: Optional[float] = None
     inverter_power_kw: Optional[float] = Field(default=None, ge=0)
     expected_power_kw: Optional[float] = Field(default=None, ge=0)
+    # SolarDoctor additions (optional)
+    poa_wm2: Optional[float] = Field(default=None, ge=0)
+    p_dc_kw: Optional[float] = Field(default=None, ge=0)
+    v: Optional[float] = None
+    i: Optional[float] = None
+    inverter_id: Optional[int] = None
+    string_id: Optional[int] = None
+    source: str = "USER"
 
 
 class ScadaReadingResponse(BaseModel):
