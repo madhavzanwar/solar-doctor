@@ -75,7 +75,7 @@ export default function PlantsPage() {
         </div>
       ) : (
         <div className="dash-card" style={{ padding: 0 }}>
-          <div className="dash-table-wrap">
+          <div className="dash-table-wrap" tabIndex={0} role="region" aria-label="Plants table (scrollable)">
             <table className="dash-table">
               <thead>
                 <tr>
@@ -86,7 +86,9 @@ export default function PlantsPage() {
                   <th>Inverter</th>
                   <th>Status</th>
                   <th>Created</th>
-                  <th></th>
+                  <th>
+                    <span className="sd-visually-hidden">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

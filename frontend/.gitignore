@@ -42,3 +42,4 @@ next-env.d.ts
 
 # visual harness build
 /.next-visual/
+/.next-a11y/

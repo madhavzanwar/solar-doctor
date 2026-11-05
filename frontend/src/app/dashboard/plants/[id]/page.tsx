@@ -92,7 +92,7 @@ function ForecastChart({ records }: { records: ForecastRecord[] }) {
   });
 
   return (
-    <div className="dash-chart-wrap">
+    <div className="dash-chart-wrap" tabIndex={0} role="region" aria-label="Forecast chart (scrollable)">
       <svg
         className="dash-chart-svg"
         style={{ height: 220 }}

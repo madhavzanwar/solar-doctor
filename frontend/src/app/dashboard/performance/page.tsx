@@ -402,7 +402,7 @@ export default function ForecastsPage() {
                   </label>
                 </div>
 
-                <div className="dash-table-wrap">
+                <div className="dash-table-wrap" tabIndex={0} role="region" aria-label="Forecast table (scrollable)">
                   <table className="dash-table">
                     <thead>
                       <tr>
@@ -580,7 +580,7 @@ export default function ForecastsPage() {
               </p>
             </div>
 
-            <div className="dash-table-wrap">
+            <div className="dash-table-wrap" tabIndex={0} role="region" aria-label="Forecast table (scrollable)">
               <table className="dash-table">
                 <thead>
                   <tr>
@@ -677,7 +677,7 @@ export default function ForecastsPage() {
             </div>
           ) : (
             <div className="dash-card" style={{ padding: 0 }}>
-              <div className="dash-table-wrap">
+              <div className="dash-table-wrap" tabIndex={0} role="region" aria-label="Forecast table (scrollable)">
                 <table className="dash-table">
                   <thead>
                     <tr>

@@ -67,6 +67,7 @@ async function startServer() {
     cwd: frontend,
     env: { ...process.env, NEXT_DIST_DIR: DIST },
     stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
   });
   await new Promise((res, rej) => {
     const t = setTimeout(() => rej(new Error("next start timed out")), 60000);
@@ -205,7 +206,11 @@ async function main() {
     }
   } finally {
     await browser.close();
-    server.kill();
+    try {
+      process.kill(-server.pid);
+    } catch {
+      // already gone
+    }
   }
   writeFileSync(join(outDir, "results.json"), JSON.stringify(results, null, 2));
   const pct = (v) => `${(v * 100).toFixed(1)}%`;
