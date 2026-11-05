@@ -53,13 +53,7 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_weights.py
       - name: Check tests/weights_required.txt ids still exist (pytest ignores stale --deselect ids)
-        run: |
-          ids="$(grep -v '^#' tests/weights_required.txt | grep .)"
-          echo "$ids" | wc -l
-          # shellcheck disable=SC2086
-          python -m pytest --collect-only -q $ids > /tmp/collect.txt || { cat /tmp/collect.txt; echo "::error::a test id in tests/weights_required.txt no longer exists"; exit 1; }
-          n="$(grep -c '::' /tmp/collect.txt)"
-          [ "$n" -eq "$(echo "$ids" | wc -l)" ] || { echo "::error::expected $(echo "$ids" | wc -l) tests, collected $n"; exit 1; }
+        run: bash scripts/check_weights_ids.sh
       - name: pytest (weights present -> thermal enabled, all tests; absent -> weights tests deselected loudly)
         run: |
           if [ -s ml/thermal/checkpoints/best.pt ]; then
