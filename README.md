@@ -91,6 +91,7 @@ Log in at http://localhost:3000/login as `admin@solardoctor.example` with the pa
 | API answers 401 / "Invalid email or password" for the seeded admin | The API is not in `users` mode (a `.env` without `SOLARDOCTOR_AUTH_MODE=users`; the app does not read `.env` itself, `make` sources it) or the password differs from the one used at seed time. Start the API with `make dev`/`make api`, not bare `uvicorn`, or export the variable. |
 | `/api/v1/health` shows `"migrations": {"state": "failed"}`, log says `duplicate column name` | The DB was created by seeding an un-migrated database (older `make seed`). Delete `solardoctor.db` and run `make seed` again; it now runs `alembic upgrade head` first. |
 | `make test` prints "WEIGHTS-DEPENDENT TESTS DESELECTED" | Expected until `ml/thermal/checkpoints/best.pt` exists (`make weights`; the Hugging Face repo is not published yet). 10 tests are deselected, all others must pass. |
+| UI returns HTTP 500 and the dev log shows `next/font/google queries have exactly one entry` | The Next.js dev server could not download Google Fonts (needs network; seen once on a fresh clone behind a proxy). Check connectivity to `fonts.googleapis.com`, stop and re-run `make dev`. |
 | Seed cannot reach NASA POWER | `make seed SEED_ARGS=--offline` uses the labelled synthetic cloud model instead. |
 
 Thermal detection is off by default (`ENABLE_THERMAL=false`). Weights are **not** in git:
