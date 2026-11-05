@@ -15,7 +15,7 @@ export default function AuthLayout({
         >
           <Logo />
         </Link>
-        <div className="flex flex-1 flex-col justify-center py-10">{children}</div>
+        <main id="main" className="flex flex-1 flex-col justify-center py-10">{children}</main>
       </div>
     </div>
   );

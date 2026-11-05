@@ -50,7 +50,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className="dash-nav">
+        <nav className="dash-nav" aria-label="Primary">
           {navItems.map((item) => {
             const active =
               item.href === "/dashboard"
@@ -61,6 +61,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={`dash-nav-item${active ? " active" : ""}`}
+                aria-current={active ? "page" : undefined}
                 onClick={() => setSidebarOpen(false)}
               >
                 <span className="dash-nav-index">{item.index}</span>
@@ -106,7 +107,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <span className="dash-topbar-user">{user ?? ""}</span>
           </div>
         </header>
-        <main className="dash-content">{children}</main>
+        <main id="main" tabIndex={-1} className="dash-content">{children}</main>
       </div>
     </div>
   );

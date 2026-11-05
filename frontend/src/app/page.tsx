@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/landing/SiteHeader";
 
 export default function Home() {
   return (
-    <main>
+    <main id="main">
       <SiteHeader />
       <Hero />
       <Features />

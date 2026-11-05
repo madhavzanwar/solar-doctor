@@ -72,6 +72,9 @@ export default function RootLayout({
       <body
         className={`${fontVars} ${cloneMode ? "font-mode-clone" : "font-mode-upgrade"} antialiased`}
       >
+        <a href="#main" className="sd-skip-link">
+          Skip to content
+        </a>
         {children}
       </body>
     </html>
