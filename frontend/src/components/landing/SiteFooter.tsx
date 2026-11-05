@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export function SiteFooter() {
   return (
@@ -6,12 +7,12 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-12 sm:flex-row sm:items-end sm:justify-between sm:px-8">
         <div>
           <p className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">
-            SolarPulse AI
+            <Logo onDark />
           </p>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-[#c5d2c5]">
-            Hybrid solar yield forecasting and plant performance monitoring
-            prototype. Register to explore the operator dashboard as the backend
-            comes online.
+            Solar O&amp;M that closes the loop: detect silent yield loss, diagnose
+            it from a photo, explain the evidence, and act with a work order
+            whose fix is verified by recovered yield.
           </p>
         </div>
         <div className="flex gap-4 text-sm font-semibold">

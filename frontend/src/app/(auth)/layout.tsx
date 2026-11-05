@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export default function AuthLayout({
   children,
@@ -12,7 +13,7 @@ export default function AuthLayout({
           href="/"
           className="font-[family-name:var(--font-display)] text-lg font-bold tracking-tight text-[color:var(--field)]"
         >
-          SolarPulse AI
+          <Logo />
         </Link>
         <div className="flex flex-1 flex-col justify-center py-10">{children}</div>
       </div>

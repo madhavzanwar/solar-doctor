@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { isLoggedIn, logout } from "@/lib/api";
 
@@ -18,7 +19,7 @@ export function SiteHeader() {
           href="/"
           className="font-[family-name:var(--font-display)] text-lg font-bold tracking-tight text-white sm:text-xl"
         >
-          SolarPulse AI
+          <Logo onDark />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3">
           <a

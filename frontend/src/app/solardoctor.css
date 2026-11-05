@@ -1,0 +1,174 @@
+/*
+ * SolarDoctor additions (DESIGN.md §2.2, §3.2, §11). Imported after globals.css and dashboard.css, which stay
+ * byte-identical to SolarPulseAI. Nothing in here edits those files; it only adds tokens and new classes.
+ */
+
+:root {
+  /* Accessible small sun text on white/paper (5.13:1) */
+  --sun-ink: #9a6118;
+  --sun-ink-on-dark: #e0a24a;
+
+  /* Severity scale: always pair with a text label */
+  --sev-critical: #9b2c2c;
+  --sev-critical-dim: rgba(155, 44, 44, 0.1);
+  --sev-high: #b45309;
+  --sev-high-dim: rgba(180, 83, 9, 0.11);
+  --sev-medium: #c9852a;
+  --sev-medium-dim: rgba(201, 133, 42, 0.12);
+  --sev-low: #5b6b7a;
+  --sev-low-dim: rgba(91, 107, 122, 0.1);
+  --sev-resolved: #1a3a2a;
+  --sev-resolved-dim: rgba(26, 58, 42, 0.08);
+
+  /* Defect classes (6-class photo classifier); never reuse for severity */
+  --cls-clean: #2f6b4f;
+  --cls-dusty: #a8792f;
+  --cls-bird: #6b6f4a;
+  --cls-snow: #4f7f9e;
+  --cls-electrical: #9b2c2c;
+  --cls-physical: #6a4c7d;
+}
+
+/* Font modes: both families are declared in layout.tsx; the mode picks which one the shared variables use. */
+.font-mode-upgrade {
+  --font-display: var(--f-bricolage), "Segoe UI", sans-serif;
+  --font-sans: var(--f-geist), "Segoe UI", sans-serif;
+  --font-mono: var(--f-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-serif: var(--f-instrument), Georgia, serif;
+}
+
+.font-mode-clone {
+  --font-display: var(--f-syne), "Segoe UI", sans-serif;
+  --font-sans: var(--f-source-sans), "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-serif: var(--f-source-sans), Georgia, serif;
+}
+
+.mono,
+.dash-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.serif-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Accessibility: visible focus ring on every interactive element (DESIGN.md §11) */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--field);
+  outline-offset: 2px;
+}
+
+.dash-sidebar a:focus-visible,
+.dash-sidebar button:focus-visible {
+  outline-color: #f4f7f4;
+}
+
+/* The original lacks a reduced-motion rule */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Logo: the sidebar logo is a block of two lines (eyebrow span + wordmark) */
+.dash-logo strong {
+  font-weight: inherit;
+}
+
+/* Skip link */
+.sd-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0.5rem;
+  z-index: 100;
+  background: var(--field);
+  color: #fff;
+  padding: 0.5rem 0.85rem;
+  border-radius: 2px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.sd-skip-link:focus {
+  left: 0.5rem;
+}
+
+/* Provenance badge (MOCK / SIMULATED) */
+.sd-source-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 2px;
+  background: rgba(20, 24, 20, 0.06);
+  color: var(--muted);
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Illustrated empty state (line drawings in --field) */
+.sd-empty {
+  text-align: center;
+  padding: 2.25rem 1rem;
+  color: var(--muted);
+}
+.sd-empty svg {
+  display: block;
+  margin: 0 auto 1rem;
+  stroke: var(--field);
+  fill: none;
+  stroke-width: 1.5;
+}
+.sd-empty-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin: 0 0 0.35rem;
+}
+.sd-empty p {
+  margin: 0 auto;
+  max-width: 34rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Skeleton loading rows */
+.sd-skeleton {
+  display: block;
+  height: 0.9rem;
+  margin: 0.7rem 0;
+  background: linear-gradient(90deg, rgba(20, 24, 20, 0.05), rgba(20, 24, 20, 0.1), rgba(20, 24, 20, 0.05));
+  background-size: 200% 100%;
+  animation: sd-shimmer 1.4s linear infinite;
+  border-radius: 2px;
+}
+@keyframes sd-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Gradient placeholder used when a licensed photo is not available (DESIGN.md §9) */
+.sd-photo-placeholder {
+  background: linear-gradient(135deg, #1a3a2a 0%, #234a36 55%, #3a5a43 100%);
+}

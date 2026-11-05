@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata: Metadata = {
-  title: "Register — SolarPulse AI",
+  title: "Register — SolarDoctor",
 };
 
 export default function RegisterPage() {

@@ -63,7 +63,7 @@ export function LoginForm() {
         Log in
       </h1>
       <p className="mt-2 text-[color:var(--muted)]">
-        Access the SolarPulse operator prototype with your account.
+        Access the SolarDoctor operations console with your account.
       </p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">

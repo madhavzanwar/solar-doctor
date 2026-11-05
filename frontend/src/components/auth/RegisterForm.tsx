@@ -91,7 +91,7 @@ export function RegisterForm() {
         Create account
       </h1>
       <p className="mt-2 text-[color:var(--muted)]">
-        Register for early access to the SolarPulse AI prototype.
+        Create an account to start finding and fixing solar yield loss.
       </p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">

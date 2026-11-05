@@ -1,23 +1,23 @@
 const steps = [
   {
-    title: "Ingest weather and SCADA",
-    body: "NWP feeds and plant telemetry land in TimescaleDB as the shared source of truth for every forecast run.",
+    title: "Ingest telemetry and weather",
+    body: "Inverter and string readings land alongside irradiance from NASA POWER or site sensors. Simulated and demo data is always labelled.",
   },
   {
-    title: "Compute physics features",
-    body: "pvlib derives solar position, plane-of-array irradiance, air mass, and cell temperature for the plant site.",
+    title: "Compute the physics baseline",
+    body: "pvlib derives clear-sky irradiance, plane-of-array and cell temperature to give the expected power the plant should be producing.",
   },
   {
-    title: "Run the ML forecast",
-    body: "LightGBM combines physics features with meteorological inputs and historical power lags to estimate gross DC output.",
+    title: "Flag the deficit",
+    body: "Sustained shortfalls against the baseline on clear-sky periods raise an alert, quantified in kW, kWh and rupees.",
   },
   {
-    title: "Apply operational constraints",
-    body: "Inverter clipping and dynamic soiling convert the gross estimate into a deliverable AC forecast operators can trust.",
+    title: "Diagnose and explain from a photo",
+    body: "Upload a panel photo. The classifier names the cause, and LIME and Grad-CAM overlays show which regions drove the call.",
   },
   {
-    title: "Surface shortfalls live",
-    body: "The anomaly engine watches forecast versus SCADA. When the gap persists past a threshold, the dashboard gets an alert.",
+    title: "Act and verify",
+    body: "Pick clean now, wait, field check or replace, dispatch a work order, and confirm the fix by the yield that recovers.",
   },
 ];
 
@@ -30,12 +30,11 @@ export function HowItWorks() {
             How it works
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">
-            From raw signals to an actionable shortfall
+            From raw signals to a verified fix
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-[color:var(--muted)]">
-            A five-step pipeline keeps physics, machine learning, and plant
-            constraints in the same loop—so the chart on screen matches what the
-            site can actually export.
+            A five-step pipeline keeps telemetry, physics, vision and field work in
+            the same loop, so the number on screen is the number you recover.
           </p>
         </div>
 

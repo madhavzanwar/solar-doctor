@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser, isLoggedIn, logout } from "@/lib/api";
@@ -32,7 +33,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="dash-sidebar-header">
           <Link href="/dashboard" className="dash-logo">
             <span>Operations</span>
-            SolarPulse AI
+            <Logo onDark />
           </Link>
           <button
             className="dash-close-btn"

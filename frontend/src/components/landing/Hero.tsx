@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export function Hero() {
   return (
@@ -21,13 +22,13 @@ export function Hero() {
             Operational prototype
           </p>
           <h1 className="animate-rise-delay-1 font-[family-name:var(--font-display)] text-5xl font-extrabold leading-[0.95] tracking-tight sm:text-6xl md:text-7xl">
-            SolarPulse AI
+            <Logo onDark />
           </h1>
           <div className="animate-line mt-5 h-px w-28 bg-[color:var(--sun)]" />
           <p className="animate-rise-delay-2 mt-6 max-w-xl text-lg leading-relaxed text-white/88 sm:text-xl">
-            Hybrid yield forecasting that pairs solar physics with machine
-            learning—so operators see deliverable AC power, not optimistic
-            weather guesses.
+            Find the silent loss. Telemetry against a physics baseline shows a
+            plant is under-delivering; a panel photo shows why; the fix is
+            dispatched and verified in recovered kWh and rupees.
           </p>
           <div className="animate-rise-delay-3 mt-9 flex flex-wrap gap-3">
             <Link href="/register" className="btn-primary">

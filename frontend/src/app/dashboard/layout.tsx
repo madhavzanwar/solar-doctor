@@ -1,5 +1,4 @@
-// Server Component — can import CSS safely with Turbopack
-import "./dashboard.css";
+// dashboard.css is imported by the root layout so that solardoctor.css can follow it.
 import { DashboardShell } from "./DashboardShell";
 
 export default function DashboardLayout({
