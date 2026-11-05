@@ -10,7 +10,6 @@ import {
   type DiagnosisResponse,
   type RootCauseTaxonomyItem,
 } from "@/lib/api";
-import { SourceBadge } from "@/components/ui/SourceBadge";
 import DiagnosisModal from "@/components/diagnosis/DiagnosisModal";
 
 export default function AlertsPage() {
@@ -69,6 +68,7 @@ export default function AlertsPage() {
   };
 
   const handleDiagnoseAlert = async (alertId: number) => {
+    if (diagnosingId !== null) return; // busy: the button stays focusable (aria-disabled) so focus can return to it
     setDiagnosingId(alertId);
     setError(null);
     try {
@@ -211,8 +211,7 @@ export default function AlertsPage() {
                             ` · ${a.deviation_percent.toFixed(1)}% shortfall`}
                           {a.expected_power_kw != null &&
                             a.actual_power_kw != null &&
-                            ` · ${a.actual_power_kw.toFixed(0)} / ${a.expected_power_kw.toFixed(0)} kW`}{" "}
-                          <SourceBadge source={a.source} />
+                            ` · ${a.actual_power_kw.toFixed(0)} / ${a.expected_power_kw.toFixed(0)} kW`}
                         </div>
                       </div>
                       <span className="dash-alert-time">
@@ -222,7 +221,8 @@ export default function AlertsPage() {
                         <button
                           className="dash-btn dash-btn-ghost dash-btn-sm"
                           onClick={() => handleDiagnoseAlert(a.id)}
-                          disabled={isDiagnosing}
+                          aria-disabled={isDiagnosing}
+                          aria-busy={isDiagnosing}
                         >
                           {isDiagnosing ? "Diagnosing…" : "Diagnose"}
                         </button>

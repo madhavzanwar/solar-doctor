@@ -58,8 +58,8 @@
     "reference": "desk-overview.webp",
     "actual": "1440x1227",
     "referenceSize": "1440x1227",
-    "diffRatioFullCanvas": 0.001621502309155121,
-    "diffRatioCommonRegion": 0.001621502309155121
+    "diffRatioFullCanvas": 0.0035033505388028614,
+    "diffRatioCommonRegion": 0.0035033505388028614
   },
   {
     "name": "mob-overview",
@@ -68,8 +68,8 @@
     "reference": "mob-overview.webp",
     "actual": "390x2566",
     "referenceSize": "390x2566",
-    "diffRatioFullCanvas": 0.0007184683334332594,
-    "diffRatioCommonRegion": 0.0007184683334332594
+    "diffRatioFullCanvas": 0.0026040729859903673,
+    "diffRatioCommonRegion": 0.0026040729859903673
   },
   {
     "name": "desk-plants",
@@ -78,8 +78,8 @@
     "reference": "desk-plants.webp",
     "actual": "1440x900",
     "referenceSize": "1440x900",
-    "diffRatioFullCanvas": 0.008280864197530864,
-    "diffRatioCommonRegion": 0.008280864197530864
+    "diffRatioFullCanvas": 0.010328703703703705,
+    "diffRatioCommonRegion": 0.010328703703703705
   },
   {
     "name": "mob-plants",
@@ -94,8 +94,8 @@
     "reference": "desk-plant-new.webp",
     "actual": "1440x900",
     "referenceSize": "1440x900",
-    "diffRatioFullCanvas": 0.0018487654320987654,
-    "diffRatioCommonRegion": 0.0018487654320987654
+    "diffRatioFullCanvas": 0.0038896604938271607,
+    "diffRatioCommonRegion": 0.0038896604938271607
   },
   {
     "name": "mob-plant-new",
@@ -110,8 +110,8 @@
     "reference": "desk-plant-detail.webp",
     "actual": "1440x1027",
     "referenceSize": "1440x1027",
-    "diffRatioFullCanvas": 0.0025384074434707344,
-    "diffRatioCommonRegion": 0.0025384074434707344
+    "diffRatioFullCanvas": 0.004494617548415017,
+    "diffRatioCommonRegion": 0.004494617548415017
   },
   {
     "name": "mob-plant-detail",
@@ -120,8 +120,8 @@
     "reference": "mob-plant-detail.webp",
     "actual": "390x2263",
     "referenceSize": "390x2263",
-    "diffRatioFullCanvas": 0.0010843332540195112,
-    "diffRatioCommonRegion": 0.0010843332540195112
+    "diffRatioFullCanvas": 0.0027453913004067665,
+    "diffRatioCommonRegion": 0.0027453913004067665
   },
   {
     "name": "desk-alerts",
@@ -130,8 +130,8 @@
     "reference": "desk-alerts.webp",
     "actual": "1440x900",
     "referenceSize": "1440x900",
-    "diffRatioFullCanvas": 0.0019930555555555556,
-    "diffRatioCommonRegion": 0.0019930555555555556
+    "diffRatioFullCanvas": 0.004101851851851852,
+    "diffRatioCommonRegion": 0.004101851851851852
   },
   {
     "name": "mob-alerts",
@@ -146,8 +146,8 @@
     "reference": "desk-forecasts.webp",
     "actual": "1440x2470",
     "referenceSize": "1440x2470",
-    "diffRatioFullCanvas": 0.002197480881691408,
-    "diffRatioCommonRegion": 0.002197480881691408
+    "diffRatioFullCanvas": 0.003753654970760234,
+    "diffRatioCommonRegion": 0.003753654970760234
   },
   {
     "name": "mob-performance",

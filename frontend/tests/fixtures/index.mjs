@@ -246,4 +246,5 @@ export const routes = [
   ["GET", /^\/api\/v1\/weather\/\d+\/(current|forecast)$/, () => weather],
   ["GET", /^\/api\/v1\/diagnosis\/taxonomy$/, () => taxonomy],
   ["POST", /^\/api\/v1\/auth\/login$/, () => loginResponse],
+  ["GET", /^\/api\/v1\/auth\/me$/, () => ({ mode: "users", kind: "user", role: "operator", user: loginResponse.user })],
 ];

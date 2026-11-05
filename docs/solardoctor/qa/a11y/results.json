@@ -1,0 +1,272 @@
+[
+  {
+    "route": "/",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/login",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/login",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/register",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/register",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/plants",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/plants",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/plants/new",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/plants/new",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/plants/2",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/plants/2",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/alerts",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/alerts",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/performance",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/performance",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/inspections",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/inspections",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/work-orders",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/work-orders",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/roi",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/roi",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/map",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/map",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/reports",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/reports",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/settings",
+    "viewport": "desktop",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  },
+  {
+    "route": "/dashboard/settings",
+    "viewport": "mobile",
+    "critical": 0,
+    "serious": 0,
+    "moderate": 0,
+    "minor": 0,
+    "violations": []
+  }
+]

@@ -1,7 +1,7 @@
 import type { components } from "./schema";
 import { ApiError } from "./errors";
 import { apiFetch, pickAccessToken } from "./http";
-import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSession } from "./storage";
+import { clearSession, cookieLifetimeSeconds, getAccessToken, getRefreshToken, getStoredUser, saveSession } from "./storage";
 
 export type UserLoginBody = components["schemas"]["UserLogin"];
 
@@ -19,13 +19,9 @@ export interface AuthResponse {
   access_token?: string;
   refresh_token?: string;
   expires_at?: string;
+  expires_in?: number;
+  refresh_expires_at?: string;
   user?: { email?: string; role?: string } | null;
-}
-
-function secondsUntil(iso: string | undefined): number | undefined {
-  if (!iso) return undefined;
-  const ms = Date.parse(iso) - Date.now();
-  return Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 1000) : undefined;
 }
 
 function persist(data: AuthResponse, fallbackUser: string): void {
@@ -35,7 +31,7 @@ function persist(data: AuthResponse, fallbackUser: string): void {
     accessToken: access,
     refreshToken: data.refresh_token,
     user: data.user?.email ?? fallbackUser,
-    expiresInSeconds: secondsUntil(data.expires_at),
+    expiresInSeconds: cookieLifetimeSeconds(data),
   });
 }
 

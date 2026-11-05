@@ -199,7 +199,7 @@ export default function ProbabilisticBandChart({
         </div>
       </div>
 
-      <div className="dash-chart-wrap" style={{ position: "relative" }}>
+      <div className="dash-chart-wrap" style={{ position: "relative" }} tabIndex={0} role="region" aria-label="Uncertainty chart (scrollable)">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${W} ${H}`}

@@ -10,7 +10,9 @@
     "gen:api": "openapi-typescript openapi.json -o src/lib/api/schema.d.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "test:visual": "node tests/visual/run.mjs"
+    "test:visual": "node tests/visual/run.mjs",
+    "test:a11y": "node tests/a11y/run.mjs",
+    "test:overflow": "node tests/overflow/run.mjs"
   },
   "dependencies": {
     "next": "15.5.27",
@@ -18,6 +20,7 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

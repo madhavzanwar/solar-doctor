@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { DiagnosisResponse } from "@/lib/api";
+import { CURRENCY_UNSET, formatMoney } from "@/lib/money";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 
 interface DiagnosisModalProps {
   diagnosis: DiagnosisResponse;
@@ -14,6 +16,41 @@ export default function DiagnosisModal({
   onClose,
   onResolveAlert,
 }: DiagnosisModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Dialog behaviour (DESIGN.md §11): focus moves in, Tab is trapped, Esc closes, focus returns on close.
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const focusables = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ?? [],
+      ).filter((el) => !el.hasAttribute("disabled"));
+    focusables()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "Tab") {
+        const items = focusables();
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previous?.focus();
+    };
+  }, [onClose]);
+
   const getUrgencyColor = (urgency: string) => {
     switch (urgency.toUpperCase()) {
       case "CRITICAL":
@@ -28,6 +65,10 @@ export default function DiagnosisModal({
   };
 
   const urgencyColor = getUrgencyColor(diagnosis.urgency_level);
+  const moneyUnset = !diagnosis.currency || diagnosis.currency.toLowerCase() === CURRENCY_UNSET;
+  const revenueValue = moneyUnset
+    ? formatMoney(0, diagnosis.currency)
+    : `${formatMoney(diagnosis.financial_impact_per_day, diagnosis.currency)}/day`;
 
   return (
     <div
@@ -44,6 +85,10 @@ export default function DiagnosisModal({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="diagnosis-title"
         style={{
           background: "var(--panel)",
           border: "1px solid var(--line)",
@@ -80,6 +125,7 @@ export default function DiagnosisModal({
               Root-cause diagnosis
             </p>
             <h2
+              id="diagnosis-title"
               style={{
                 fontFamily: "var(--font-display), sans-serif",
                 fontSize: "1.2rem",
@@ -89,12 +135,16 @@ export default function DiagnosisModal({
                 overflowWrap: "anywhere",
               }}
             >
-              {diagnosis.root_cause_title}
+              {diagnosis.root_cause_title} <SourceBadge source={diagnosis.telemetry_source} />
             </h2>
             <p style={{ margin: "0.35rem 0 0", fontSize: "0.8rem", color: "var(--muted)" }}>
               Plant #{diagnosis.plant_id}
               {diagnosis.plant_name ? ` · ${diagnosis.plant_name}` : ""} ·{" "}
               {new Date(diagnosis.timestamp).toLocaleString()}
+              {diagnosis.telemetry_ts
+                ? ` · telemetry as of ${new Date(diagnosis.telemetry_ts).toLocaleString()}`
+                : ""}
+              {diagnosis.telemetry_source ? ` · source ${diagnosis.telemetry_source}` : ""}
             </p>
           </div>
 
@@ -138,7 +188,7 @@ export default function DiagnosisModal({
               },
               {
                 label: "Revenue impact",
-                value: `$${diagnosis.financial_impact_per_day.toFixed(2)}/day`,
+                value: revenueValue,
                 color: "var(--sun)",
               },
               {
@@ -181,6 +231,15 @@ export default function DiagnosisModal({
               </div>
             ))}
           </div>
+
+          {(moneyUnset || diagnosis.financial_assumption) && (
+            <p style={{ margin: "-0.6rem 0 1.25rem", fontSize: "0.78rem", color: "var(--muted)" }}>
+              {moneyUnset
+                ? "Revenue impact not estimated: this plant has no energy tariff set."
+                : null}
+              {diagnosis.financial_assumption ? ` ${diagnosis.financial_assumption}` : ""}
+            </p>
+          )}
 
           <div
             style={{
@@ -328,7 +387,7 @@ export default function DiagnosisModal({
                     >
                       {s.action}
                     </div>
-                    {s.required_tools.length > 0 && (
+                    {(s.required_tools ?? []).length > 0 && (
                       <div
                         style={{
                           marginTop: "0.4rem",
@@ -337,7 +396,7 @@ export default function DiagnosisModal({
                           overflowWrap: "anywhere",
                         }}
                       >
-                        Tools: {s.required_tools.join(", ")}
+                        Tools: {(s.required_tools ?? []).join(", ")}
                       </div>
                     )}
                     {s.safety_note && (
