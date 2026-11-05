@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { ApiError, login } from "@/lib/api";
 import { safeNextPath } from "@/lib/auth-guard";
+import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/password";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -69,7 +70,8 @@ export function LoginForm() {
             name="password"
             autoComplete="current-password"
             required
-            minLength={8}
+            minLength={PASSWORD_MIN}
+            maxLength={PASSWORD_MAX}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />

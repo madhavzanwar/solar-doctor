@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { register } from "@/lib/api";
+import { PASSWORD_MAX, PASSWORD_MIN, validatePassword } from "@/lib/password";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -19,6 +20,12 @@ export function RegisterForm() {
     setMessage(null);
     setError(null);
 
+    const passwordProblem = validatePassword(password);
+    if (passwordProblem) {
+      setError(passwordProblem);
+      setPending(false);
+      return;
+    }
     if (password !== confirm) {
       setError("Passwords do not match.");
       setPending(false);
@@ -26,14 +33,14 @@ export function RegisterForm() {
     }
 
     try {
-      const signedIn = await register({ email, password, full_name: name.trim() || undefined });
-      if (signedIn) {
+      const outcome = await register({ email, password, full_name: name.trim() || undefined });
+      if (outcome === "signed-in") {
         setMessage("Account created! Signing you in…");
         setTimeout(() => {
           window.location.href = "/dashboard";
         }, 600);
       } else {
-        setMessage("Account created! Please log in.");
+        setMessage("Registration received. Please log in with your password.");
         setTimeout(() => {
           window.location.href = "/login";
         }, 1200);
@@ -89,7 +96,8 @@ export function RegisterForm() {
             name="password"
             autoComplete="new-password"
             required
-            minLength={8}
+            minLength={PASSWORD_MIN}
+            maxLength={PASSWORD_MAX}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
@@ -105,7 +113,8 @@ export function RegisterForm() {
             name="confirm"
             autoComplete="new-password"
             required
-            minLength={8}
+            minLength={PASSWORD_MIN}
+            maxLength={PASSWORD_MAX}
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
           />

@@ -1,17 +1,18 @@
 import type { components } from "./schema";
+import { ApiError } from "./errors";
 import { apiFetch, pickAccessToken } from "./http";
-import { clearSession, getAccessToken, getStoredUser, saveSession } from "./storage";
+import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSession } from "./storage";
 
 export type UserLoginBody = components["schemas"]["UserLogin"];
 
-/** `/auth/register` is not in the schema yet (backend work in parallel); contract: email + password + full_name. */
+/** Contract in docs/solardoctor/API_AUTH.md: `username`/`full_name` are accepted and ignored by the backend. */
 export interface RegisterBody {
   email: string;
   password: string;
   full_name?: string;
 }
 
-/** Contract: opaque token + refresh token JSON. `user` mirrors the backend's serialised user. */
+/** Token body of login, token and refresh (API_AUTH.md). `token` and `access_token` are the same value. */
 export interface AuthResponse {
   token?: string;
   access_token?: string;
@@ -48,29 +49,40 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return data;
 }
 
-/** Registers and, when the backend returns a token, signs the user in. Returns true if signed in. */
-export async function register(body: RegisterBody): Promise<boolean> {
-  const data = await apiFetch<AuthResponse>("/api/v1/auth/register", {
+/**
+ * Registers, then signs in with the same credentials. The backend answers 201 with no token, and the same
+ * response for an already-registered email (no account enumeration), so the follow-up login is what tells the
+ * caller whether this password works for the account. A 401 from that login is reported as "login-required".
+ */
+export async function register(body: RegisterBody): Promise<"signed-in" | "login-required"> {
+  await apiFetch<{ status?: string }>("/api/v1/auth/register", {
     method: "POST",
     body: JSON.stringify({ ...body, email: body.email.trim() }),
     skipAuthRetry: true,
   });
-  if (pickAccessToken(data)) {
-    persist(data, body.email.trim());
-    return true;
+  try {
+    await login(body.email, body.password);
+    return "signed-in";
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) return "login-required";
+    throw err;
   }
-  return false;
 }
 
 export function me() {
   return apiFetch<{ role?: string; user?: { email?: string } | null }>("/api/v1/auth/me");
 }
 
-/** Revoke the server session (best effort), clear local state, go to /login. */
+/** Revoke the access session and the refresh family on the server (best effort), clear local state, go to /login. */
 export async function logout(): Promise<void> {
   try {
-    if (getAccessToken()) {
-      await apiFetch<void>("/api/v1/auth/logout", { method: "POST", skipAuthRetry: true });
+    const refreshToken = getRefreshToken();
+    if (getAccessToken() || refreshToken) {
+      await apiFetch<void>("/api/v1/auth/logout", {
+        method: "POST",
+        body: JSON.stringify(refreshToken ? { refresh_token: refreshToken } : {}),
+        skipAuthRetry: true,
+      });
     }
   } catch {
     // The local session is cleared regardless.

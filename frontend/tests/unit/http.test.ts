@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/errors";
 import { apiFetch } from "@/lib/api/http";
 import { ACCESS_KEY, REFRESH_KEY, saveSession } from "@/lib/api/storage";
-import { getCurrentUser, isLoggedIn, login, register } from "@/lib/api/auth";
+import { getCurrentUser, isLoggedIn, login, logout, register } from "@/lib/api/auth";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -115,14 +115,85 @@ describe("login / register", () => {
     expect(isLoggedIn()).toBe(false);
   });
 
-  it("register signs in when the backend returns a token, otherwise reports false", async () => {
-    fetchMock.mockResolvedValueOnce(json({ access_token: "t2", refresh_token: "r2" }));
-    await expect(register({ email: "a@b.in", password: "longenough" })).resolves.toBe(true);
+  it("register posts, then logs in with the same credentials", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ email: "a@b.in", role: "viewer", status: "registered" }, 201))
+      .mockResolvedValueOnce(json({ token: "t2", access_token: "t2", refresh_token: "r2" }));
+    await expect(register({ email: " a@b.in", password: "longenough1", full_name: "A" })).resolves.toBe("signed-in");
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/auth/register");
+    expect(fetchMock.mock.calls[1][0]).toContain("/api/v1/auth/login");
+    expect(JSON.parse((fetchMock.mock.calls[1][1] as RequestInit).body as string)).toEqual({
+      email: "a@b.in",
+      password: "longenough1",
+    });
     expect(localStorage.getItem(ACCESS_KEY)).toBe("t2");
+  });
 
-    localStorage.clear();
-    fetchMock.mockResolvedValueOnce(json({ id: 5 }, 201));
-    await expect(register({ email: "c@d.in", password: "longenough" })).resolves.toBe(false);
+  it("register reports login-required when the follow-up login is 401 (duplicate email, other password)", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ email: "a@b.in", role: "viewer", status: "registered" }, 201))
+      .mockResolvedValueOnce(json({ detail: "Invalid email or password" }, 401));
+    await expect(register({ email: "a@b.in", password: "longenough1" })).resolves.toBe("login-required");
+    expect(isLoggedIn()).toBe(false);
+  });
+
+  it("register surfaces a 400 weak-password message and does not try to log in", async () => {
+    fetchMock.mockResolvedValueOnce(json({ detail: "Password must be 10-256 characters" }, 400));
+    await expect(register({ email: "a@b.in", password: "short" })).rejects.toThrow("Password must be 10-256 characters");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("turns 429 into a readable message using Retry-After", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ detail: "Too many login attempts. Try again later." }), {
+        status: 429,
+        headers: { "Retry-After": "600" },
+      }),
+    );
+    const err = (await login("a@b.in", "longenough1").catch((e: unknown) => e)) as ApiError;
+    expect(err.status).toBe(429);
+    expect(err.retryAfterSeconds).toBe(600);
+    expect(err.message).toBe("Too many attempts. Please try again in about 10 minutes.");
+  });
+
+  it("rotating refresh: stores the new refresh token and uses it next time, never the old one", async () => {
+    saveSession({ accessToken: "a0", refreshToken: "r0" });
+    const sent: string[] = [];
+    let n = 0;
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) => {
+      if (String(url).includes("/auth/refresh")) {
+        sent.push(JSON.parse(init.body as string).refresh_token);
+        n += 1;
+        return json({ token: `a${n}`, refresh_token: `r${n}` });
+      }
+      const bearer = new Headers(init.headers).get("Authorization");
+      return bearer === `Bearer a${n}` && n > 0 ? json({ ok: true }) : json({ detail: "expired" }, 401);
+    });
+    await apiFetch("/api/v1/x");
+    expect(localStorage.getItem(REFRESH_KEY)).toBe("r1");
+    await apiFetch("/api/v1/y"); // a1 is current, so no refresh needed
+    saveSession({ accessToken: "stale", refreshToken: localStorage.getItem(REFRESH_KEY) });
+    await apiFetch("/api/v1/z");
+    expect(sent).toEqual(["r0", "r1"]);
+  });
+
+  it("logout posts the bearer token and the refresh token, then clears local state", async () => {
+    saveSession({ accessToken: "a", refreshToken: "r" });
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await logout();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/api/v1/auth/logout");
+    expect(new Headers(init.headers).get("Authorization")).toBe("Bearer a");
+    expect(JSON.parse(init.body as string)).toEqual({ refresh_token: "r" });
+    expect(isLoggedIn()).toBe(false);
+    expect(localStorage.getItem(REFRESH_KEY)).toBeNull();
+    expect(location.href).toBe("/login");
+  });
+
+  it("logout still clears local state when the server call fails", async () => {
+    saveSession({ accessToken: "a", refreshToken: "r" });
+    fetchMock.mockRejectedValueOnce(new TypeError("offline"));
+    await logout();
     expect(isLoggedIn()).toBe(false);
   });
 });
