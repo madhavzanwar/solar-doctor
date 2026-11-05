@@ -701,11 +701,14 @@ def run_diagnosis_for_alert(db: Session, alert_id: int) -> DiagnosisResponse:
     if not alert:
         raise ValueError(f"Alert with ID {alert_id} not found.")
 
+    plant = db.execute(select(Plant).where(Plant.id == alert.plant_id)).scalar_one_or_none()
+    if plant is not None and is_tracker_plant(plant):
+        raise BaselineUnsupportedForTrackers(plant)  # alert power values derive from the invalid baseline
+
     existing = get_diagnosis_by_alert_id(db, alert_id)
     if existing:
         return existing
 
-    plant = db.execute(select(Plant).where(Plant.id == alert.plant_id)).scalar_one_or_none()
     plant_name = plant.name if plant else f"Plant #{alert.plant_id}"
     capacity_kw = plant.dc_kw if plant else 1000.0
 

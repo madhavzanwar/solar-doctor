@@ -14,16 +14,35 @@ are used as given. A pvlib single-axis model was evaluated against real PVDAQ 90
 """
 from __future__ import annotations
 
+import re
+from typing import Optional
+
 from fastapi import HTTPException
 
 TRACKER_MARKER = "[single-axis tracker, fixed-tilt baseline invalid]"
 BASELINE_UNSUPPORTED_STATUS = "baseline_unsupported_for_trackers"
 
 
+# Tolerant to case, whitespace and punctuation variants ("Single Axis Tracker - fixed tilt baseline invalid").
+_MARKER_RE = re.compile(
+    r"\[?\s*single[\W_]*axis[\W_]+tracker[\W_]+fixed[\W_]*tilt[\W_]+baseline[\W_]+invalid\s*\]?", re.IGNORECASE)
+_LOCATION_MAX = 512  # plants.location length
+
+
+def has_tracker_marker(location: object) -> bool:
+    return isinstance(location, str) and _MARKER_RE.search(location) is not None
+
+
 def is_tracker_plant(plant) -> bool:
-    """True when the plant is flagged as a single-axis tracker (marker at the end of ``location``)."""
-    loc = getattr(plant, "location", None)
-    return isinstance(loc, str) and TRACKER_MARKER in loc
+    """True when the plant is flagged as a single-axis tracker (marker in ``location``, variants tolerated)."""
+    return has_tracker_marker(getattr(plant, "location", None))
+
+
+def with_marker(location: Optional[str]) -> str:
+    """``location`` with any marker variant removed and the canonical marker appended (fits 512 chars)."""
+    base = _MARKER_RE.sub("", location or "").strip()
+    base = base[: _LOCATION_MAX - len(TRACKER_MARKER) - 1].rstrip()
+    return f"{base} {TRACKER_MARKER}".strip()
 
 
 class BaselineUnsupportedForTrackers(HTTPException):
