@@ -45,7 +45,13 @@ def test_register_then_token_login_then_me(client, users_mode, prefix):
 
 def test_register_validation_duplicate_and_toggle(client, users_mode, make_user, monkeypatch):
     make_user("dup@example.test", "viewer")
-    assert client.post("/auth/register", json={"email": "dup@example.test", "password": PASSWORD}).status_code == 409
+    # duplicate signup is indistinguishable from a fresh one (no account enumeration)
+    dup = client.post("/auth/register", json={"email": "dup@example.test", "password": PASSWORD})
+    fresh = client.post("/auth/register", json={"email": "fresh@example.test", "password": PASSWORD})
+    assert dup.status_code == fresh.status_code == 201
+    assert set(dup.json()) == set(fresh.json())
+    # ...and does not touch the existing account's password
+    assert client.post("/auth/login", json={"email": "dup@example.test", "password": PASSWORD}).status_code == 200
     assert client.post("/auth/register", json={"email": "bad", "password": PASSWORD}).status_code == 400
     assert client.post("/auth/register", json={"email": "x@example.test", "password": "short"}).status_code == 400
     # a role in the payload is ignored
@@ -73,10 +79,48 @@ def test_refresh_rotates_and_old_token_is_dead(client, users_mode, make_user, pr
     assert second["refresh_token"] != first["refresh_token"]
     assert second["access_token"] != first["access_token"]
     assert client.get("/auth/me", headers={"Authorization": f"Bearer {second['access_token']}"}).status_code == 200
-    # single use
+    third = client.post(f"{prefix}/auth/refresh", json={"refresh_token": second["refresh_token"]})
+    assert third.status_code == 200          # chain continues
+    # single use: replaying the first token is refused...
     assert client.post(f"{prefix}/auth/refresh", json={"refresh_token": first["refresh_token"]}).status_code == 401
-    # chain continues
-    assert client.post(f"{prefix}/auth/refresh", json={"refresh_token": second["refresh_token"]}).status_code == 200
+    # ...and is treated as theft: the whole family, including the newest token, is revoked.
+    assert client.post(f"{prefix}/auth/refresh", json={"refresh_token": third.json()["refresh_token"]}).status_code == 401
+
+
+def test_reuse_detection_spares_other_logins(client, users_mode, make_user):
+    make_user("a@example.test", "viewer")
+    one = _login(client, "a@example.test")
+    two = _login(client, "a@example.test")      # separate login = separate family
+    rotated = client.post("/auth/refresh", json={"refresh_token": one["refresh_token"]}).json()
+    assert client.post("/auth/refresh", json={"refresh_token": one["refresh_token"]}).status_code == 401
+    assert client.post("/auth/refresh", json={"refresh_token": rotated["refresh_token"]}).status_code == 401
+    assert client.post("/auth/refresh", json={"refresh_token": two["refresh_token"]}).status_code == 200
+
+
+def test_bearer_only_logout_kills_refresh_token(client, users_mode, make_user):
+    make_user("a@example.test", "viewer")
+    body = _login(client, "a@example.test")
+    other = _login(client, "a@example.test")    # different family: unaffected
+    h = {"Authorization": f"Bearer {body['access_token']}"}
+    assert client.post("/api/v1/auth/logout", headers=h).status_code == 204
+    assert client.get("/auth/me", headers=h).status_code == 401
+    assert client.post("/auth/refresh", json={"refresh_token": body["refresh_token"]}).status_code == 401
+    assert client.post("/auth/refresh", json={"refresh_token": other["refresh_token"]}).status_code == 200
+
+
+def test_bearer_logout_after_rotation_kills_new_refresh_token(client, users_mode, make_user):
+    make_user("a@example.test", "viewer")
+    first = _login(client, "a@example.test")
+    second = client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]}).json()
+    h = {"Authorization": f"Bearer {second['access_token']}"}
+    assert client.post("/auth/logout", headers=h).status_code == 204
+    assert client.post("/auth/refresh", json={"refresh_token": second["refresh_token"]}).status_code == 401
+
+
+@pytest.mark.parametrize("password", ["aaaaaaaaaaaa", "1111111111", "weakuser", "WeakUser  "])
+def test_trivially_weak_passwords_rejected(client, users_mode, password):
+    r = client.post("/auth/register", json={"email": "weakuser@example.test", "password": password})
+    assert r.status_code == 400, password
 
 
 def test_refresh_rejects_garbage_and_token_type_confusion(client, users_mode, make_user):
@@ -171,10 +215,13 @@ def test_technician_read_only_and_not_admin(client, users_mode, make_user, login
     assert client.get("/parks", headers=h).status_code == 200
     blocked = [
         client.post("/missions", json={"name": "m", "park_id": "PARK_A"}, headers=h),
-        client.patch(f"/faults/{two_projects['fault_a']}", json={"status": "resolved"}, headers=h),
+        client.post("/inventory/components", json={"name": "motor"}, headers=h),
+        client.delete(f"/missions/{two_projects['mission_a']}", headers=h),
         client.get("/users", headers=h),
     ]
-    assert [r.status_code for r in blocked] == [403] * 3
+    assert [r.status_code for r in blocked] == [403] * 4
+    # a fault not assigned to them does not exist for them (404, not 403)
+    assert client.patch(f"/faults/{two_projects['fault_a']}", json={"status": "in_progress"}, headers=h).status_code == 404
 
 
 def test_technician_sees_only_assigned_work_orders(client, users_mode, make_user, login, db_session, two_projects):
@@ -211,3 +258,97 @@ def test_role_rank_and_operator_cannot_manage_users(client, users_mode, make_use
     assert Principal(kind=KIND_USER, role="operator").has_role("technician")
     make_user("op@example.test", "operator")
     assert client.get("/users", headers=login("op@example.test")).status_code == 403
+
+
+# ── technician: assigned faults only (every fault route) ─────────────────────
+
+@pytest.fixture
+def tech_world(client, users_mode, make_user, login, db_session, two_projects):
+    """Technician T with one assigned fault; same park holds a colleague's and an unassigned fault."""
+    from solardoctor.db.models import PanelFault
+    mine = db_session.get(PanelFault, two_projects["fault_a"])
+    mine.assignee, mine.status = "T@Example.test", "assigned"
+    other = PanelFault(park_id=mine.park_id, panel_id="R9-C9", class_="cell", severity="HIGH",
+                       assignee="someone@else.test", status="assigned")
+    unassigned = PanelFault(park_id=mine.park_id, panel_id="R8-C8", class_="cell", severity="LOW", status="open")
+    db_session.add_all([other, unassigned])
+    db_session.commit()
+    make_user("t@example.test", "technician", project_ids=[two_projects["p1"]])
+    return {"h": login("t@example.test"), "mine": mine.id, "other": other.id, "unassigned": unassigned.id}
+
+
+@pytest.mark.parametrize("prefix", PREFIXES)
+def test_technician_fault_list_only_own(client, tech_world, prefix):
+    r = client.get(f"{prefix}/parks/PARK_A/faults", headers=tech_world["h"])
+    assert r.status_code == 200
+    body = r.json()
+    assert [f["id"] for f in body["faults"]] == [tech_world["mine"]]
+    assert body["total"] == 1 and sum(body["counts_by_status"].values()) == 1
+    assert "someone@else.test" not in r.text
+
+
+def test_technician_other_faults_are_404_on_every_read(client, tech_world):
+    h = tech_world["h"]
+    for fid in (tech_world["other"], tech_world["unassigned"], 999999):
+        assert client.get(f"/faults/{fid}/comments", headers=h).status_code == 404
+        assert client.get(f"/faults/{fid}/photos", headers=h).status_code == 404
+        assert client.get(f"/faults/{fid}/photos/1", headers=h).status_code == 404
+    mine = tech_world["mine"]
+    assert client.get(f"/faults/{mine}/comments", headers=h).status_code == 200
+    assert client.get(f"/faults/{mine}/photos", headers=h).status_code == 200
+
+
+def test_technician_can_work_own_fault(client, tech_world):
+    h, fid = tech_world["h"], tech_world["mine"]
+    r = client.patch(f"/faults/{fid}", json={"status": "in_progress", "notes": "on site"}, headers=h)
+    assert r.status_code == 200 and r.json()["status"] == "in_progress"
+    c = client.post(f"/api/v1/faults/{fid}/comments", json={"body": "replaced string fuse", "author": "spoof"}, headers=h)
+    assert c.status_code == 201 and c.json()["author"] == "t@example.test"
+    png = b"\x89PNG\r\n\x1a\n" + b"\0" * 32
+    # upload is permitted by policy and ownership; image validation is the faults router's business
+    p = client.post(f"/faults/{fid}/photos", files={"file": ("p.png", png, "image/png")}, headers=h)
+    assert p.status_code not in (403, 404), p.text
+    r = client.patch(f"/faults/{fid}", json={"status": "resolved", "resolution_note": "fixed"}, headers=h)
+    assert r.status_code == 200 and r.json()["status"] == "resolved"
+
+
+def test_technician_cannot_touch_others_faults(client, tech_world):
+    h = tech_world["h"]
+    png = b"\x89PNG\r\n\x1a\n" + b"\0" * 32
+    for fid in (tech_world["other"], tech_world["unassigned"]):
+        assert client.patch(f"/faults/{fid}", json={"status": "in_progress"}, headers=h).status_code == 404
+        assert client.post(f"/faults/{fid}/comments", json={"body": "x"}, headers=h).status_code == 404
+        assert client.post(f"/faults/{fid}/photos", files={"file": ("p.png", png, "image/png")}, headers=h).status_code == 404
+
+
+def test_technician_forbidden_changes_on_own_fault(client, tech_world):
+    h, fid = tech_world["h"], tech_world["mine"]
+    for body in ({"assignee": "t2@example.test"}, {"assignee": None}, {"priority": "low"},
+                 {"due_date": "2030-01-01"}, {"status": "open"}, {"status": "assigned"},
+                 {"status": "in_progress", "priority": "low"}):
+        assert client.patch(f"/faults/{fid}", json=body, headers=h).status_code == 403, body
+    assert client.delete(f"/faults/{fid}/photos/1", headers=h).status_code == 403
+    assert client.post("/missions", json={"name": "m", "park_id": "PARK_A"}, headers=h).status_code == 403
+    assert client.get("/users", headers=h).status_code == 403
+
+
+def test_technician_works_only_in_own_projects(client, users_mode, make_user, login, db_session, two_projects):
+    """Assigned by email but the fault lives in a project the technician is not a member of."""
+    from solardoctor.db.models import PanelFault
+    f = db_session.get(PanelFault, two_projects["fault_b"])
+    f.assignee, f.status = "t@example.test", "assigned"
+    db_session.commit()
+    make_user("t@example.test", "technician", project_ids=[two_projects["p1"]])
+    h = login("t@example.test")
+    assert client.patch(f"/faults/{f.id}", json={"status": "in_progress"}, headers=h).status_code == 404
+    assert client.get(f"/faults/{f.id}/comments", headers=h).status_code == 404
+
+
+def test_operator_and_viewer_unchanged_on_faults(client, users_mode, make_user, login, two_projects):
+    make_user("op@example.test", "operator", project_ids=[two_projects["p1"]])
+    make_user("v@example.test", "viewer", project_ids=[two_projects["p1"]])
+    op, v = login("op@example.test"), login("v@example.test")
+    fid = two_projects["fault_a"]
+    assert client.patch(f"/faults/{fid}", json={"assignee": "x@y.test", "status": "assigned"}, headers=op).status_code == 200
+    assert client.patch(f"/faults/{fid}", json={"status": "resolved"}, headers=v).status_code == 403
+    assert client.post(f"/faults/{fid}/comments", json={"body": "x"}, headers=v).status_code == 403

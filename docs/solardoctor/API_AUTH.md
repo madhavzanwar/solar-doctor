@@ -14,7 +14,7 @@ refresh token can never authenticate a request. Send the access token as `Author
 | Method + path | Auth | Request | Success |
 |---|---|---|---|
 | `GET /auth/mode` | public | - | `{"mode": "off"\|"apikey"\|"users"}` |
-| `POST /auth/register` | public | JSON `{email, password, username?, full_name?}` (`username`/`full_name` accepted, ignored) | 201 user object (role always `viewer`, no project access) |
+| `POST /auth/register` | public | JSON `{email, password, username?, full_name?}` (`username`/`full_name` accepted, ignored) | 201 `{"email", "role": "viewer", "status": "registered"}`; identical for an already-registered email (no account enumeration; the existing account is untouched). Role is always `viewer`, no project access |
 | `POST /auth/login` | public | JSON `{email, password}` | 200 token body |
 | `POST /auth/token` | public | `application/x-www-form-urlencoded` `username` (= email), `password` (what the SolarPulse `LoginForm` posts) | 200 token body |
 | `POST /auth/refresh` | public | JSON `{refresh_token}` | 200 token body (rotated) |
@@ -34,18 +34,21 @@ Token body (login, token, refresh):
 `token`/`expires_at`/`user` are the original Axalon keys; `access_token`/`refresh_token`/`token_type` are what
 the SolarPulse client reads.
 
-Errors: 400 validation (email format, password 10-256 chars), 401 bad credentials / bad or used refresh token,
-403 registration disabled, 404 not in users mode, 409 duplicate email, 429 rate limited (`Retry-After`).
+Errors: 400 validation (email format, password 10-256 chars, not a single repeated character, not equal to the email name), 401 bad credentials / bad or used refresh token,
+403 registration disabled, 404 not in users mode, 429 rate limited (`Retry-After`).
 Error bodies are `{"detail": "..."}`.
 
 ## Behaviour
 
-- **Refresh rotation:** a refresh token is single use; `/auth/refresh` deletes it and issues a new access +
-  refresh pair. Replaying a used token gives 401. Expired tokens and tokens of disabled users give 401.
-- **Logout:** revokes the Bearer session and, if `refresh_token` is in the body, that refresh token. The access
-  session and its refresh token are not linked server-side, so clients **must send `refresh_token` on logout**;
-  otherwise the refresh token stays valid until it expires. Disabling a user, changing their password or
-  deleting them revokes everything.
+- **Refresh rotation + reuse detection:** a refresh token is single use; `/auth/refresh` consumes it and
+  issues a new access + refresh pair in the same *family* (one family per login). Replaying an already-used
+  token revokes the whole family (including the newest token), so the holder must log in again. Expired tokens
+  and tokens of disabled users give 401.
+- **Logout:** `POST /auth/logout` revokes the Bearer session **and the refresh family of that login**, with or
+  without `refresh_token` in the body (sending only `refresh_token` also works). Other logins of the same user
+  are unaffected. Mechanism, no schema change: access tokens are `<random>.<family>`, refresh tokens
+  `<family>.<random>`, and a marker row (hash of `family:<id>`) in `user_sessions` must exist for any refresh
+  token of that family to be honoured. Disabling/deleting a user or changing their password revokes all.
 - **Rate limits (in-memory, per process):** login/token: 5 failures per email and 20 per IP per 15 min;
   register: 10 attempts per IP per 15 min.
 - **Password:** minimum 10 characters (SolarPulse's client-side minimum of 8 must be raised to 10).
@@ -68,8 +71,9 @@ Rank: `viewer` < `technician` < `operator` < `admin`.
 |---|---|
 | admin | everything, incl. `/users` management; no project restriction |
 | operator | read + write project data inside assigned projects |
-| technician | read like a viewer inside assigned projects (HTTP writes are 403); `GET /parks/{id}/work-orders` is narrowed to faults whose `assignee` equals the technician's email (case-insensitive; the `assignee` query filter cannot widen it) |
+| technician | sees and works **only faults whose `assignee` equals their email** (case-insensitive) inside their projects: `GET /parks/{id}/faults`, `/parks/{id}/work-orders`, `/faults/{id}/comments`, `/faults/{id}/photos[/{pid}]` are filtered; any other fault id is **404**. May `PATCH /faults/{id}` with `status` in `in_progress`/`resolved`, `notes`, `resolution_note` only (assignee/priority/due date or other statuses: 403), `POST /faults/{id}/comments` (author forced to their email) and `POST /faults/{id}/photos` on their own faults. Everything else that writes is 403 |
 | viewer | read-only inside assigned projects (self-registered users have none, so they see nothing until an admin assigns projects) |
 
 Admins create technicians via `POST /users` with `"role": "technician"` and set `assignee` on faults to the
-technician's email.
+technician's email. A typo in `assignee` hides the fault from the technician. Other read routes (park grid,
+inspections, results) still show project data to a technician; only fault records are narrowed.

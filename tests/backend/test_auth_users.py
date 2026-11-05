@@ -35,8 +35,8 @@ def test_session_token_is_stored_hashed(client, users_mode, make_user, db_sessio
     body = client.post("/auth/login", json={"email": "a@axalon.test", "password": PASSWORD}).json()
     token = body["token"]
     stored = [s.token_hash for s in db_session.query(UserSession).all()]
-    # One row for the access session + one for its refresh token; both hashed.
-    assert len(stored) == 2
+    # Access session + refresh token + refresh-family marker; all hashed.
+    assert len(stored) == 3
     assert all(len(h) == 64 and token not in h and body["refresh_token"] not in h for h in stored)
     import hashlib
     assert hashlib.sha256(token.encode()).hexdigest() in stored
