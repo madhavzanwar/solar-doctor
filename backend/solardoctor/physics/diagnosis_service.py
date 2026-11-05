@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import select
@@ -571,6 +571,8 @@ def _record_to_response(r: Diagnosis, plant_name: Optional[str] = None) -> Diagn
         technician_steps=steps,
         safety_warning=r.safety_warning,
         preventative_advice=r.preventative_advice,
+        telemetry_ts=r.telemetry_ts,
+        telemetry_source=r.telemetry_source,
         created_at=r.created_at,
     )
 
@@ -593,6 +595,8 @@ def persist_diagnosis(db: Session, diag: DiagnosisResponse) -> Diagnosis:
         technician_steps_json=json.dumps([s.model_dump() for s in diag.technician_steps]),
         safety_warning=diag.safety_warning,
         preventative_advice=diag.preventative_advice,
+        telemetry_ts=diag.telemetry_ts,
+        telemetry_source=diag.telemetry_source,
         created_at=datetime.now(tz=timezone.utc),
     )
     db.add(record)
@@ -611,23 +615,52 @@ def get_diagnosis_by_alert_id(db: Session, alert_id: int) -> Optional[DiagnosisR
     return _record_to_response(record) if record else None
 
 
-def resolve_power_inputs(db: Session, plant: Plant, expected: Optional[float], actual: Optional[float]):
-    """Expected/actual kW from the request, else the plant's latest telemetry row that has both.
+MAX_TELEMETRY_AGE_HOURS_ENV = "SOLARDOCTOR_DIAGNOSIS_MAX_TELEMETRY_AGE_H"
+DEFAULT_MAX_TELEMETRY_AGE_HOURS = 24.0
+MIN_EXPECTED_FRACTION = 0.05  # skip night/dawn rows: expected power below 5 % of the AC rating
 
-    Raises InsufficientDataError rather than substituting SolarPulse's capacity*0.75 / *0.65 guesses.
+
+def resolve_power_inputs(db: Session, plant: Plant, expected: Optional[float], actual: Optional[float],
+                         allow_simulated: bool = False, now: Optional[datetime] = None):
+    """Return ``(expected_kw, actual_kw, telemetry_row_or_None)`` without inventing anything.
+
+    * both given in the request -> used as is (no telemetry involved);
+    * exactly one given -> refused (never mix a request value with an unrelated telemetry value);
+    * neither -> the newest telemetry row that has both p_expected_kw and p_ac_kw, is no older than
+      ``SOLARDOCTOR_DIAGNOSIS_MAX_TELEMETRY_AGE_H`` (default 24 h), has expected power of at least 5 % of
+      the AC rating (daylight), and is not SIMULATED unless ``allow_simulated``.
+    Raises InsufficientDataError with the reason otherwise (callers return 422 and persist nothing).
     """
     if expected is not None and actual is not None:
         return expected, actual, None
-    tel = db.execute(
-        select(Telemetry).where(Telemetry.plant_id == plant.id, Telemetry.p_expected_kw.is_not(None),
-                                Telemetry.p_ac_kw.is_not(None)).order_by(Telemetry.ts.desc()).limit(1)
-    ).scalar_one_or_none()
-    if tel is None:
+    if expected is not None or actual is not None:
         raise InsufficientDataError(
-            "expected_power_kw and actual_power_kw are required (or ingest telemetry with an expected "
-            "power) - refusing to invent values.")
-    return (expected if expected is not None else tel.p_expected_kw,
-            actual if actual is not None else tel.p_ac_kw, tel)
+            "Provide both expected_power_kw and actual_power_kw, or neither (to use recent telemetry); "
+            "mixing a request value with telemetry is not allowed.")
+    import os
+    try:
+        max_age = float(os.getenv(MAX_TELEMETRY_AGE_HOURS_ENV, DEFAULT_MAX_TELEMETRY_AGE_HOURS))
+    except ValueError:
+        max_age = DEFAULT_MAX_TELEMETRY_AGE_HOURS
+    now = now or datetime.now(tz=timezone.utc)
+    floor = MIN_EXPECTED_FRACTION * plant.ac_kw
+    rows = db.execute(
+        select(Telemetry).where(
+            Telemetry.plant_id == plant.id, Telemetry.p_expected_kw.is_not(None), Telemetry.p_ac_kw.is_not(None),
+            Telemetry.ts >= now - timedelta(hours=max_age),
+        ).order_by(Telemetry.ts.desc()).limit(500)
+    ).scalars().all()
+    daylight = [r for r in rows if r.p_expected_kw >= floor]
+    usable = [r for r in daylight if allow_simulated or (r.source or "").upper() != "SIMULATED"]
+    if usable:
+        tel = usable[0]
+        return tel.p_expected_kw, tel.p_ac_kw, tel
+    if daylight:
+        raise InsufficientDataError(
+            "Only SIMULATED telemetry is available; set allow_simulated=true to diagnose from it.")
+    raise InsufficientDataError(
+        f"No telemetry within the last {max_age:g} h with expected power >= {MIN_EXPECTED_FRACTION:.0%} of the "
+        "AC rating (daylight); provide expected_power_kw and actual_power_kw explicitly.")
 
 
 def run_diagnosis_for_alert(db: Session, alert_id: int) -> DiagnosisResponse:

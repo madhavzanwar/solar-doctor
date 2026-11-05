@@ -180,6 +180,8 @@ def upgrade() -> None:
             sa.Column('technician_steps_json', sa.Text(), nullable=False),
             sa.Column('safety_warning', sa.String(512), nullable=True),
             sa.Column('preventative_advice', sa.String(512), nullable=True),
+            sa.Column('telemetry_ts', _tz(), nullable=True),
+            sa.Column('telemetry_source', sa.String(32), nullable=True),
             sa.Column('created_at', _tz(), nullable=False),
             sa.ForeignKeyConstraint(['plant_id'], ['plants.id'], ondelete='CASCADE'),
             sa.ForeignKeyConstraint(['alert_id'], ['plant_alerts.id'], ondelete='SET NULL'),

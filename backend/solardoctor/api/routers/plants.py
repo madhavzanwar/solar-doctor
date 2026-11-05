@@ -22,7 +22,7 @@ def create_plant(data: PlantCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=List[PlantResponse], summary="List all active plants")
-def list_plants(skip: int = Query(default=0, ge=0), limit: int = Query(default=100, ge=1, le=500), db: Session = Depends(get_db)):
+def list_plants(skip: int = Query(default=0, ge=0, le=1_000_000), limit: int = Query(default=100, ge=1, le=500), db: Session = Depends(get_db)):
     return plant_service.list_plants(db, skip=skip, limit=limit)
 
 

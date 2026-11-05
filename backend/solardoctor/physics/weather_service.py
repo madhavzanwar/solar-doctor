@@ -271,6 +271,41 @@ def redact(text: object) -> str:
     return _KEY_RE.sub(r"\1***", str(text))
 
 
+class _RedactingFilter(logging.Filter):
+    """Redact credentials in log records of the HTTP libraries (httpx logs full URLs at INFO)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            msg = record.getMessage()
+        except Exception:  # malformed %-args: still never emit the raw text
+            msg = str(record.msg)
+        red = redact(msg)
+        if red != msg or record.args:
+            record.msg, record.args = red, None
+        return True
+
+
+_HTTP_LOGGERS = ("httpx", "httpcore", "httpcore.connection", "httpcore.http11", "httpcore.http2",
+                 "httpcore.proxy", "urllib3", "urllib3.connectionpool")
+_http_level_set = False
+
+
+def harden_http_logging() -> None:
+    """Keep API keys out of logs at the source.
+
+    Attaches a redacting filter to the httpx/httpcore loggers (holds even if someone later lowers the
+    level to INFO/DEBUG) and, once, raises their level to WARNING so request URLs are not logged at all.
+    """
+    global _http_level_set
+    for name in _HTTP_LOGGERS:
+        lg = logging.getLogger(name)
+        if not any(isinstance(f, _RedactingFilter) for f in lg.filters):
+            lg.addFilter(_RedactingFilter())
+        if not _http_level_set:
+            lg.setLevel(logging.WARNING)
+    _http_level_set = True
+
+
 class WeatherAPIError(RuntimeError):
     """Weather provider failure; the message never contains the request URL or API key."""
 
@@ -284,6 +319,7 @@ class WeatherAPIClient:
 
     def __init__(self, api_key: str, base_url: str = WEATHERAPI_BASE,
                  transport: httpx.BaseTransport | None = None) -> None:
+        harden_http_logging()
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
         self._transport = transport
@@ -459,6 +495,7 @@ def fetch_nasa_power_hourly(lat: float, lon: float, start: datetime, end: dateti
         cached = _cache_get(db, lat, lon, kind)
         if cached:
             return parse_nasa_power_hourly(json.loads(cached))
+    harden_http_logging()
     with httpx.Client(timeout=60.0, transport=transport) as client:
         resp = client.get(NASA_POWER_URL, params=params)
         resp.raise_for_status()

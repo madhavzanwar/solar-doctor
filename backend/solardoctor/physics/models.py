@@ -245,6 +245,8 @@ class Diagnosis(Base):
     technician_steps_json: Mapped[str] = mapped_column(Text, nullable=False)
     safety_warning: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     preventative_advice: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    telemetry_ts: Mapped[Optional[datetime]] = mapped_column(UTCDateTime, nullable=True)
+    telemetry_source: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
 
 

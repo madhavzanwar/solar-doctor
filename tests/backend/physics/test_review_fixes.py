@@ -17,8 +17,9 @@ def _iso(monkeypatch, tmp_path):
     reset_registry()
     # alembic's fileConfig (run by migration tests in the same process) disables existing loggers.
     for name in list(logging.root.manager.loggerDict):
-        if name.startswith("solardoctor"):
+        if name.startswith(("solardoctor", "httpx", "httpcore")):
             logging.getLogger(name).disabled = False
+    logging.getLogger("httpx").setLevel(logging.INFO)  # httpx logs full request URLs at INFO
     yield
     reset_registry()
 
@@ -40,6 +41,27 @@ def test_weather_api_key_not_logged(monkeypatch, caplog, status_code):
     assert wd.source == "mock"
     assert "SUPERSECRETKEY" not in caplog.text
     assert f"HTTP {status_code}" in caplog.text
+
+
+def test_httpx_info_logging_is_redacted_even_if_level_lowered(monkeypatch, caplog):
+    from solardoctor.physics import weather_service as ws
+    monkeypatch.setenv("SOLARDOCTOR_WEATHER_API_KEY", "SUPERSECRETKEY")
+    ws.harden_http_logging()                       # what building the client does
+    logging.getLogger("httpx").setLevel(logging.INFO)  # someone (basicConfig, ops) lowers it again
+    caplog.set_level(logging.DEBUG)
+    ws.get_current_weather(18.5, 73.8, transport=httpx.MockTransport(lambda r: httpx.Response(401)))
+    ws.get_current_weather(18.5, 73.8, transport=httpx.MockTransport(lambda r: httpx.Response(200, json={})))
+    http_lines = [r.getMessage() for r in caplog.records if r.name == "httpx"]
+    assert http_lines, "httpx INFO request line should be emitted for this test to prove the filter"
+    assert all("SUPERSECRETKEY" not in m for m in http_lines) and any("key=***" in m for m in http_lines)
+    assert "SUPERSECRETKEY" not in caplog.text
+
+
+def test_client_construction_raises_http_loggers_to_warning(monkeypatch):
+    import solardoctor.physics.weather_service as ws
+    monkeypatch.setattr(ws, "_http_level_set", False)
+    ws.WeatherAPIClient("k")
+    assert logging.getLogger("httpx").level == logging.WARNING
 
 
 def test_weather_connection_error_not_logged_with_key(monkeypatch, caplog):
@@ -90,8 +112,8 @@ def test_diagnose_uses_latest_telemetry_when_request_has_no_numbers(client, db_s
     from solardoctor.physics.models import Telemetry
     p = _mk(client, tariff_inr_kwh=6.0)
     db_session.add(Telemetry(plant_id=p["id"], ts=datetime.now(tz=timezone.utc), p_ac_kw=40.0,
-                             p_expected_kw=80.0, ghi_wm2=800.0, source="SIMULATED"))
-    db_session.commit()
+                             p_expected_kw=80.0, ghi_wm2=800.0, source="USER"))
+    db_session.commit()  # (SIMULATED rows now need allow_simulated: see test_simulated_telemetry_*)
     r = client.post("/api/v1/diagnosis/diagnose", json={"plant_id": p["id"], "inverter_error_code": "F056"})
     assert r.status_code == 200, r.text
     d = r.json()
@@ -236,3 +258,94 @@ def test_ws_credential_channels(ws_client):
             ws.send_json({"type": "auth", "token": "bad"})
             ws.receive_json()
     assert ei.value.code == 4401
+
+
+# ── F2: telemetry fallback honesty ──────────────────────────────────────────
+
+def _tel(db, pid, hours_ago=1.0, expected=80.0, actual=40.0, source="USER"):
+    from datetime import timedelta
+    from solardoctor.physics.models import Telemetry
+    db.add(Telemetry(plant_id=pid, ts=datetime.now(tz=timezone.utc) - timedelta(hours=hours_ago),
+                     p_expected_kw=expected, p_ac_kw=actual, ghi_wm2=800.0, source=source))
+    db.commit()
+
+
+def _diag(client, pid, **kw):
+    return client.post("/api/v1/diagnosis/diagnose", json={"plant_id": pid, **kw})
+
+
+def test_stale_telemetry_rejected(client, db_session):
+    p = _mk(client)
+    _tel(db_session, p["id"], hours_ago=90 * 24)
+    r = _diag(client, p["id"])
+    assert r.status_code == 422 and "last 24" in r.json()["detail"]
+    assert client.get(f"/api/v1/diagnosis/plant/{p['id']}").json() == []
+
+
+def test_max_age_is_configurable(client, db_session, monkeypatch):
+    p = _mk(client)
+    _tel(db_session, p["id"], hours_ago=30)
+    assert _diag(client, p["id"]).status_code == 422
+    monkeypatch.setenv("SOLARDOCTOR_DIAGNOSIS_MAX_TELEMETRY_AGE_H", "48")
+    assert _diag(client, p["id"]).status_code == 200
+
+
+def test_night_rows_skipped_in_favour_of_earlier_daylight_row(client, db_session):
+    p = _mk(client)                       # ac 100 kW -> floor 5 kW
+    _tel(db_session, p["id"], hours_ago=6, expected=90.0, actual=45.0)
+    _tel(db_session, p["id"], hours_ago=0.5, expected=0.0, actual=0.0)   # latest row is night
+    d = _diag(client, p["id"]).json()
+    assert d["telemetry_evidence"]["expected_power_kw"] == 90.0 and d["estimated_loss_kw"] == 45.0
+    only_night = _mk(client, name="N")
+    _tel(db_session, only_night["id"], hours_ago=0.5, expected=1.0, actual=0.0)
+    assert _diag(client, only_night["id"]).status_code == 422
+
+
+def test_mixed_request_and_telemetry_rejected(client, db_session):
+    p = _mk(client)
+    _tel(db_session, p["id"])
+    for body in ({"expected_power_kw": 100}, {"actual_power_kw": 10}):
+        r = _diag(client, p["id"], **body)
+        assert r.status_code == 422 and "mixing" in r.json()["detail"]
+
+
+def test_simulated_telemetry_needs_opt_in_and_is_labelled(client, db_session):
+    p = _mk(client)
+    _tel(db_session, p["id"], source="SIMULATED")
+    r = _diag(client, p["id"])
+    assert r.status_code == 422 and "allow_simulated" in r.json()["detail"]
+    ok = _diag(client, p["id"], allow_simulated=True)
+    assert ok.status_code == 200
+    d = ok.json()
+    assert d["telemetry_source"] == "SIMULATED" and d["telemetry_ts"]
+    assert d["telemetry_evidence"]["telemetry_source"] == "SIMULATED" and d["telemetry_evidence"]["telemetry_ts"]
+    stored = client.get(f"/api/v1/diagnosis/plant/{p['id']}").json()[0]
+    assert stored["telemetry_source"] == "SIMULATED"          # provenance survives persistence
+
+
+def test_real_recent_telemetry_prefers_non_simulated(client, db_session):
+    p = _mk(client)
+    _tel(db_session, p["id"], hours_ago=3, expected=70.0, actual=35.0, source="USER")
+    _tel(db_session, p["id"], hours_ago=1, expected=90.0, actual=10.0, source="SIMULATED")
+    d = _diag(client, p["id"]).json()
+    assert d["telemetry_source"] == "USER" and d["telemetry_evidence"]["expected_power_kw"] == 70.0
+
+
+def test_request_values_do_not_touch_telemetry(client, db_session):
+    p = _mk(client)
+    d = _diag(client, p["id"], expected_power_kw=100, actual_power_kw=60).json()
+    assert d["telemetry_ts"] is None and d["telemetry_source"] is None
+
+
+# ── F4/F5: bounds ───────────────────────────────────────────────────────────
+
+def test_bounds(client):
+    assert client.get("/api/v1/plants?skip=99999999999999999999").status_code == 422
+    assert client.get("/api/v1/plants?skip=1000001").status_code == 422
+    assert client.post("/api/v1/plants", json={**PLANT, "capacity_kw": 1e308}).status_code == 422
+    assert client.post("/api/v1/plants", json={**PLANT, "inverter_capacity_kw": 1e8}).status_code == 422
+    p = _mk(client)
+    assert client.put(f"/api/v1/plants/{p['id']}", json={"capacity_kw": 1e9}).status_code == 422
+    for body in ({"expected_power_kw": -1, "actual_power_kw": 5}, {"expected_power_kw": 5, "actual_power_kw": -1}):
+        assert _diag(client, p["id"], **body).status_code == 422
+    assert client.get(f"/api/v1/diagnosis/plant/{p['id']}").json() == []

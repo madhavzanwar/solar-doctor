@@ -177,7 +177,7 @@ def run_cases(ns: SimpleNamespace) -> dict:
     for c in cases:
         d = ns.diagnose_root_cause(plant_id=1, plant_name="P", capacity_kw=1000.0, timestamp=ts0, **c)
         dd = d.model_dump()
-        for k in ("created_at", "timestamp", "currency", "financial_assumption"):
+        for k in ("created_at", "timestamp", "currency", "financial_assumption", "telemetry_ts", "telemetry_source"):
             dd.pop(k, None)
         diags.append(_clean(dd))
     out["diagnosis"] = diags

@@ -16,6 +16,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+MAX_KW = 1e7  # 10 TW-scale sanity bound; the largest real plants are ~2e6 kW
+
 
 def _check_tz(v):
     if v is None:
@@ -33,8 +35,8 @@ class PlantCreate(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
     timezone: str = Field(default="UTC", max_length=64)
-    capacity_kw: float = Field(..., gt=0)
-    inverter_capacity_kw: float = Field(..., gt=0)
+    capacity_kw: float = Field(..., gt=0, le=MAX_KW)
+    inverter_capacity_kw: float = Field(..., gt=0, le=MAX_KW)
     module_count: Optional[int] = Field(default=None, gt=0)
     # SolarDoctor additions (all optional; SolarPulse clients can omit them)
     park_id: Optional[str] = Field(default=None, max_length=200, description="Axalon Park to link 1:1")
@@ -55,8 +57,8 @@ class PlantUpdate(BaseModel):
     latitude: Optional[float] = Field(default=None, ge=-90.0, le=90.0)
     longitude: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
     timezone: Optional[str] = Field(default=None, max_length=64)
-    capacity_kw: Optional[float] = Field(default=None, gt=0)
-    inverter_capacity_kw: Optional[float] = Field(default=None, gt=0)
+    capacity_kw: Optional[float] = Field(default=None, gt=0, le=MAX_KW)
+    inverter_capacity_kw: Optional[float] = Field(default=None, gt=0, le=MAX_KW)
     module_count: Optional[int] = Field(default=None, gt=0)
     is_active: Optional[bool] = None
     park_id: Optional[str] = None

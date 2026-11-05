@@ -25,8 +25,9 @@ def run_diagnosis(request: DiagnosisRequest, db: Session = Depends(get_db)):
     plant = plant_service.get_plant(db, request.plant_id)
     has_tariff = plant.tariff_inr_kwh is not None
     try:
-        expected, actual, _tel = diagnosis_service.resolve_power_inputs(
-            db, plant, request.expected_power_kw, request.actual_power_kw)
+        expected, actual, tel = diagnosis_service.resolve_power_inputs(
+            db, plant, request.expected_power_kw, request.actual_power_kw,
+            allow_simulated=request.allow_simulated)
     except diagnosis_service.InsufficientDataError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
     diag = diagnosis_service.diagnose_root_cause(
@@ -39,6 +40,10 @@ def run_diagnosis(request: DiagnosisRequest, db: Session = Depends(get_db)):
         tariff_per_kwh=plant.tariff_inr_kwh if has_tariff else None,
         currency="INR" if has_tariff else diagnosis_service.CURRENCY_UNSET,
     )
+    if tel is not None:
+        diag.telemetry_ts, diag.telemetry_source = tel.ts, tel.source
+        diag.telemetry_evidence = {**(diag.telemetry_evidence or {}), "telemetry_ts": tel.ts.isoformat(),
+                                   "telemetry_source": tel.source}
     diag.id = diagnosis_service.persist_diagnosis(db, diag).id
     return diag
 

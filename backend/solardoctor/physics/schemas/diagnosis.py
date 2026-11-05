@@ -27,8 +27,9 @@ class DiagnosisRequest(BaseModel):
     inverter_error_code: Optional[str] = Field(
         default=None, description="Inverter fault code (e.g. F056, F034, E003, AFCI, ISO_FAULT)"
     )
-    expected_power_kw: Optional[float] = None
-    actual_power_kw: Optional[float] = None
+    expected_power_kw: Optional[float] = Field(default=None, ge=0, le=1e8)
+    actual_power_kw: Optional[float] = Field(default=None, ge=0, le=1e8)
+    allow_simulated: bool = Field(default=False, description="Permit the telemetry fallback to use rows whose source is SIMULATED")
     irradiance_w_m2: Optional[float] = None
     temperature_c: Optional[float] = None
     module_temp_c: Optional[float] = None
@@ -59,6 +60,8 @@ class DiagnosisResponse(BaseModel):
     safety_warning: Optional[str] = None
     preventative_advice: Optional[str] = None
     telemetry_evidence: Optional[dict] = None
+    telemetry_ts: Optional[datetime] = Field(default=None, description="Timestamp of the telemetry row used (when power values came from telemetry)")
+    telemetry_source: Optional[str] = Field(default=None, description="source of that row, e.g. USER, SIMULATED")
     created_at: datetime
 
 
