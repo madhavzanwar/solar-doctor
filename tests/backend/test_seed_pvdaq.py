@@ -31,23 +31,29 @@ IRR_COLS = [
 ]
 
 
-@pytest.fixture
-def files(tmp_path):
-    # FIXTURE, NOT REAL DATA: 2 days of 5-minute rows in local standard time (UTC-7).
-    idx = pd.date_range("2024-06-01 00:05", "2024-06-03 00:00", freq="5min")
-    hour = idx.hour + idx.minute / 60
-    sun = np.clip(np.sin((hour - 6) / 12 * np.pi), 0, None)
+LAT, LON = 40.3864, -104.5512  # Kersey, CO (from the 9068 metadata)
+
+
+def make_files(tmp_path, utc_start: str, days: int = 2):
+    """FIXTURE, NOT REAL DATA.  Artificial 5-minute rows whose diurnal shape follows the true pvlib sun
+    position at Kersey, written the way the PVDAQ loggers do: on the DST-observing America/Denver wall clock
+    (so the fall-back hour appears twice, the spring-forward hour is missing)."""
+    import pvlib
+    utc = pd.date_range(pd.Timestamp(utc_start, tz="UTC"), periods=days * 288, freq="5min")
+    elev = pvlib.solarposition.get_solarposition(utc, LAT, LON)["apparent_elevation"].to_numpy()
+    sun = np.clip(np.sin(np.radians(elev)), 0, None)
+    idx = utc.tz_convert("America/Denver").tz_localize(None)
     ac = pd.DataFrame({
         AC_COLS[0]: 100 * sun, AC_COLS[1]: 400 * sun, AC_COLS[2]: 300 * sun, AC_COLS[3]: 1.0}, index=idx)
-    ac.loc[idx[10], AC_COLS[2]] = np.nan                       # one gap in inverter 2
-    ac.loc[idx[20], AC_COLS[1]] = -2.0                         # night-time negative reading
+    ac.iloc[10, 2] = np.nan                                    # one gap in inverter 2
+    ac.iloc[20, 1] = -2.0                                      # night-time negative reading
     irr = pd.DataFrame({IRR_COLS[0]: 1000 * sun, IRR_COLS[1]: 999 * sun, IRR_COLS[2]: 800 * sun}, index=idx)
     ac.index.name = irr.index.name = "measured_on"
     ac.to_csv(tmp_path / "ac.csv")
     irr.to_csv(tmp_path / "irr.csv")
     meta = {
         "System": {"system_id": 1, "public_name": "FIXTURE_NOT_REAL_DATA", "power(kW DC)": 1000.0, "timezone_code": 7},
-        "Site": {"location": "Nowhere, XX", "latitude": 40.0, "longitude": -105.0, "elevation(m)": 1500.0},
+        "Site": {"location": "Nowhere, XX", "latitude": LAT, "longitude": LON, "elevation(m)": 1500.0},
         "Mount": {"Mount 0": {"tracking": "t", "type": "single-axis tracker", "azimuth": 180.0, "tilt": 0.0}},
         "Inverters": {"Inverter 0": {"name": "fx_inv_1", "AC capacity(kW)": 500}, "Inverter 1": {"name": "fx_inv_2", "AC capacity(kW)": 400}},
         "Modules": {"Module 0": {"quantity": 100, "nameplate capacity(W)": 10.0, "temperature coefficient of maximum power(%C)": -0.28}},
@@ -56,25 +62,82 @@ def files(tmp_path):
     return tmp_path
 
 
+@pytest.fixture
+def files(tmp_path):
+    return make_files(tmp_path, "2024-06-01 06:00", days=2)
+
+
 START, END = pd.Timestamp("2024-06-01", tz="UTC"), pd.Timestamp("2024-06-02", tz="UTC")
+
+
+def _solar_noon_utc(day: str) -> pd.Timestamp:
+    import pvlib
+    t = pd.date_range(pd.Timestamp(day, tz="UTC"), periods=1440, freq="1min")
+    el = pvlib.solarposition.get_solarposition(t, LAT, LON)["apparent_elevation"]
+    return el.idxmax()
+
+
+@pytest.mark.parametrize("day", ["2024-01-10", "2024-06-20"])  # MST (UTC-7) and MDT (UTC-6)
+def test_diurnal_peak_lines_up_with_solar_noon_in_both_seasons(tmp_path, day):
+    d0 = pd.Timestamp(day, tz="UTC")
+    make_files(tmp_path, f"{day} 00:00", days=2)
+    m = pvdaq.map_pvdaq(tmp_path / "ac.csv", tmp_path / "irr.csv", tmp_path / "meta.json", d0, d0 + pd.Timedelta(days=1))
+    # one solar day in UTC: 08:00 on day d0 to 08:00 the next day (June sunset is after 00:00 UTC)
+    t = m.telemetry.loc[d0 + pd.Timedelta(hours=8):d0 + pd.Timedelta(hours=32)]
+    mins = np.asarray((t.index - d0) / pd.Timedelta(minutes=1), dtype=float)
+    centroid = d0 + pd.Timedelta(minutes=float((mins * t["poa"]).sum() / t["poa"].sum()))
+    assert abs(centroid - _solar_noon_utc(day)) <= pd.Timedelta(minutes=20), (centroid, _solar_noon_utc(day))
+    assert abs(t["poa"].idxmax() - _solar_noon_utc(day)) <= pd.Timedelta(minutes=30)
+    # the generator wrote local wall-clock noon at 12:00 (MST) / 13:00 (MDT) -> UTC 19:00 / 19:00 +- sun position
+    assert any("America/Denver" in n for n in m.meta_notes)
+
+
+def test_fall_back_hour_is_dropped_not_shifted(tmp_path):
+    make_files(tmp_path, "2024-11-02 12:00", days=2)          # spans 2024-11-03 fall-back (01:00-02:00 twice)
+    d0, d1 = pd.Timestamp("2024-11-02", tz="UTC"), pd.Timestamp("2024-11-04", tz="UTC")
+    m = pvdaq.map_pvdaq(tmp_path / "ac.csv", tmp_path / "irr.csv", tmp_path / "meta.json", d0, d1)
+    assert m.telemetry.index.is_unique and m.telemetry.index.is_monotonic_increasing
+    # the repeated wall-clock hour (24 five-minute rows per file, 2 files) is dropped and reported
+    assert any(n.startswith("timestamps:") and " 48 ambiguous" in n for n in m.meta_notes), m.meta_notes
+    # daytime values still line up with the sun on both sides of the change
+    noon_before = _solar_noon_utc("2024-11-02")
+    noon_after = _solar_noon_utc("2024-11-03")
+    for noon in (noon_before, noon_after):
+        w = m.telemetry.loc[noon - pd.Timedelta(hours=3):noon + pd.Timedelta(hours=3), "poa"]
+        assert abs(w.idxmax() - noon) <= pd.Timedelta(minutes=30)
 
 
 def test_mapping_units_and_aggregation(files):
     m = pvdaq.map_pvdaq(files / "ac.csv", files / "irr.csv", files / "meta.json", START, END)
     p = m.plant
     assert p["source"] == "PVDAQ" and p["name"] == "PVDAQ 1 FIXTURE_NOT_REAL_DATA"
-    assert (p["dc_kw"], p["ac_kw"], p["lat"], p["lon"], p["altitude_m"]) == (1000.0, 900.0, 40.0, -105.0, 1500.0)
+    assert (p["dc_kw"], p["ac_kw"], p["lat"], p["lon"], p["altitude_m"]) == (1000.0, 900.0, LAT, LON, 1500.0)
+    assert p["tz"] == "America/Denver" and "single-axis tracker" in p["location"] and "baseline invalid" in p["location"]
     assert p["temp_coeff"] == pytest.approx(-0.0028) and p["module_count"] == 100
     assert [i["name"] for i in m.inverters] == ["fx_inv_1", "fx_inv_2"]
     t = m.telemetry
-    # 15-minute bins in UTC (local 00:00 MST = 07:00 UTC) and local noon (19:00 UTC) peaks near 700 kW
     assert set(t.index.to_series().diff().dropna()) <= {pd.Timedelta(minutes=15), pd.Timedelta(minutes=30)}
-    assert t.index[0] >= pd.Timestamp("2024-06-01 07:00", tz="UTC")
-    noon = t.loc["2024-06-01 19:00":"2024-06-01 19:00"].iloc[0]
+    noon = t.loc[_solar_noon_utc("2024-06-01").floor("15min")]
     assert noon["plant_ac"] == pytest.approx(noon["inv_1"] + noon["inv_2"]) and 650 < noon["plant_ac"] <= 700
-    assert 850 < noon["poa"] < 1000                      # mean of the two non-compensated pyranometers (900)
-    assert (t[["inv_1", "inv_2"]] >= 0).all().all()      # negative night readings clipped
+    assert 850 < noon["poa"] < 1000                      # mean of the two non-compensated pyranometers (~900)
+    assert (t[["inv_1", "inv_2"]] >= 0).all().all()      # negative night readings clipped ...
+    assert any("1 negative inverter-AC" in n for n in m.meta_notes)  # ... and counted
     assert t["plant_ac"].notna().all()                   # bins with a missing inverter are dropped, not zero-filled
+
+
+def test_bins_need_two_of_three_samples(tmp_path):
+    make_files(tmp_path, "2024-06-01 06:00", days=1)
+    ac = pd.read_csv(tmp_path / "ac.csv", index_col=0)
+    # blank two of the three samples of one daytime bin for BOTH inverters, one sample of the next bin
+    ac.iloc[130:132, [1, 2]] = np.nan
+    ac.iloc[135, [1, 2]] = np.nan
+    ac.to_csv(tmp_path / "ac.csv")
+    m = pvdaq.map_pvdaq(tmp_path / "ac.csv", tmp_path / "irr.csv", tmp_path / "meta.json", START, END)
+    raw = pd.DatetimeIndex(pd.read_csv(tmp_path / "ac.csv", index_col=0, parse_dates=True).index)
+    bin_bad = raw[130].tz_localize("America/Denver").tz_convert("UTC").floor("15min")
+    bin_ok = raw[135].tz_localize("America/Denver").tz_convert("UTC").floor("15min")
+    assert bin_bad not in m.telemetry.index          # 1 of 3 samples: rejected
+    assert bin_ok in m.telemetry.index               # 2 of 3 samples: kept
 
 
 def test_write_is_idempotent_and_labelled(files, tmp_path, monkeypatch):
