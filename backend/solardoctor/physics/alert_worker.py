@@ -35,9 +35,9 @@ class LogNotificationAdapter(NotificationAdapter):
 
 
 def run_alert_check(db: Session, plant_id: int, lookback_minutes: int = 60,
-                    adapter: Optional[NotificationAdapter] = None) -> int:
+                    adapter: Optional[NotificationAdapter] = None, now: Optional[datetime] = None) -> int:
     """Returns the number of alerts created (0 or 1)."""
-    since = datetime.now(tz=timezone.utc) - timedelta(minutes=lookback_minutes)
+    since = (now or datetime.now(tz=timezone.utc)) - timedelta(minutes=lookback_minutes)
     plant = db.get(Plant, plant_id)
     tel = db.execute(
         select(Telemetry).where(Telemetry.plant_id == plant_id, Telemetry.ts >= since)

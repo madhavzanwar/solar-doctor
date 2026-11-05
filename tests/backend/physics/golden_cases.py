@@ -6,6 +6,7 @@ works when the SolarPulse clone is absent (regenerate with ``python make_golden.
 """
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import math
 from datetime import datetime, timezone
@@ -74,6 +75,29 @@ WEATHERAPI_RAW = {
          "cloud": 10 * (h % 5), "uv": float(h % 9), "condition": {"text": "Clear"}, "is_day": 1 if 6 <= h <= 18 else 0}
         for h in range(0, 24, 3)]}]},
 }
+
+
+# The mock weather is a function of the wall-clock hour (is_day, sun fraction -> condition text). The
+# captured golden values were taken in daylight at the plant's longitude, so pin the clock to a fixed
+# daytime instant (2026-11-05 06:30 UTC, ~12:00 IST) for BOTH the port and the original.
+FROZEN_NOW = datetime(2026, 11, 5, 6, 30, tzinfo=timezone.utc)
+
+
+class _FrozenDatetime(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return FROZEN_NOW if tz is None else FROZEN_NOW.astimezone(tz)
+
+
+@contextlib.contextmanager
+def frozen_clock(module):
+    """Replace ``datetime`` in a service module with one whose now() is FROZEN_NOW."""
+    original = module.datetime
+    module.datetime = _FrozenDatetime
+    try:
+        yield
+    finally:
+        module.datetime = original
 
 
 def run_cases(ns: SimpleNamespace) -> dict:
@@ -189,7 +213,8 @@ def run_cases(ns: SimpleNamespace) -> dict:
     cur = ns.parse_current(WEATHERAPI_RAW)
     out["weather_current"] = _clean({k: v for k, v in dataclasses.asdict(cur).items() if k != "timestamp"})
     out["weather_hourly"] = _clean([dataclasses.asdict(p) for p in ns.parse_hourly(WEATHERAPI_RAW)])
-    mock = ns.mock_weather(18.52, 73.86)
+    with frozen_clock(ns.weather_module):
+        mock = ns.mock_weather(18.52, 73.86)
     out["weather_mock_static"] = _clean({"loc": mock.location_name, "source": mock.source, "n": len(mock.hourly_forecast),
                                          "cond": mock.current.condition_text})
 
@@ -227,7 +252,7 @@ def ours() -> SimpleNamespace:
         classify_severity=an._classify_severity, diagnose_root_cause=ds.diagnose_root_cause,
         get_root_cause_taxonomy=ds.get_root_cause_taxonomy, estimate_irradiance=ws._estimate_irradiance,
         parse_current=ws._parse_current, parse_hourly=ws._parse_hourly_forecast, mock_weather=ws._mock_weather_data,
-        calculate_physics_power=fs.calculate_physics_power,
+        calculate_physics_power=fs.calculate_physics_power, weather_module=ws,
     )
 
 
@@ -258,4 +283,5 @@ def original() -> SimpleNamespace:
         parse_hourly=o.mod("services.weather_service")._parse_hourly_forecast,
         mock_weather=o.mod("services.weather_service")._mock_weather_data,
         calculate_physics_power=o.mod("services.forecast_service")._calculate_physics_power,
+        weather_module=o.mod("services.weather_service"),
     )
