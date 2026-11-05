@@ -56,8 +56,8 @@ _READ_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 # photo upload). The handlers still 404 unless the fault is assigned to them and
 # the faults router limits which fields/statuses they may set.
 _TECHNICIAN_WRITES = (
-    ("PATCH", re.compile(r"^/faults/\d+$")),
-    ("POST", re.compile(r"^/faults/\d+/(comments|photos)$")),
+    ("PATCH", re.compile(r"/faults/[0-9]+")),
+    ("POST", re.compile(r"/faults/[0-9]+/(?:comments|photos)")),
 )
 
 NOT_AUTHENTICATED = "Not authenticated"
@@ -170,7 +170,7 @@ def access_policy(
         needed = read_role if request.method in _READ_METHODS else write_role
         if principal.is_technician and request.method not in _READ_METHODS:
             path = strip_api_prefix(request.url.path)
-            if any(request.method == m and rx.match(path) for m, rx in _TECHNICIAN_WRITES):
+            if any(request.method == m and rx.fullmatch(path) for m, rx in _TECHNICIAN_WRITES):
                 return
         if not principal.has_role(needed):
             raise HTTPException(status_code=403, detail=FORBIDDEN)
