@@ -1,0 +1,158 @@
+[
+  {
+    "name": "desk-landing",
+    "route": "/",
+    "viewport": "1440x900",
+    "reference": "desk-landing.webp",
+    "actual": "1440x3201",
+    "referenceSize": "1440x3167",
+    "diffRatioFullCanvas": 0.10948249678919782,
+    "diffRatioCommonRegion": 0.09992215731677367
+  },
+  {
+    "name": "mob-landing",
+    "route": "/",
+    "viewport": "390x844",
+    "reference": "mob-landing.webp",
+    "actual": "390x3829",
+    "referenceSize": "390x3720",
+    "diffRatioFullCanvas": 0.18412921630471904,
+    "diffRatioCommonRegion": 0.16065274331403365
+  },
+  {
+    "name": "desk-login",
+    "route": "/login",
+    "viewport": "1440x900",
+    "reference": "desk-login.webp",
+    "actual": "1440x900",
+    "referenceSize": "1440x900",
+    "diffRatioFullCanvas": 0.0013016975308641975,
+    "diffRatioCommonRegion": 0.0013016975308641975
+  },
+  {
+    "name": "mob-login",
+    "route": "/login",
+    "viewport": "390x844",
+    "reference": null
+  },
+  {
+    "name": "desk-register",
+    "route": "/register",
+    "viewport": "1440x900",
+    "reference": "desk-register.webp",
+    "actual": "1440x900",
+    "referenceSize": "1440x900",
+    "diffRatioFullCanvas": 0.0020925925925925925,
+    "diffRatioCommonRegion": 0.0020925925925925925
+  },
+  {
+    "name": "mob-register",
+    "route": "/register",
+    "viewport": "390x844",
+    "reference": null
+  },
+  {
+    "name": "desk-overview",
+    "route": "/dashboard",
+    "viewport": "1440x900",
+    "reference": "desk-overview.webp",
+    "actual": "1440x1227",
+    "referenceSize": "1440x1227",
+    "diffRatioFullCanvas": 0.001621502309155121,
+    "diffRatioCommonRegion": 0.001621502309155121
+  },
+  {
+    "name": "mob-overview",
+    "route": "/dashboard",
+    "viewport": "390x844",
+    "reference": "mob-overview.webp",
+    "actual": "390x2566",
+    "referenceSize": "390x2566",
+    "diffRatioFullCanvas": 0.0007184683334332594,
+    "diffRatioCommonRegion": 0.0007184683334332594
+  },
+  {
+    "name": "desk-plants",
+    "route": "/dashboard/plants",
+    "viewport": "1440x900",
+    "reference": "desk-plants.webp",
+    "actual": "1440x900",
+    "referenceSize": "1440x900",
+    "diffRatioFullCanvas": 0.008280864197530864,
+    "diffRatioCommonRegion": 0.008280864197530864
+  },
+  {
+    "name": "mob-plants",
+    "route": "/dashboard/plants",
+    "viewport": "390x844",
+    "reference": null
+  },
+  {
+    "name": "desk-plant-new",
+    "route": "/dashboard/plants/new",
+    "viewport": "1440x900",
+    "reference": "desk-plant-new.webp",
+    "actual": "1440x900",
+    "referenceSize": "1440x900",
+    "diffRatioFullCanvas": 0.0018487654320987654,
+    "diffRatioCommonRegion": 0.0018487654320987654
+  },
+  {
+    "name": "mob-plant-new",
+    "route": "/dashboard/plants/new",
+    "viewport": "390x844",
+    "reference": null
+  },
+  {
+    "name": "desk-plant-detail",
+    "route": "/dashboard/plants/2",
+    "viewport": "1440x900",
+    "reference": "desk-plant-detail.webp",
+    "actual": "1440x1027",
+    "referenceSize": "1440x1027",
+    "diffRatioFullCanvas": 0.0025384074434707344,
+    "diffRatioCommonRegion": 0.0025384074434707344
+  },
+  {
+    "name": "mob-plant-detail",
+    "route": "/dashboard/plants/2",
+    "viewport": "390x844",
+    "reference": "mob-plant-detail.webp",
+    "actual": "390x2263",
+    "referenceSize": "390x2263",
+    "diffRatioFullCanvas": 0.0010843332540195112,
+    "diffRatioCommonRegion": 0.0010843332540195112
+  },
+  {
+    "name": "desk-alerts",
+    "route": "/dashboard/alerts",
+    "viewport": "1440x900",
+    "reference": "desk-alerts.webp",
+    "actual": "1440x900",
+    "referenceSize": "1440x900",
+    "diffRatioFullCanvas": 0.0019930555555555556,
+    "diffRatioCommonRegion": 0.0019930555555555556
+  },
+  {
+    "name": "mob-alerts",
+    "route": "/dashboard/alerts",
+    "viewport": "390x844",
+    "reference": null
+  },
+  {
+    "name": "desk-performance",
+    "route": "/dashboard/performance",
+    "viewport": "1440x900",
+    "reference": "desk-forecasts.webp",
+    "actual": "1440x2470",
+    "referenceSize": "1440x2470",
+    "diffRatioFullCanvas": 0.002197480881691408,
+    "diffRatioCommonRegion": 0.002197480881691408
+  },
+  {
+    "name": "mob-performance",
+    "route": "/dashboard/performance",
+    "viewport": "390x844",
+    "reference": null
+  }
+]
