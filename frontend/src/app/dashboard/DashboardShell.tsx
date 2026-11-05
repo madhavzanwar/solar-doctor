@@ -6,7 +6,8 @@ import { ScopeProvider } from "@/components/dashboard/scope";
 import { TopbarControls } from "@/components/dashboard/TopbarControls";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCurrentUser, isLoggedIn, logout } from "@/lib/api";
+import { getCurrentUser, isLoggedIn, logout, me } from "@/lib/api";
+import { roleLabel } from "@/lib/roles";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", index: "01" },
@@ -25,6 +26,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -33,6 +35,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       return;
     }
     setUser(getCurrentUser());
+    me()
+      .then((r) => {
+        setRole(r.role ?? null);
+        if (r.user?.email) setUser(r.user.email);
+      })
+      .catch(() => undefined);
   }, [router]);
 
   return (
@@ -81,7 +89,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="dash-user-info">
               <span className="dash-user-name">{user ?? "Operator"}</span>
-              <span className="dash-user-role">Plant operator</span>
+              <span className="dash-user-role">{roleLabel(role) || "\u00a0"}</span>
             </div>
           </div>
           <button className="dash-logout" onClick={logout}>

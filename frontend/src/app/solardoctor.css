@@ -173,6 +173,12 @@ summary:focus-visible,
   background: linear-gradient(135deg, #1a3a2a 0%, #234a36 55%, #3a5a43 100%);
 }
 
+/* aria-disabled buttons keep focus (a disabled button would drop it) but look and behave as unavailable */
+.dash-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
 /* ── Overflow containment (found with long real-world plant names) ──
  * An absolutely positioned hidden label inside a table escapes the scroll wrapper unless the wrapper is the
  * containing block; toolbar selects with long option text must shrink instead of widening the page. */

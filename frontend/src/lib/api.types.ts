@@ -13,8 +13,7 @@ export type ProbabilisticForecastPoint = S["ProbabilisticForecastPoint"];
 export type RampRiskSummary = S["RampRiskSummarySchema"];
 export type ProbabilisticForecastResponse = S["ProbabilisticForecastResponse"];
 export type OnlineAdapterStatus = S["OnlineAdapterStatusResponse"];
-/** `source` is not in the schema yet; the SIMULATED badge reads it when the backend starts sending it. */
-export type Alert = S["AlertResponse"] & { source?: string | null };
+export type Alert = S["AlertResponse"];
 export type TechnicianStep = S["TechnicianStep"];
 export type DiagnosisResponse = S["DiagnosisResponse"];
 export type DiagnosisRequest = Pick<S["DiagnosisRequest"], "plant_id"> & Partial<S["DiagnosisRequest"]>;

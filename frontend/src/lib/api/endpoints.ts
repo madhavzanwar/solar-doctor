@@ -16,6 +16,7 @@ import type {
   RootCauseTaxonomyItem,
   WeatherData,
 } from "../api.types";
+import { ApiError } from "./errors";
 import { apiFetch } from "./http";
 
 // ── Plant endpoints ────────────────────────────────────────────────────────────
@@ -38,8 +39,12 @@ export const forecastApi = {
     apiFetch<ForecastRecord[]>(
       `/api/v1/forecast/${plantId}?limit=${limit}`
     ),
+  /** Resolves to null when the plant has no forecasts yet (the API answers 404). */
   summary: (plantId: number) =>
-    apiFetch<ForecastSummary>(`/api/v1/forecast/${plantId}/summary`),
+    apiFetch<ForecastSummary>(`/api/v1/forecast/${plantId}/summary`).catch((err: unknown) => {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }),
   generate: (plantId: number, horizonMinutes = 60) =>
     apiFetch<ForecastRecord>(
       `/api/v1/forecast/${plantId}/generate?horizon_minutes=${horizonMinutes}`,
