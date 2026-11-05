@@ -58,6 +58,8 @@ class SolarDetector:
                 "Thermal detection is disabled (ENABLE_THERMAL=false). Run "
                 "`python scripts/fetch_weights.py` and set ENABLE_THERMAL=true to enable it."
             )
+        # Checkpoints are pickles; ask ultralytics to refuse arbitrary objects (the sha256-pinned best.pt loads fine).
+        os.environ.setdefault("ULTRALYTICS_SAFE_LOAD", "1")
         from ultralytics import YOLO
 
         self.weights_path = Path(weights_path)
