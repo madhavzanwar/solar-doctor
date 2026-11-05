@@ -137,11 +137,6 @@ _CORS_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
 _AGENTS_DEPS = [Depends(access_policy(allow_share=False, read_role=ROLE_ADMIN, write_role=ROLE_ADMIN))]
 app.include_router(agents_router, prefix=API_PREFIX, dependencies=_AGENTS_DEPS)
 app.include_router(agents_router, dependencies=_AGENTS_DEPS, include_in_schema=False, deprecated=True)
-app.add_middleware(
-    CORSMiddleware, allow_origins=_CORS_ORIGINS,
-    allow_origin_regex=_CORS_ORIGIN_REGEX, allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allow_headers=["*"],
-)
 
 _REQUEST_TIMEOUT_S = 120
 
@@ -190,6 +185,15 @@ async def timeout_middleware(request, call_next):
         return await asyncio.wait_for(call_next(request), timeout=_REQUEST_TIMEOUT_S)
     except asyncio.TimeoutError:
         return JSONResponse({"detail": "Request timeout"}, status_code=504)
+
+
+# CORS must be the OUTERMOST middleware (added last): otherwise 401/504 responses produced by the
+# auth/timeout middlewares carry no CORS headers and browsers report them as network errors.
+app.add_middleware(
+    CORSMiddleware, allow_origins=_CORS_ORIGINS,
+    allow_origin_regex=_CORS_ORIGIN_REGEX, allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allow_headers=["*"],
+)
 
 
 # ── Domain routers ──────────────────────────────────────────────────────────────
