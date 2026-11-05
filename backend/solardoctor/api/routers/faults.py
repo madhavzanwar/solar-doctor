@@ -11,6 +11,7 @@ from solardoctor.api.deps import *  # noqa: F401,F403
 from solardoctor.api.schemas.responses import CommentOut, FaultOut, FaultPhotoOut, FaultsListOut
 from solardoctor.api.schemas import CommentCreate, FaultUpdate
 from solardoctor.api.serializers import _serialize_fault_photo
+from solardoctor.api.support.scope import fault_assigned_to
 from solardoctor.core.fault_workflow import (
     PRIORITY_LEVELS,
     WorkflowError,
@@ -85,6 +86,8 @@ def list_park_faults(
         faults = q.order_by(
             PanelFault.severity.desc(), PanelFault.last_seen_date.desc()
         ).all()
+        if principal.is_technician:
+            faults = [f for f in faults if fault_assigned_to(principal, f.assignee)]
         counts = {s: 0 for s in FAULT_STATUSES}
         for f in faults:
             if f.status in counts:
@@ -141,6 +144,19 @@ def _apply_fields(fault: PanelFault, payload: dict) -> None:
         fault.resolution_note = note[:_MAX_RESOLUTION_NOTE_LEN] or None
 
 
+# What a technician may change on their own assigned fault: work it and say what was done.
+_TECH_STATUSES = frozenset({"in_progress", "resolved"})
+_TECH_FIELDS = frozenset({"status", "notes", "resolution_note"})
+
+
+def _check_technician_update(payload: dict) -> None:
+    extra = set(payload) - _TECH_FIELDS
+    if extra:
+        raise HTTPException(status_code=403, detail=f"Technicians cannot change: {', '.join(sorted(extra))}")
+    if payload.get("status") is not None and payload["status"] not in _TECH_STATUSES:
+        raise HTTPException(status_code=403, detail="Technicians may only set in_progress or resolved")
+
+
 @router.patch("/faults/{fault_id}", response_model=FaultOut)
 def update_fault(fault_id: int, payload: FaultUpdate, principal: Principal = Depends(current_principal)):
     """Update a fault's workflow: status, assignee, due date, priority, notes.
@@ -159,6 +175,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, principal: Principal = Dep
     try:
         fault = _get_fault_or_404(session, fault_id)
         ensure_fault_visible(principal, fault_id, session)
+        if principal.is_technician:
+            _check_technician_update(payload)
         _apply_fields(fault, payload)
         try:
             if new_status:
@@ -182,6 +200,8 @@ def create_fault_comment(fault_id: int, body: CommentCreate, principal: Principa
     if not comment_body:
         raise HTTPException(status_code=400, detail="body is required")
     author = str(body.get("author", ""))[:128] if body.get("author") else None
+    if principal.is_technician:
+        author = (principal.email or "")[:128] or None   # no spoofing another author
     session = get_session()
     try:
         _get_fault_or_404(session, fault_id)

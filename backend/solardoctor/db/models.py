@@ -314,8 +314,9 @@ class TrackFile(Base):
 
 ROLE_ADMIN = "admin"        # everything, including user management
 ROLE_OPERATOR = "operator"  # run inspections, edit faults/missions/inventory
+ROLE_TECHNICIAN = "technician"  # read-only + only the work orders assigned to them
 ROLE_VIEWER = "viewer"      # read-only
-USER_ROLES = (ROLE_ADMIN, ROLE_OPERATOR, ROLE_VIEWER)
+USER_ROLES = (ROLE_ADMIN, ROLE_OPERATOR, ROLE_TECHNICIAN, ROLE_VIEWER)
 
 
 class User(Base):

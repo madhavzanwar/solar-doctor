@@ -18,12 +18,13 @@ import logging
 import os
 import re
 import secrets
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from solardoctor.core.app_config import hash_password, verify_hash
 from solardoctor.core.rate_limit import LoginRateLimiter, LoginThrottle
 from solardoctor.db.models import (
-    ROLE_ADMIN, USER_ROLES, ProjectMember, Project, ShareLink, User, UserSession,
+    ROLE_ADMIN, ROLE_VIEWER, USER_ROLES, ProjectMember, Project, ShareLink, User, UserSession,
 )
 
 logger = logging.getLogger("axalon.auth")
@@ -40,11 +41,15 @@ USER_PBKDF2_ITERATIONS = 600_000
 MIN_PASSWORD_LEN = 10
 MAX_PASSWORD_LEN = 256          # bounds the KDF cost an attacker can request
 SESSION_TTL_HOURS_DEFAULT = 12
+REFRESH_TTL_DAYS_DEFAULT = 7
 SHARE_LINK_MAX_DAYS = 365
 
 LOGIN_MAX_FAILURES_PER_EMAIL = 5
 LOGIN_MAX_FAILURES_PER_IP = 20
 LOGIN_WINDOW_S = 15 * 60
+REGISTER_MAX_PER_IP = 10        # every attempt counts, not only failures
+
+register_limiter = LoginRateLimiter(REGISTER_MAX_PER_IP, LOGIN_WINDOW_S)
 
 login_limiter = LoginThrottle(
     per_email=LoginRateLimiter(LOGIN_MAX_FAILURES_PER_EMAIL, LOGIN_WINDOW_S),
@@ -89,12 +94,17 @@ def validate_email(raw: object) -> str:
     return email
 
 
-def validate_password(raw: object) -> str:
+def validate_password(raw: object, email: object = None) -> str:
     password = raw if isinstance(raw, str) else ""
     if not (MIN_PASSWORD_LEN <= len(password) <= MAX_PASSWORD_LEN):
         raise AuthValidationError(
             f"Password must be {MIN_PASSWORD_LEN}–{MAX_PASSWORD_LEN} characters"
         )
+    if len(set(password)) == 1:
+        raise AuthValidationError("Password is too weak: do not repeat a single character")
+    local = normalize_email(email).split("@")[0]
+    if local and password.strip().lower() == local:
+        raise AuthValidationError("Password is too weak: it must not equal your email name")
     return password
 
 
@@ -111,6 +121,18 @@ def hash_user_password(password: str) -> str:
 
 def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _refresh_hash(token: str) -> str:
+    # Domain-separated from access tokens: a refresh token presented as a bearer
+    # hashes to a different value and can never resolve to a session.
+    return hashlib.sha256(b"refresh:" + token.encode()).hexdigest()
+
+
+def registration_enabled() -> bool:
+    """Self-service /auth/register (always creates a scope-less `viewer`)."""
+    raw = os.environ.get("SOLARDOCTOR_ALLOW_REGISTRATION", "1").strip().lower()
+    return raw not in ("0", "false", "no", "off")
 
 
 def _new_token() -> tuple[str, str]:
@@ -143,11 +165,14 @@ def project_ids_for(session, user_id: int) -> list[int]:
 def create_user(session, *, email, password, role, project_ids=()) -> User:
     """Validate and insert a user. Raises AuthValidationError; LookupError on duplicate."""
     email = validate_email(email)
-    password = validate_password(password)
+    password = validate_password(password, email)
     role = validate_role(role)
+    # Hash before looking for a duplicate so both outcomes cost the same KDF run
+    # (no account-existence timing oracle on self-service registration).
+    password_hash = hash_user_password(password)
     if session.query(User.id).filter(User.email == email).first() is not None:
         raise LookupError("A user with that email already exists")
-    user = User(email=email, password_hash=hash_user_password(password), role=role, disabled=False)
+    user = User(email=email, password_hash=password_hash, role=role, disabled=False)
     session.add(user)
     session.flush()
     try:
@@ -204,17 +229,158 @@ def _session_ttl() -> timedelta:
     return timedelta(hours=min(max(hours, 0.25), 24 * 30))
 
 
-def create_session(session, user: User) -> tuple[str, datetime]:
+def create_session(session, user: User, family: str | None = None) -> tuple[str, datetime]:
+    """Issue an access token. With `family`, the token is `<random>.<family>` so
+    a bearer-only logout can find (and kill) the refresh family of this login."""
     token, digest = _new_token()
+    if family:
+        token = f"{token}.{family}"
+        digest = _token_hash(token)
     expires_at = datetime.utcnow() + _session_ttl()
     session.add(UserSession(user_id=user.id, token_hash=digest, expires_at=expires_at))
     session.commit()
     return token, expires_at
 
 
+def _refresh_ttl() -> timedelta:
+    try:
+        days = float(os.environ.get("SOLARDOCTOR_REFRESH_TTL_DAYS", REFRESH_TTL_DAYS_DEFAULT))
+    except ValueError:
+        days = REFRESH_TTL_DAYS_DEFAULT
+    return timedelta(days=min(max(days, 1.0), 90.0))
+
+
+@dataclass(frozen=True)
+class TokenPair:
+    access_token: str
+    expires_at: datetime
+    refresh_token: str
+    refresh_expires_at: datetime
+
+
+# A login owns a "family": a random id `fid` carried by its access tokens
+# (`<random>.<fid>`) and refresh tokens (`<fid>.<random>`), plus one marker row
+# in user_sessions (hash of "family:<fid>"). A refresh token is only honoured
+# while its marker exists, so deleting the marker (bearer logout, reuse of an
+# already-rotated token) kills every descendant refresh token. All of this fits
+# the existing user_sessions columns: no migration.
+
+def _family_hash(fid: str) -> str:
+    return hashlib.sha256(b"family:" + fid.encode()).hexdigest()
+
+
+def _family_of_refresh(token: str) -> str:
+    fid, sep, rest = (token or "").partition(".")
+    return fid if sep and rest and fid.isalnum() else ""
+
+
+def _family_of_access(token: str) -> str:
+    rest, sep, fid = (token or "").rpartition(".")
+    return fid if sep and rest and fid.isalnum() else ""
+
+
+def revoke_family(session, fid: str) -> None:
+    if fid:
+        session.query(UserSession).filter(UserSession.token_hash == _family_hash(fid)).delete(
+            synchronize_session=False
+        )
+        session.commit()
+
+
+def create_token_pair(session, user: User, family: str | None = None) -> TokenPair:
+    """Issue an access session plus a single-use refresh token. Pass the existing
+    `family` when rotating so the chain stays one revocable unit."""
+    fid = family or secrets.token_hex(8)
+    access, access_exp = create_session(session, user, family=fid)
+    refresh = f"{fid}.{secrets.token_urlsafe(32)}"
+    refresh_exp = datetime.utcnow() + _refresh_ttl()
+    session.add(UserSession(user_id=user.id, token_hash=_refresh_hash(refresh), expires_at=refresh_exp))
+    marker = session.query(UserSession).filter(UserSession.token_hash == _family_hash(fid)).first()
+    if marker is None:
+        session.add(UserSession(user_id=user.id, token_hash=_family_hash(fid), expires_at=refresh_exp))
+    else:
+        marker.expires_at = refresh_exp
+    session.commit()
+    return TokenPair(access, access_exp, refresh, refresh_exp)
+
+
+def rotate_refresh_token(session, refresh_token: str) -> tuple[User, TokenPair] | None:
+    """Exchange a live refresh token for a new pair; the old one dies atomically.
+
+    Returns None for unknown, expired, already-used, or disabled-user tokens.
+    Presenting an already-rotated token of a live family is treated as theft:
+    the whole family is revoked, so the legitimate holder must log in again.
+    """
+    fid = _family_of_refresh(refresh_token)
+    if not fid:
+        return None
+    marker = session.query(UserSession).filter(UserSession.token_hash == _family_hash(fid)).first()
+    if marker is None or marker.expires_at <= datetime.utcnow():
+        return None
+    row = session.query(UserSession).filter(
+        UserSession.token_hash == _refresh_hash(refresh_token)
+    ).first()
+    if row is None:
+        revoke_family(session, fid)          # reuse of a rotated token
+        return None
+    # Single-use: only the caller whose DELETE hits the row may proceed.
+    deleted = session.query(UserSession).filter(UserSession.id == row.id).delete(
+        synchronize_session=False
+    )
+    session.commit()
+    if deleted != 1:
+        return None
+    if row.expires_at <= datetime.utcnow():
+        revoke_family(session, fid)
+        return None
+    user = session.query(User).filter(User.id == row.user_id).first()
+    if user is None or user.disabled:
+        return None
+    return user, create_token_pair(session, user, family=fid)
+
+
+def revoke_refresh_token(session, refresh_token: str) -> None:
+    """Revoke the family of a refresh token, but only if the token itself is live
+    (a guessed family id alone proves nothing)."""
+    fid = _family_of_refresh(refresh_token)
+    if not fid:
+        return
+    live = session.query(UserSession.id).filter(
+        UserSession.token_hash == _refresh_hash(refresh_token),
+        UserSession.expires_at > datetime.utcnow(),
+    ).first()
+    if live is not None:
+        revoke_family(session, fid)
+
+
+def revoke_session(session, token: str) -> None:
+    """Log out: drop the access session and the refresh family of that login."""
+    if not _ACCESS_TOKEN_RE.fullmatch(token or ""):
+        return
+    deleted = session.query(UserSession).filter(UserSession.token_hash == _token_hash(token)).delete(
+        synchronize_session=False
+    )
+    session.commit()
+    if deleted:                       # only a genuine session may revoke its family
+        revoke_family(session, _family_of_access(token))
+
+
+def register_user(session, *, email, password) -> User:
+    """Self-service signup: always the least-privileged role, no project access."""
+    return create_user(session, email=email, password=password, role=ROLE_VIEWER)
+
+
+# Access tokens are `<urlsafe random>` or `<urlsafe random>.<16 hex family>`.
+# Refresh and family-marker rows live in the same table under sha256 of
+# "refresh:<token>" / "family:<fid>"; those preimages contain ':' and so can never
+# match this shape. Without this gate a bearer string "family:<fid>" (the fid is
+# visible in every access token) would hash to the marker row and authenticate.
+_ACCESS_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{20,}(?:\.[0-9a-f]{16})?")
+
+
 def resolve_session(session, token: str) -> User | None:
     """Return the enabled user behind a live session token, else None."""
-    if not token:
+    if not token or not _ACCESS_TOKEN_RE.fullmatch(token):
         return None
     # Lookup is by SHA-256 of the token, so index timing reveals nothing usable
     # about the token itself — no separate constant-time compare is needed.
@@ -229,13 +395,6 @@ def resolve_session(session, token: str) -> User | None:
     if user is None or user.disabled:
         return None
     return user
-
-
-def revoke_session(session, token: str) -> None:
-    session.query(UserSession).filter(UserSession.token_hash == _token_hash(token)).delete(
-        synchronize_session=False
-    )
-    session.commit()
 
 
 def revoke_user_sessions(session, user_id: int) -> None:
