@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hmac
 import os
+import re
 from dataclasses import dataclass
 from typing import Callable
 
@@ -50,6 +51,14 @@ USERS_PUBLIC_PATHS = ALWAYS_PUBLIC_PATHS | {
 # scope applies), writes nothing; work-order listings are narrowed to their own.
 _ROLE_RANK = {ROLE_VIEWER: 0, ROLE_TECHNICIAN: 1, ROLE_OPERATOR: 2, ROLE_ADMIN: 3}
 _READ_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+# Writes a technician may attempt: work their assigned fault (update, comment,
+# photo upload). The handlers still 404 unless the fault is assigned to them and
+# the faults router limits which fields/statuses they may set.
+_TECHNICIAN_WRITES = (
+    ("PATCH", re.compile(r"^/faults/\d+$")),
+    ("POST", re.compile(r"^/faults/\d+/(comments|photos)$")),
+)
 
 NOT_AUTHENTICATED = "Not authenticated"
 FORBIDDEN = "Insufficient permissions"
@@ -159,6 +168,10 @@ def access_policy(
         if principal.kind == KIND_SHARE and not allow_share:
             raise HTTPException(status_code=403, detail=FORBIDDEN)
         needed = read_role if request.method in _READ_METHODS else write_role
+        if principal.is_technician and request.method not in _READ_METHODS:
+            path = strip_api_prefix(request.url.path)
+            if any(request.method == m and rx.match(path) for m, rx in _TECHNICIAN_WRITES):
+                return
         if not principal.has_role(needed):
             raise HTTPException(status_code=403, detail=FORBIDDEN)
 

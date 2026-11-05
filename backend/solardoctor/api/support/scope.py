@@ -93,12 +93,21 @@ def ensure_job_visible(principal: Principal, job_id: str, session=None, detail: 
             raise _not_found(detail)
 
 
+def fault_assigned_to(principal: Principal, assignee: str | None) -> bool:
+    """Technicians own only the faults whose assignee is their email (case-insensitive)."""
+    mine = (principal.email or "").strip().lower()
+    return bool(mine) and (assignee or "").strip().lower() == mine
+
+
 def ensure_fault_visible(principal: Principal, fault_id: int, session=None, detail: str = "Fault not found") -> None:
     if not principal.is_restricted:
         return
     with _borrowed(session) as s:
-        row = s.query(PanelFault.park_id).filter(PanelFault.id == fault_id).first()
+        row = s.query(PanelFault.park_id, PanelFault.assignee).filter(PanelFault.id == fault_id).first()
         if row is None or not park_is_visible(s, principal, row[0]):
+            raise _not_found(detail)
+        # Technicians only see work assigned to them; others look nonexistent (404).
+        if principal.is_technician and not fault_assigned_to(principal, row[1]):
             raise _not_found(detail)
 
 
@@ -111,7 +120,7 @@ def scope_missions(session, query, principal: Principal):
 
 
 __all__ = [
-    "ensure_fault_visible", "ensure_job_visible", "ensure_park_visible",
+    "ensure_fault_visible", "fault_assigned_to", "ensure_job_visible", "ensure_park_visible",
     "ensure_project_visible", "park_is_visible", "scope_missions", "scope_parks",
     "scope_projects", "visible_park_ids",
 ]
