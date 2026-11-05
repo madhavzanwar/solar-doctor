@@ -20,11 +20,15 @@ def _iso(monkeypatch, tmp_path):
     reset_registry()
 
 
-def _mk(client, tracker=False, **kw):
-    loc = f"Kersey, CO {TRACKER_MARKER}" if tracker else "Pune"
-    r = client.post("/api/v1/plants", json={**PLANT, "location": loc, **kw})
+def _mk(client, **kw):
+    r = client.post("/api/v1/plants", json={**PLANT, "location": "Pune", **kw})
     assert r.status_code == 201, r.text
     return r.json()
+
+
+def _mk_tracker(db):
+    """Tracker plants are created like the PVDAQ importer does (ORM); the plants API refuses the marker."""
+    return {"id": _orm(db, True).id}
 
 
 def _orm(db, tracker, tariff=None):
@@ -71,8 +75,8 @@ def test_expected_power_raises_for_tracker_but_not_fixed(db_session):
     assert solar.expected_power(_orm(db_session, False), [NOON])["p_ac_kw"].iloc[0] > 0
 
 
-def test_forecast_generate_and_probabilistic_422_for_tracker(client):
-    t = _mk(client, tracker=True)
+def test_forecast_generate_and_probabilistic_422_for_tracker(client, db_session):
+    t = _mk_tracker(db_session)
     _assert_unsupported(client.post(f"/api/v1/forecast/{t['id']}/generate"))
     _assert_unsupported(client.get(f"/api/v1/forecast/{t['id']}/probabilistic"))
     assert client.get(f"/api/v1/forecast/{t['id']}").json() == []  # nothing was persisted
@@ -113,7 +117,7 @@ def test_alert_worker_skips_tracker(db_session, with_forecast):
 
 def test_diagnose_from_telemetry_422_for_tracker_but_explicit_values_ok(client, db_session):
     from solardoctor.physics.models import Telemetry
-    t = _mk(client, tracker=True)
+    t = _mk_tracker(db_session)
     db_session.add(Telemetry(plant_id=t["id"], ts=datetime.now(tz=timezone.utc), p_ac_kw=10.0,
                              p_expected_kw=90.0, source="USER"))
     db_session.commit()
