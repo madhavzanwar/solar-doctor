@@ -1,15 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
-      },
-    ],
-  },
-};
+// Photos are self-hosted in public/images (credits in docs/IMAGE_CREDITS.md); no remote image hosts.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

@@ -6,8 +6,8 @@ export function Hero() {
   return (
     <section className="relative min-h-[100svh] overflow-hidden text-white">
       <Image
-        src="https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=2400&q=80"
-        alt="Solar farm under open sky"
+        src="/images/hero-desert-array.webp"
+        alt="Rows of solar panels across a desert plain"
         fill
         priority
         className="object-cover object-center"
