@@ -23,6 +23,7 @@ from solardoctor.api.routers import (
     map, missions, ortho, ortho_generate, park, park_layout, projects, results,
     settings, share_links, track, users, work_orders,
 )
+from solardoctor.api.routers import diagnosis, forecast, physics_alerts, plants, scada, weather
 from solardoctor.api.support.odm_jobs import resume_odm_jobs
 from drone.relay.server import create_app as create_relay_app
 from solardoctor.core.observability import init_sentry
@@ -224,6 +225,9 @@ _ROUTER_POLICIES = (   # original registration order preserved
     (work_orders, _INTERNAL),
     (ortho_generate, _INTERNAL),
     (park_layout, _INTERNAL),
+    # Physics (ported SolarPulse endpoints). Read: viewer+, write: operator+.
+    (plants, _INTERNAL), (forecast, _INTERNAL), (diagnosis, _INTERNAL),
+    (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL),
 )
 for _module, _policy in _ROUTER_POLICIES:
     _deps = [Depends(_policy)] if _policy else []
@@ -231,6 +235,9 @@ for _module, _policy in _ROUTER_POLICIES:
     app.include_router(_module.router, prefix=API_PREFIX, dependencies=_deps)
     # Deprecated unprefixed alias (legacy clients + existing tests); hidden from OpenAPI.
     app.include_router(_module.router, dependencies=_deps, include_in_schema=False, deprecated=True)
+
+# SCADA WebSocket: authenticates itself (HTTP middleware/policies do not run for websocket scopes).
+app.include_router(scada.ws_router, prefix=API_PREFIX)
 
 # ── Drone relay ──────────────────────────────────────────────────────────────
 # Served from this app because new Hugging Face Docker Spaces need a paid plan:
