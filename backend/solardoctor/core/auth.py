@@ -167,9 +167,12 @@ def create_user(session, *, email, password, role, project_ids=()) -> User:
     email = validate_email(email)
     password = validate_password(password, email)
     role = validate_role(role)
+    # Hash before looking for a duplicate so both outcomes cost the same KDF run
+    # (no account-existence timing oracle on self-service registration).
+    password_hash = hash_user_password(password)
     if session.query(User.id).filter(User.email == email).first() is not None:
         raise LookupError("A user with that email already exists")
-    user = User(email=email, password_hash=hash_user_password(password), role=role, disabled=False)
+    user = User(email=email, password_hash=password_hash, role=role, disabled=False)
     session.add(user)
     session.flush()
     try:
@@ -337,16 +340,29 @@ def rotate_refresh_token(session, refresh_token: str) -> tuple[User, TokenPair] 
 
 
 def revoke_refresh_token(session, refresh_token: str) -> None:
-    revoke_family(session, _family_of_refresh(refresh_token))
+    """Revoke the family of a refresh token, but only if the token itself is live
+    (a guessed family id alone proves nothing)."""
+    fid = _family_of_refresh(refresh_token)
+    if not fid:
+        return
+    live = session.query(UserSession.id).filter(
+        UserSession.token_hash == _refresh_hash(refresh_token),
+        UserSession.expires_at > datetime.utcnow(),
+    ).first()
+    if live is not None:
+        revoke_family(session, fid)
 
 
 def revoke_session(session, token: str) -> None:
     """Log out: drop the access session and the refresh family of that login."""
-    session.query(UserSession).filter(UserSession.token_hash == _token_hash(token)).delete(
+    if not _ACCESS_TOKEN_RE.fullmatch(token or ""):
+        return
+    deleted = session.query(UserSession).filter(UserSession.token_hash == _token_hash(token)).delete(
         synchronize_session=False
     )
     session.commit()
-    revoke_family(session, _family_of_access(token))
+    if deleted:                       # only a genuine session may revoke its family
+        revoke_family(session, _family_of_access(token))
 
 
 def register_user(session, *, email, password) -> User:
@@ -354,9 +370,17 @@ def register_user(session, *, email, password) -> User:
     return create_user(session, email=email, password=password, role=ROLE_VIEWER)
 
 
+# Access tokens are `<urlsafe random>` or `<urlsafe random>.<16 hex family>`.
+# Refresh and family-marker rows live in the same table under sha256 of
+# "refresh:<token>" / "family:<fid>"; those preimages contain ':' and so can never
+# match this shape. Without this gate a bearer string "family:<fid>" (the fid is
+# visible in every access token) would hash to the marker row and authenticate.
+_ACCESS_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{20,}(?:\.[0-9a-f]{16})?")
+
+
 def resolve_session(session, token: str) -> User | None:
     """Return the enabled user behind a live session token, else None."""
-    if not token:
+    if not token or not _ACCESS_TOKEN_RE.fullmatch(token):
         return None
     # Lookup is by SHA-256 of the token, so index timing reveals nothing usable
     # about the token itself — no separate constant-time compare is needed.
