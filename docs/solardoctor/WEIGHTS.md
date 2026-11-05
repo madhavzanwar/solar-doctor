@@ -39,12 +39,30 @@ AGPL-3.0 (Ultralytics YOLO11 and weights trained with it). Implications:
   `hot-spot-low` box covering the whole frame (conf 0.69-0.71). That says the model loads and runs; the fixture
   images are not labelled ground truth, so it says nothing about accuracy.
 
+## Loading safety (pickle)
+A `.pt` checkpoint is a pickle; loading an untrusted one runs code. The sha256 pin in `fetch_weights.py` is the
+main defence. Tested by us (ultralytics 8.4.202, CPU): with `ULTRALYTICS_SAFE_LOAD=1` set before import,
+`YOLO('ml/thermal/checkpoints/best.pt')` loads (task `detect`, 11 classes) and inference on a fixture runs.
+So the safe (weights_only) loader works with this checkpoint. `backend/solardoctor/core/detector.py` is outside
+sd-ml's directories and was not edited. Suggested one-line change for the backend owner, placed in the module
+before `from ultralytics import YOLO` (around line 61):
+```python
+os.environ.setdefault("ULTRALYTICS_SAFE_LOAD", "1")   # weights_only loading; verified to work with best.pt
+```
+Re-run `tests/backend` after that change; a future retrained checkpoint must be re-checked under it.
+
 ## Obtain
 ```bash
 python scripts/fetch_weights.py          # tries SolarDoctor HF repo, then upstream's public Space; sha256-verified
 ```
-Behaviour: skips if a verified file already exists; resumes interrupted downloads (`best.pt.part`); a wrong
-hash never lands at the destination; `--force`, `--dest`, `--url` available. Then set `ENABLE_THERMAL=true`.
+The script uses only the Python standard library (no `huggingface_hub`, so CI no longer needs to pip-install it).
+Behaviour: skips if a verified file already exists; resumes interrupted downloads (`best.pt.part`, git-ignored)
+and validates the server's `Content-Range`; retries the same URL twice with backoff on a short read or hash
+mismatch; a wrong hash never lands at the destination; our own HF repo returning 401/404 is skipped with one
+quiet line; `HF_TOKEN` is sent only to our own HF repo, never to the public upstream Space, and `Authorization`
+is stripped on any redirect to a non-Hugging Face host; `--force`, `--dest`, `--url` available. Then set
+`ENABLE_THERMAL=true` (CI currently sets it to false at workflow level; that is for sd-architect, see
+`docs/solardoctor/qa/REVIEW_weights.md` finding 1).
 
 ## Publish to the SolarDoctor HF repo (owner only; needs a write token)
 Nothing has been uploaded by the build agents.
