@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import http.server
 import io
+import threading
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 _path = Path(__file__).resolve().parents[1] / "scripts" / "fetch_weights.py"
@@ -14,7 +17,7 @@ _spec.loader.exec_module(fw)
 
 DATA = b"thermal-weights-" * 1000
 SHA = hashlib.sha256(DATA).hexdigest()
-QUIET = {"log": lambda *_: None}
+QUIET = {"log": lambda *_: None, "sleep": lambda *_: None}
 
 
 class Resp(io.BytesIO):
@@ -96,12 +99,12 @@ def test_server_ignoring_range_restarts(tmp_path):
 def test_falls_back_to_next_source_and_reports_errors(tmp_path, capsys):
     def op(req, timeout=None):
         if "first" in req.full_url:
-            raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+            raise urllib.error.HTTPError(req.full_url, 500, "Server Error", {}, None)
         return Resp(DATA)
 
     assert fw.fetch(["http://x/first", "http://x/second"], tmp_path / "a.pt", SHA, opener=op, **QUIET) == 0
     assert fw.fetch(["http://x/first"], tmp_path / "b.pt", SHA, opener=op, **QUIET) == 1
-    assert "404" in capsys.readouterr().err
+    assert "500" in capsys.readouterr().err
 
 
 def test_token_only_sent_to_hf(monkeypatch):
