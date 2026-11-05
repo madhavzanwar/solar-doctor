@@ -18,12 +18,13 @@ import logging
 import os
 import re
 import secrets
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from solardoctor.core.app_config import hash_password, verify_hash
 from solardoctor.core.rate_limit import LoginRateLimiter, LoginThrottle
 from solardoctor.db.models import (
-    ROLE_ADMIN, USER_ROLES, ProjectMember, Project, ShareLink, User, UserSession,
+    ROLE_ADMIN, ROLE_VIEWER, USER_ROLES, ProjectMember, Project, ShareLink, User, UserSession,
 )
 
 logger = logging.getLogger("axalon.auth")
@@ -40,11 +41,15 @@ USER_PBKDF2_ITERATIONS = 600_000
 MIN_PASSWORD_LEN = 10
 MAX_PASSWORD_LEN = 256          # bounds the KDF cost an attacker can request
 SESSION_TTL_HOURS_DEFAULT = 12
+REFRESH_TTL_DAYS_DEFAULT = 7
 SHARE_LINK_MAX_DAYS = 365
 
 LOGIN_MAX_FAILURES_PER_EMAIL = 5
 LOGIN_MAX_FAILURES_PER_IP = 20
 LOGIN_WINDOW_S = 15 * 60
+REGISTER_MAX_PER_IP = 10        # every attempt counts, not only failures
+
+register_limiter = LoginRateLimiter(REGISTER_MAX_PER_IP, LOGIN_WINDOW_S)
 
 login_limiter = LoginThrottle(
     per_email=LoginRateLimiter(LOGIN_MAX_FAILURES_PER_EMAIL, LOGIN_WINDOW_S),
@@ -111,6 +116,18 @@ def hash_user_password(password: str) -> str:
 
 def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _refresh_hash(token: str) -> str:
+    # Domain-separated from access tokens: a refresh token presented as a bearer
+    # hashes to a different value and can never resolve to a session.
+    return hashlib.sha256(b"refresh:" + token.encode()).hexdigest()
+
+
+def registration_enabled() -> bool:
+    """Self-service /auth/register (always creates a scope-less `viewer`)."""
+    raw = os.environ.get("SOLARDOCTOR_ALLOW_REGISTRATION", "1").strip().lower()
+    return raw not in ("0", "false", "no", "off")
 
 
 def _new_token() -> tuple[str, str]:
@@ -210,6 +227,71 @@ def create_session(session, user: User) -> tuple[str, datetime]:
     session.add(UserSession(user_id=user.id, token_hash=digest, expires_at=expires_at))
     session.commit()
     return token, expires_at
+
+
+def _refresh_ttl() -> timedelta:
+    try:
+        days = float(os.environ.get("SOLARDOCTOR_REFRESH_TTL_DAYS", REFRESH_TTL_DAYS_DEFAULT))
+    except ValueError:
+        days = REFRESH_TTL_DAYS_DEFAULT
+    return timedelta(days=min(max(days, 1.0), 90.0))
+
+
+@dataclass(frozen=True)
+class TokenPair:
+    access_token: str
+    expires_at: datetime
+    refresh_token: str
+    refresh_expires_at: datetime
+
+
+def create_token_pair(session, user: User) -> TokenPair:
+    """Issue an access session plus a single-use refresh token (stored hashed in
+    `user_sessions`, so no schema change; see _refresh_hash)."""
+    access, access_exp = create_session(session, user)
+    refresh = secrets.token_urlsafe(32)
+    refresh_exp = datetime.utcnow() + _refresh_ttl()
+    session.add(UserSession(user_id=user.id, token_hash=_refresh_hash(refresh), expires_at=refresh_exp))
+    session.commit()
+    return TokenPair(access, access_exp, refresh, refresh_exp)
+
+
+def rotate_refresh_token(session, refresh_token: str) -> tuple[User, TokenPair] | None:
+    """Exchange a live refresh token for a new pair; the old one dies atomically.
+
+    Returns None for unknown, expired, already-used, or disabled-user tokens.
+    """
+    if not refresh_token:
+        return None
+    digest = _refresh_hash(refresh_token)
+    row = session.query(UserSession).filter(UserSession.token_hash == digest).first()
+    if row is None:
+        return None
+    # Single-use: only the caller whose DELETE hits the row may proceed.
+    deleted = session.query(UserSession).filter(UserSession.id == row.id).delete(
+        synchronize_session=False
+    )
+    session.commit()
+    if deleted != 1 or row.expires_at <= datetime.utcnow():
+        return None
+    user = session.query(User).filter(User.id == row.user_id).first()
+    if user is None or user.disabled:
+        return None
+    return user, create_token_pair(session, user)
+
+
+def revoke_refresh_token(session, refresh_token: str) -> None:
+    if not refresh_token:
+        return
+    session.query(UserSession).filter(
+        UserSession.token_hash == _refresh_hash(refresh_token)
+    ).delete(synchronize_session=False)
+    session.commit()
+
+
+def register_user(session, *, email, password) -> User:
+    """Self-service signup: always the least-privileged role, no project access."""
+    return create_user(session, email=email, password=password, role=ROLE_VIEWER)
 
 
 def resolve_session(session, token: str) -> User | None:

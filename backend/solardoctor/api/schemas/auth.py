@@ -15,6 +15,23 @@ class UserLogin(BaseModel):
     password: Any | None = None
 
 
+class UserRegister(BaseModel):
+    """SolarPulse-shaped signup. `username`/`full_name` are accepted for client
+    compatibility and ignored: accounts are keyed by email."""
+    email: Any | None = None
+    password: Any | None = None
+    username: Any | None = None
+    full_name: Any | None = None
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: Any | None = None
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: Any | None = None
+
+
 class UserCreate(BaseModel):
     email: Any | None = None
     password: Any | None = None

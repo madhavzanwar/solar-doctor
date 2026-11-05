@@ -21,7 +21,7 @@ from fastapi import HTTPException, Request
 from solardoctor.core.auth import (
     MODE_APIKEY, MODE_USERS, auth_mode, project_ids_for, resolve_session, resolve_share_link,
 )
-from solardoctor.db.models import ROLE_ADMIN, ROLE_OPERATOR, ROLE_VIEWER
+from solardoctor.db.models import ROLE_ADMIN, ROLE_OPERATOR, ROLE_TECHNICIAN, ROLE_VIEWER
 from solardoctor.db.session import get_session
 
 API_PREFIX = "/api/v1"
@@ -40,9 +40,15 @@ KIND_SHARE = "share"
 # Reachable without credentials. /auth/mode is public in every mode because the
 # console must learn which login UI to show before it has any credentials.
 ALWAYS_PUBLIC_PATHS = frozenset({"/health", "/track/login", "/auth/mode"})
-USERS_PUBLIC_PATHS = ALWAYS_PUBLIC_PATHS | {"/auth/login"}
+# Credential-exchange endpoints cannot require a (possibly expired) access token;
+# /auth/logout is public so a client holding only a refresh token can still sign out.
+USERS_PUBLIC_PATHS = ALWAYS_PUBLIC_PATHS | {
+    "/auth/login", "/auth/token", "/auth/register", "/auth/refresh", "/auth/logout",
+}
 
-_ROLE_RANK = {ROLE_VIEWER: 0, ROLE_OPERATOR: 1, ROLE_ADMIN: 2}
+# technician sits between viewer and operator: reads like a viewer (project
+# scope applies), writes nothing; work-order listings are narrowed to their own.
+_ROLE_RANK = {ROLE_VIEWER: 0, ROLE_TECHNICIAN: 1, ROLE_OPERATOR: 2, ROLE_ADMIN: 3}
 _READ_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 NOT_AUTHENTICATED = "Not authenticated"
@@ -62,6 +68,10 @@ class Principal:
     @property
     def is_restricted(self) -> bool:
         return self.project_ids is not None
+
+    @property
+    def is_technician(self) -> bool:
+        return self.kind == KIND_USER and self.role == ROLE_TECHNICIAN
 
     def can_see_project(self, project_id: int | None) -> bool:
         if self.project_ids is None:
