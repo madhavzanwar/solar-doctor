@@ -32,6 +32,8 @@ const PLANTS = (env("SMOKE_PLANT_NAMES") ?? "Bhadla Block C,PCCoE Rooftop,Pavaga
 const EXPECTED_404 = [/\/api\/v1\/forecast\/[^?]*summary/];
 const isExpected404 = (url, status) => status === 404 && EXPECTED_404.some((re) => re.test(url));
 
+const TRACKER_NAME = "SMOKE PVDAQ-style tracker";
+
 const failures = [];
 let passes = 0;
 function check(name, ok, detail = "") {
@@ -83,6 +85,28 @@ async function main() {
   check("API lists plants", plantsRes.status === 200 && apiPlants.length > 0, `status ${plantsRes.status}, ${apiPlants.length} plants`);
   if (!apiPlants.length) return;
   const firstId = apiPlants[0].id;
+
+  // Ensure a PVDAQ-style tracker plant exists (the real PVDAQ import is not part of the offline seed). The frontend
+  // recognises it by the marker the importer writes at the end of `location`. Idempotent; created through the API.
+  let trackerPlant = apiPlants.find((p) => p.name === TRACKER_NAME);
+  if (!trackerPlant) {
+    const created = await apiJson("/api/v1/plants", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        name: TRACKER_NAME,
+        latitude: 39.74,
+        longitude: -105.18,
+        capacity_kw: 100,
+        inverter_capacity_kw: 90,
+        location: "Golden, CO [single-axis tracker, fixed-tilt baseline invalid]",
+      }),
+    });
+    check("create PVDAQ-style tracker plant", created.status >= 200 && created.status < 300, `status ${created.status}`);
+    trackerPlant = created.body;
+  }
+  if (!trackerPlant?.id) return;
+  const trackerId = trackerPlant.id;
 
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -176,6 +200,18 @@ async function main() {
     await visit(`/dashboard/plants/${firstId}`, new RegExp(escapeRe(apiPlants[0].name), "i"));
     await visit("/dashboard/alerts", /^alerts$/i);
     await visit("/dashboard/performance", /^performance$/i);
+
+    // PVDAQ-style single-axis tracker plant: labelled "not supported" state, Generate disabled, no failed API calls
+    await visit(`/dashboard/plants/${trackerId}`, new RegExp(escapeRe(TRACKER_NAME), "i"));
+    const notice = "Not supported for single-axis trackers (fixed-tilt baseline invalid)";
+    check("tracker plant detail shows the labelled unsupported state", (await page.getByText(notice).count()) === 1);
+    check("tracker plant 'Run forecast' is disabled", await page.getByRole("button", { name: /run forecast/i }).isDisabled());
+    await visit("/dashboard/performance", /^performance$/i);
+    await page.locator("#forecast-plant-select").selectOption(String(trackerId));
+    await page.waitForLoadState("networkidle");
+    check("performance shows the unsupported state for the tracker plant", (await page.getByText(notice).count()) >= 1);
+    check("performance 'Generate forecast' is disabled for the tracker plant", await page.getByRole("button", { name: /generate forecast|refresh/i }).first().isDisabled());
+    check("no 'Unprocessable Entity' text shown", (await page.getByText(/unprocessable/i).count()) === 0);
 
     // Logout
     current = "logout";
