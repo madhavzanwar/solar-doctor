@@ -173,6 +173,29 @@ summary:focus-visible,
   background: linear-gradient(135deg, #1a3a2a 0%, #234a36 55%, #3a5a43 100%);
 }
 
+/* ── Overflow containment (found with long real-world plant names) ──
+ * An absolutely positioned hidden label inside a table escapes the scroll wrapper unless the wrapper is the
+ * containing block; toolbar selects with long option text must shrink instead of widening the page. */
+.dash-table-wrap {
+  position: relative;
+}
+.dash-toolbar > *,
+.dash-toolbar label {
+  min-width: 0;
+  max-width: 100%;
+}
+.dash-toolbar select.dash-input {
+  width: auto;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+.dash-plant-name,
+.dash-plant-loc,
+.dash-alert-msg,
+.dash-page-sub {
+  overflow-wrap: anywhere;
+}
+
 /* ── Contrast fixes (DESIGN.md §11): small sun text uses --sun-ink on light, a lighter ochre on field green ── */
 .dash-sidebar .dash-logo span,
 .dash-sidebar .dash-nav-index {

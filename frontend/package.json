@@ -11,7 +11,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:visual": "node tests/visual/run.mjs",
-    "test:a11y": "node tests/a11y/run.mjs"
+    "test:a11y": "node tests/a11y/run.mjs",
+    "test:overflow": "node tests/overflow/run.mjs"
   },
   "dependencies": {
     "next": "15.5.27",
