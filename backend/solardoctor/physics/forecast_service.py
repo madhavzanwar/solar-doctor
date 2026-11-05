@@ -169,6 +169,12 @@ def _trained_dc_kw(plant: Plant, times: pd.DatetimeIndex, wd, probabilistic: boo
         from ml.forecast.features.feature_pipeline import SolarFeaturePipeline
         wx = pd.DataFrame({"ghi_nwp": wf["ghi"].values, "temp_ambient_nwp": wf["t"].values,
                            "wind_speed_nwp": wf["w"].values, "cloud_cover_pct": wf["c"].values}, index=times)
+        # Weather feeds give GHI only; split into DNI/DHI with the Erbs model (as the feature
+        # pipeline would for pvlib) so every canonical weather column is populated.
+        import pvlib
+        zen = pvlib.solarposition.get_solarposition(times, plant.lat, plant.lon)["apparent_zenith"]
+        erbs = pvlib.irradiance.erbs(wx["ghi_nwp"], zen, times)
+        wx["dni_nwp"], wx["dhi_nwp"] = erbs["dni"].fillna(0.0).values, erbs["dhi"].fillna(0.0).values
         X = SolarFeaturePipeline(solar.plant_config_from_orm(plant)).transform(wx)
         if probabilistic:
             return model.predict_quantiles(X)

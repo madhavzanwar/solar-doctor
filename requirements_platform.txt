@@ -46,3 +46,13 @@ python-dotenv>=1.0.1             # .env file support for secrets
 # numpy>=1.26.0                  # (already present)
 # opencv-python>=4.9.0           # (already present)
 # Pillow>=10.2.0                 # (already present)
+
+# ── Physics / forecasting (Phase E, ported from SolarPulseAI) ────────────────
+pvlib>=0.11.0                    # clear-sky, POA, PVWatts, cell temperature
+lightgbm>=4.5.0                  # hybrid + quantile forecasters (optional at runtime: falls back to physics baseline)
+scikit-learn>=1.6.0
+joblib>=1.3.0
+pandas>=2.2.0
+numpy>=1.26.0,<3
+scipy>=1.11.0
+httpx>=0.27.0                    # weather / NASA POWER clients
