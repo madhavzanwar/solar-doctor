@@ -78,8 +78,8 @@ def _online_adapter_updates(db: Session, rows: List[Telemetry]) -> None:
             applied = False
             for r in rs:
                 near = [f for f in forecasts if abs((f.forecast_time - r.ts).total_seconds()) <= window.total_seconds()]
-                if not near:
-                    continue
+                if not near or r.p_ac_kw is None:
+                    continue  # never feed a missing actual to the online adapter
                 match = min(near, key=lambda f: abs((f.forecast_time - r.ts).total_seconds()))
                 applied |= registry.update_online_state(
                     plant_id=str(plant_id), y_actual=r.p_ac_kw, y_pred_base=match.ml_power_kw or match.predicted_power_kw,

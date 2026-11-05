@@ -40,7 +40,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import Any, Dict, List
 
 import httpx
 
@@ -311,7 +311,7 @@ class WeatherAPIError(RuntimeError):
 
 
 def _api_key() -> str:
-    return os.getenv("SOLARDOCTOR_WEATHER_API_KEY") or os.getenv("WEATHER_API_KEY", "")
+    return os.getenv("SOLARDOCTOR_WEATHER_API_KEY") or os.getenv("WEATHER_API_KEY") or ""
 
 
 class WeatherAPIClient:
@@ -326,7 +326,7 @@ class WeatherAPIClient:
 
     def get_forecast(self, lat: float, lon: float, days: int = 1) -> dict:
         days = max(1, min(days, 3))  # free tier: max 3 days
-        params = {"key": self._api_key, "q": f"{lat},{lon}", "days": days, "aqi": "no", "alerts": "no"}
+        params: Dict[str, Any] = {"key": self._api_key, "q": f"{lat},{lon}", "days": days, "aqi": "no", "alerts": "no"}
         try:
             with httpx.Client(timeout=REQUEST_TIMEOUT_S, transport=self._transport) as client:
                 resp = client.get(f"{self._base_url}/forecast.json", params=params)
@@ -485,7 +485,7 @@ def parse_nasa_power_hourly(payload: dict):
 def fetch_nasa_power_hourly(lat: float, lon: float, start: datetime, end: datetime,
                             db=None, transport=None):
     """NASA POWER hourly irradiance (cached in weather_cache when ``db`` is given)."""
-    params = {
+    params: Dict[str, Any] = {
         "parameters": "ALLSKY_SFC_SW_DWN,T2M,WS10M", "community": "RE", "format": "JSON",
         "latitude": round(lat, 4), "longitude": round(lon, 4), "time-standard": "UTC",
         "start": start.strftime("%Y%m%d"), "end": end.strftime("%Y%m%d"),

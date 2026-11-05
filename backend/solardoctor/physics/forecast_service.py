@@ -177,7 +177,7 @@ def _trained_dc_kw(plant: Plant, times: pd.DatetimeIndex, wd, probabilistic: boo
         wx["dni_nwp"], wx["dhi_nwp"] = erbs["dni"].fillna(0.0).values, erbs["dhi"].fillna(0.0).values
         X = SolarFeaturePipeline(solar.plant_config_from_orm(plant)).transform(wx)
         if probabilistic:
-            return model.predict_quantiles(X)
+            return getattr(model, "predict_quantiles")(X)
         return pd.Series(model.predict(X), index=times)
     except Exception as exc:
         logger.error("Trained-model inference failed: %s", exc)

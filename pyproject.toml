@@ -64,3 +64,5 @@ ignore = []
 python_version = "3.11"
 ignore_missing_imports = true
 check_untyped_defs = true
+# Only the listed new modules are gated; legacy Axalon code they import is not type-checked.
+follow_imports = "silent"

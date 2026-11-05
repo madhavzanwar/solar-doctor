@@ -650,7 +650,7 @@ def resolve_power_inputs(db: Session, plant: Plant, expected: Optional[float], a
             Telemetry.ts >= now - timedelta(hours=max_age),
         ).order_by(Telemetry.ts.desc()).limit(500)
     ).scalars().all()
-    daylight = [r for r in rows if r.p_expected_kw >= floor]
+    daylight = [r for r in rows if r.p_expected_kw is not None and r.p_expected_kw >= floor]
     usable = [r for r in daylight if allow_simulated or (r.source or "").upper() != "SIMULATED"]
     if usable:
         tel = usable[0]
