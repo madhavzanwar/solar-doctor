@@ -43,15 +43,29 @@ jobs:
           for d in physics vision fusion roi workers; do [ -d "backend/solardoctor/$d" ] && mods="$mods backend/solardoctor/$d"; done
           # shellcheck disable=SC2086
           if [ -n "$mods" ]; then mypy $mods; else echo "no new modules yet"; fi
-      - name: Try to fetch thermal weights from Hugging Face
+      - name: Cache thermal weights
+        uses: actions/cache@v4
+        with:
+          path: ml/thermal/checkpoints/best.pt
+          key: thermal-best-fabb41c88f9d
+      - name: Fetch thermal weights (no-op on a verified cached file; may fail while unpublished)
         id: weights
         continue-on-error: true
-        run: python -m pip install -q huggingface_hub && python scripts/fetch_weights.py
-      - name: pytest (prints any deselected weights-dependent tests)
+        run: python scripts/fetch_weights.py
+      - name: Check tests/weights_required.txt ids still exist (pytest ignores stale --deselect ids)
         run: |
-          # No weights -> scripts/pytest_deselect_args.sh lists the deselected tests loudly (stderr) and
-          # prints the --deselect args; a CI warning annotation is added as well.
-          if [ ! -s ml/thermal/checkpoints/best.pt ]; then
+          ids="$(grep -v '^#' tests/weights_required.txt | grep .)"
+          echo "$ids" | wc -l
+          # shellcheck disable=SC2086
+          python -m pytest --collect-only -q $ids > /tmp/collect.txt || { cat /tmp/collect.txt; echo "::error::a test id in tests/weights_required.txt no longer exists"; exit 1; }
+          n="$(grep -c '::' /tmp/collect.txt)"
+          [ "$n" -eq "$(echo "$ids" | wc -l)" ] || { echo "::error::expected $(echo "$ids" | wc -l) tests, collected $n"; exit 1; }
+      - name: pytest (weights present -> thermal enabled, all tests; absent -> weights tests deselected loudly)
+        run: |
+          if [ -s ml/thermal/checkpoints/best.pt ]; then
+            export ENABLE_THERMAL=true
+            echo "thermal weights present: ENABLE_THERMAL=true, running ALL tests"
+          else
             echo "::warning title=Weights tests deselected::thermal weights unavailable; tests in tests/weights_required.txt are NOT run"
           fi
           deselect="$(bash scripts/pytest_deselect_args.sh)"
@@ -162,6 +176,8 @@ jobs:
         run: |
           alembic upgrade head
           python scripts/seed.py --offline
+      - name: Seed the tracker fixture the smoke test needs (the API refuses to create it)
+        run: python scripts/seed_smoke_tracker.py
       - name: Start API (users auth mode)
         run: |
           mkdir -p logs
