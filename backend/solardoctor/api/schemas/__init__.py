@@ -15,7 +15,9 @@ from solardoctor.api.schemas.missions import MissionCreate
 from solardoctor.api.schemas.corrections import CorrectionCreate
 from solardoctor.api.schemas.park import ParkUpdate
 from solardoctor.api.schemas.settings import SettingsUpdate
-from solardoctor.api.schemas.auth import ShareLinkCreate, UserCreate, UserLogin, UserUpdate
+from solardoctor.api.schemas.auth import (
+    LogoutRequest, RefreshRequest, ShareLinkCreate, UserCreate, UserLogin, UserRegister, UserUpdate,
+)
 
 __all__ = [
     "ComponentBody", "PrototypeBody", "AssignmentBody", "OrderBody",
@@ -23,4 +25,5 @@ __all__ = [
     "FaultUpdate", "CommentCreate", "MissionCreate", "CorrectionCreate",
     "ParkUpdate", "SettingsUpdate",
     "ShareLinkCreate", "UserCreate", "UserLogin", "UserUpdate",
+    "LogoutRequest", "RefreshRequest", "UserRegister",
 ]

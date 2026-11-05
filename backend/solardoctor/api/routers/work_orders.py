@@ -145,6 +145,9 @@ def export_work_orders(
             PanelFault.park_id == park_id, PanelFault.status.in_(statuses)
         )
         wanted_assignee = (assignee or "").strip().lower()
+        if principal.is_technician:
+            # Technicians only ever see work orders assigned to their own account.
+            wanted_assignee = (principal.email or "").strip().lower() or "\0"
         faults = [
             f for f in q.all()
             if not wanted_assignee or (f.assignee or "").strip().lower() == wanted_assignee

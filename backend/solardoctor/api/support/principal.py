@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hmac
 import os
+import re
 from dataclasses import dataclass
 from typing import Callable
 
@@ -21,7 +22,7 @@ from fastapi import HTTPException, Request
 from solardoctor.core.auth import (
     MODE_APIKEY, MODE_USERS, auth_mode, project_ids_for, resolve_session, resolve_share_link,
 )
-from solardoctor.db.models import ROLE_ADMIN, ROLE_OPERATOR, ROLE_VIEWER
+from solardoctor.db.models import ROLE_ADMIN, ROLE_OPERATOR, ROLE_TECHNICIAN, ROLE_VIEWER
 from solardoctor.db.session import get_session
 
 API_PREFIX = "/api/v1"
@@ -40,10 +41,24 @@ KIND_SHARE = "share"
 # Reachable without credentials. /auth/mode is public in every mode because the
 # console must learn which login UI to show before it has any credentials.
 ALWAYS_PUBLIC_PATHS = frozenset({"/health", "/track/login", "/auth/mode"})
-USERS_PUBLIC_PATHS = ALWAYS_PUBLIC_PATHS | {"/auth/login"}
+# Credential-exchange endpoints cannot require a (possibly expired) access token;
+# /auth/logout is public so a client holding only a refresh token can still sign out.
+USERS_PUBLIC_PATHS = ALWAYS_PUBLIC_PATHS | {
+    "/auth/login", "/auth/token", "/auth/register", "/auth/refresh", "/auth/logout",
+}
 
-_ROLE_RANK = {ROLE_VIEWER: 0, ROLE_OPERATOR: 1, ROLE_ADMIN: 2}
+# technician sits between viewer and operator: reads like a viewer (project
+# scope applies), writes nothing; work-order listings are narrowed to their own.
+_ROLE_RANK = {ROLE_VIEWER: 0, ROLE_TECHNICIAN: 1, ROLE_OPERATOR: 2, ROLE_ADMIN: 3}
 _READ_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+# Writes a technician may attempt: work their assigned fault (update, comment,
+# photo upload). The handlers still 404 unless the fault is assigned to them and
+# the faults router limits which fields/statuses they may set.
+_TECHNICIAN_WRITES = (
+    ("PATCH", re.compile(r"/faults/[0-9]+")),
+    ("POST", re.compile(r"/faults/[0-9]+/(?:comments|photos)")),
+)
 
 NOT_AUTHENTICATED = "Not authenticated"
 FORBIDDEN = "Insufficient permissions"
@@ -62,6 +77,10 @@ class Principal:
     @property
     def is_restricted(self) -> bool:
         return self.project_ids is not None
+
+    @property
+    def is_technician(self) -> bool:
+        return self.kind == KIND_USER and self.role == ROLE_TECHNICIAN
 
     def can_see_project(self, project_id: int | None) -> bool:
         if self.project_ids is None:
@@ -149,6 +168,10 @@ def access_policy(
         if principal.kind == KIND_SHARE and not allow_share:
             raise HTTPException(status_code=403, detail=FORBIDDEN)
         needed = read_role if request.method in _READ_METHODS else write_role
+        if principal.is_technician and request.method not in _READ_METHODS:
+            path = strip_api_prefix(request.url.path)
+            if any(request.method == m and rx.fullmatch(path) for m, rx in _TECHNICIAN_WRITES):
+                return
         if not principal.has_role(needed):
             raise HTTPException(status_code=403, detail=FORBIDDEN)
 
