@@ -1,5 +1,8 @@
 # SolarDoctor build prompts — how to use them
 
+> **Status (see `../HANDOVER.md`, written when Prompt 1 completes):** Prompt 1 (foundation) is being finalised. Prompts 2 and 3 now start with an *Operating notes* block with
+> lessons learned and the current state of the code. Prefer running Prompt 2 as several sessions, one per workstream.
+
 Three prompts build SolarDoctor end to end. Run them **in order**, each in a **fresh Claude Code session** attached
 to https://github.com/madhavzanwar/solar-doctor with push access. Each prompt is self-contained (it restates the
 context it needs) and ends by committing and pushing to `main`, so the next prompt starts from the repo state.

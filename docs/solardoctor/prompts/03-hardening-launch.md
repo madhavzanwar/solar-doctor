@@ -5,6 +5,56 @@
 
 ---
 
+## Operating notes (v2, learned while running Prompt 1: read before planning)
+
+**Start state.** `git fetch origin && git log --oneline -5 origin/main`; confirm the previous tag exists and read
+`docs/solardoctor/HANDOVER.md`, `BUILD_LOG.md`, `DECISIONS.md` and `qa/` before touching anything.
+
+**Subagent hygiene (these bit us):**
+- A subagent's worktree may start on a STALE commit. Every agent's first command must be
+  `git fetch origin && git checkout -B <branch> origin/main`. Agents never push; the lead merges after sign-off.
+- Usage limits stop agents mid-task (it happened four times). Tell every agent to **commit after each step**, keep
+  tasks small, and resume stopped agents with `SendMessage` instead of spawning new ones.
+- The shared venv pattern: run Python as `PYTHONSAFEPATH=1 PYTHONPATH=backend:. python -m pytest ...` from the
+  worktree so the worktree's code is imported, not an editable install elsewhere.
+- Several large workstreams are better as **separate sessions** (one per workstream) than one mega-session.
+
+**Independent review loop.** `sd-qa` never fixes what it reviews. Expect 2-3 rounds per branch; real findings so far
+included: refresh/marker rows authenticating as bearer tokens, technician scope leaks, an API key printed by httpx's
+own logger, a fabricated diagnosis when no telemetry existed, silent use of stale/SIMULATED telemetry, a 15x kWh bug
+(assumed 1-minute spacing), a 1-hour DST error in an importer, CORS missing on 401s so token refresh never ran, a
+horizontal-scroll bug only visible with real data. Ask reviewers to **run the author's new tests against the old code**
+(they must fail there) and to reproduce, not just read.
+
+**Facts about the current codebase (do not rebuild what exists):**
+- Python package `solardoctor` in `backend/solardoctor/`; all routes under `/api/v1` (unprefixed paths are hidden
+  deprecated aliases); legacy `AXALON_*` env vars are mirrored to `SOLARDOCTOR_*`.
+- Auth contract: `docs/solardoctor/API_AUTH.md` (rotating single-use refresh tokens, token families, technician
+  scoped to assigned faults and allowed to progress their own work orders). Roles: admin, operator, technician, viewer.
+- Physics already exists (ported from SolarPulseAI, MIT): `physics/solar.py` (pvlib clear-sky, POA, Faiman, PVWatts DC
+  -> AC clipping), plants/inverters/strings/telemetry/forecasts/plant_alerts/diagnoses/weather_cache tables
+  (Alembic head `0011`), forecast + probabilistic (labelled SIMULATED scenario when no trained model), anomaly
+  service (WARNING 10 %, CRITICAL 25 %: Prompt 2 asks for 5 %/10 % on QC'd clear-sky samples, so extend/replace
+  deliberately and log it), diagnosis taxonomy, weather service (mock weather is labelled and never fed to models),
+  SCADA ingest + WebSocket. Build ON these; do not re-port.
+- `make seed` (`scripts/seed.py`, flags `--reset`, `--offline`, `--shift-to-now`) creates 3 SIMULATED plants + 30 days
+  of telemetry with a known S-04 string fault, soiling ramps and a cloudy spell. `scripts/import_pvdaq.py` imports
+  PVDAQ system 9068 (CC BY 4.0; a single-axis tracker, so the fixed-tilt baseline is invalid for it: flag/skip it).
+  Diagnosis refuses telemetry older than 24 h or SIMULATED unless `allow_simulated=true` (see SEED_PLAN.md section 9).
+- Responses use `currency="unset"` when a plant has no tariff (frontend shows "Not estimated"); never default to USD.
+- Frontend: `frontend/` is the SolarPulseAI clone; `globals.css` and `dashboard.css` must stay byte-identical to
+  upstream; additions go in `src/app/solardoctor.css`. Tests: Vitest, axe (`npm run test:a11y`, must stay at 0
+  violations), visual harness (`npm run test:visual`, ~10 min), 390 px overflow check on every route.
+- Weights: Git LFS is not used. Thermal weights come from Hugging Face (`make weights`); 9 backend tests need them
+  and are deselected in CI only when the weights are missing (`tests/weights_required.txt`). The backend test count
+  only goes up: check `docs/solardoctor/BASELINE_TESTS.md` and the latest merge commit for the current number.
+- Branch policy: confirm with the repo owner where to push (this repo's sessions were restricted to one branch at
+  first); never rewrite shared history. (Prompt 1 stripped one LFS pointer from unpublished history; see DECISIONS.md #6.)
+- Licence rule and honesty rule are unchanged: nothing from no-licence repos; no invented data, metrics or citations;
+  simulated data is labelled everywhere.
+
+---
+
 You are the **release lead** for **SolarDoctor** (team Photosphere, PCCoE Pune): an AI solar O&M platform that
 **detects** silent yield loss with a physics baseline, **diagnoses** the cause from panel photos with a
 Hugging Face–hosted model, **explains** it (LIME + Grad-CAM + telemetry cross-check) and **acts** (₹ ROI decision →
@@ -134,7 +184,7 @@ independently before merge. Loop until **zero blockers and zero majors** remain;
 - [ ] Licences/credits complete; AGPL isolation documented.
 - [ ] Live: app URL, API docs URL, HF model, HF Space demo — all listed in README and working.
 - [ ] Docs complete; PITCH.md and demo GIF ready.
-- [ ] Everything committed (Conventional Commits) and **pushed to `origin main`**; release **`v1.0.0`** published.
+- [ ] Everything committed (Conventional Commits) and **pushed to the agreed branch (`origin main` unless the owner says otherwise)**; release **`v1.0.0`** published.
 
 Finish with a release report: links, final metrics table, audit summary (found/fixed/deferred), known issues, and
 the exact steps a judge should follow to see the full Detect → Diagnose → Explain → Act loop in under 3 minutes.
