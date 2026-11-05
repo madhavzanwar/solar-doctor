@@ -25,6 +25,7 @@ log = logging.getLogger("solardoctor.seed")
 
 SRC_NASA = "NASA_POWER"
 SRC_SYNTH = "SYNTHETIC_CLEARSKY"
+SRC_NASA_SHIFTED = "NASA_POWER_TIME_SHIFTED"
 
 Fetcher = Callable[[float, float, pd.Timestamp, pd.Timestamp], pd.DataFrame]
 
@@ -90,12 +91,17 @@ def _clearsky(lat, lon, alt, times) -> pd.DataFrame:
 
 
 def from_hourly(hourly: pd.DataFrame, lat: float, lon: float, alt: float,
-                times: pd.DatetimeIndex) -> pd.DataFrame:
-    """Resample NASA hourly (hour-average, stamped at hour start) to ``times`` via clear-sky index."""
+                times: pd.DatetimeIndex, shift: pd.Timedelta = pd.Timedelta(0)) -> pd.DataFrame:
+    """Resample NASA hourly (hour-average, stamped at hour start) to ``times`` via clear-sky index.
+
+    ``shift`` > 0 moves the weather (clear-sky index, temperature, wind) forward in time by whole days
+    while the clear-sky curve is recomputed for the *shifted* dates, so solar geometry stays correct for the
+    dates the rows carry (the weather is borrowed from ``shift`` earlier)."""
     center = hourly.index + pd.Timedelta(minutes=30)
     cs_h = _clearsky(lat, lon, alt, center)["ghi"].to_numpy()
     k_h = pd.Series(np.where(cs_h > 25.0, hourly["ghi"].to_numpy() / np.maximum(cs_h, 1e-9), np.nan), index=center)
     k_h = k_h.clip(0.0, 1.15)
+    k_h.index = k_h.index + shift
     union = k_h.index.union(times)
     k = k_h.reindex(union).interpolate("time", limit_area=None).ffill(limit=8).bfill(limit=8).reindex(times)
     cs = _clearsky(lat, lon, alt, times)["ghi"]
@@ -103,7 +109,7 @@ def from_hourly(hourly: pd.DataFrame, lat: float, lon: float, alt: float,
     out["ghi"] = (k.fillna(0.0) * cs).clip(lower=0.0)
     for col in ("temp_air", "wind_speed"):
         s = hourly[col].copy()
-        s.index = center
+        s.index = center + shift
         out[col] = s.reindex(s.index.union(times)).interpolate("time").ffill().bfill().reindex(times)
     return out
 
@@ -141,17 +147,26 @@ def apply_cloudy_spell(frame: pd.DataFrame, start: pd.Timestamp, days: tuple[int
 
 
 def get_irradiance(lat: float, lon: float, alt: float, tag: str, times: pd.DatetimeIndex, seed: int,
-                   fetcher: Fetcher, cache_dir: Path, allow_network: bool = True) -> Irradiance:
-    """NASA POWER if possible, else the labelled synthetic fallback."""
-    start, end = times[0].normalize(), times[-1].normalize()
+                   fetcher: Fetcher, cache_dir: Path, allow_network: bool = True,
+                   shift: pd.Timedelta = pd.Timedelta(0)) -> Irradiance:
+    """NASA POWER if possible, else the labelled synthetic fallback.
+
+    ``times`` is the output index.  With ``shift`` > 0 the NASA data is fetched for ``times - shift`` and
+    labelled ``NASA_POWER_TIME_SHIFTED``."""
+    start, end = (times[0] - shift).normalize(), (times[-1] - shift).normalize()
     if allow_network:
         try:
             hourly = cached_fetch(fetcher, cache_dir, tag, lat, lon, start, end + pd.Timedelta(days=0))
             win = hourly.loc[(hourly.index >= start) & (hourly.index < end + pd.Timedelta(days=1))]
             if win["ghi"].isna().mean() > 0.05 or len(win) < 24 * 25:
                 raise RuntimeError("NASA POWER GHI has too many gaps (%.0f %% NaN)" % (100 * win["ghi"].isna().mean()))
-            frame = from_hourly(win.interpolate("time", limit=3), lat, lon, alt, times)
-            return Irradiance(frame, SRC_NASA, "NASA POWER hourly ALLSKY_SFC_SW_DWN/T2M/WS10M, clear-sky-index interpolated to 15 min")
+            frame = from_hourly(win.interpolate("time", limit=3), lat, lon, alt, times, shift)
+            note = "NASA POWER hourly ALLSKY_SFC_SW_DWN/T2M/WS10M, clear-sky-index interpolated to 15 min"
+            if shift > pd.Timedelta(0):
+                return Irradiance(frame, SRC_NASA_SHIFTED,
+                                  f"time-shifted NASA POWER irradiance: weather of {start:%Y-%m-%d}..{end:%Y-%m-%d} "
+                                  f"moved +{shift.days} days (clear-sky geometry recomputed for the shown dates); " + note)
+            return Irradiance(frame, SRC_NASA, note)
         except Exception as exc:
             log.warning("NASA POWER unavailable for %s (%s): using SYNTHETIC clear-sky x cloud model", tag, exc)
             reason = f"NASA POWER unavailable ({type(exc).__name__}: {str(exc)[:120]})"

@@ -117,3 +117,34 @@ Run: `make seed` (or `python scripts/seed.py [--reset] [--offline] [--end YYYY-M
 - Dataset licence/attribution is NOT yet recorded in `THIRD_PARTY_NOTICES.md` (not verified; lead to decide).
 - Tests use an artificial fixture (`FIXTURE_NOT_REAL_DATA`) with the real column layout; the real import was run
   once by hand against the live bucket.
+
+## 9. QA round 1 fixes (sd-qa REVIEW_seed.md)
+
+- **PVDAQ time zone (HIGH).** The 9068 loggers write the DST-observing local wall clock, not fixed UTC-7. The
+  importer now maps `timezone_code` 7 -> `America/Denver`, `tz_localize` + `tz_convert("UTC")`, and DROPS (and
+  counts in the notes) the ambiguous fall-back hour and non-existent spring-forward rows; nothing is shifted
+  silently. Tests: January (MST) and June (MDT) diurnal peak within 20 min of the pvlib solar noon at Kersey, and a
+  fall-back-day case. Real June 2024 import: median (midpoint of POA > 20 W/m2) minus pvlib solar noon = -7.5 min
+  over 26 days (before the fix it was about +60 min).
+- **`--reset` with dependants (MEDIUM).** Seeded faults' comments and photo rows are deleted first, detections are
+  detached (`fault_id` NULL, the inspection keeps them), then the faults. Only faults in seed parks whose notes start
+  with `SIMULATED` are touched; PVDAQ/USER plants, telemetry, alerts, unrelated faults and users are preserved
+  (tested). Photo blobs in the object store are not deleted.
+- **Stale data (MEDIUM): `--shift-to-now` (default off).** Chosen because it can stay physically honest: the NASA
+  *weather* (clear-sky index, temperature, wind) of the latest complete window is moved forward by whole days, and
+  the clear-sky curve, solar position and PVWatts expected power are recomputed for the shifted dates. So the rows
+  are consistent with the date they carry; what is borrowed is the weather. Labelled everywhere:
+  `irradiance_source = "NASA_POWER_TIME_SHIFTED"`, note "time-shifted NASA POWER irradiance ... +N days" in
+  `weather_cache` seed_meta and `seed_manifest.json` (`shift_days`, `time_shifted_irradiance`); rows stay
+  `SIMULATED`. Alerts, faults, forecasts and telemetry all move with the window; fault `first_seen_date` is the
+  window's last day (also without the flag, instead of the run date). The seed prints "the data is ~N day(s) old"
+  and the remedy. Without the flag the diagnose demo needs
+  `SOLARDOCTOR_DIAGNOSIS_MAX_TELEMETRY_AGE_H=<hours>` and `allow_simulated=true`; with it the newest row is yesterday
+  (note the 24 h freshness bar still wants a row less than 24 h old, so the diagnose demo should also set the age
+  env to e.g. 48, or re-seed daily).
+- **Tracker marker (LOW).** The `plants` table has no notes column and no migration was added, so the PVDAQ plant's
+  `location` ends with `[single-axis tracker, fixed-tilt baseline invalid]`. Making the physics expected-power path
+  skip such plants would touch `backend/solardoctor/physics/` (not mine): reported to the lead.
+- **Minors.** Too-short seed passwords give `ERROR: cannot create seed user ...` (exit 1, no traceback); clipped
+  negative AC/POA samples are counted in the PVDAQ notes; a 15-min bin needs >= 2 of 3 five-minute samples; parks are
+  named `<plant> (SIMULATED)`.
