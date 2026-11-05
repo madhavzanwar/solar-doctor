@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { ApiError, login } from "@/lib/api";
+import { safeNextPath } from "@/lib/auth-guard";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -17,40 +19,19 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const params = new URLSearchParams();
-      params.append("username", email.trim());
-      params.append("password", password);
-
-      const res = await fetch(`${apiUrl}/api/v1/auth/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: params.toString(),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        setError(errorData?.detail || "Invalid email or password.");
-        setPending(false);
-        return;
-      }
-
-      const data = await res.json();
-      if (typeof window !== "undefined") {
-        localStorage.setItem("solarpulse_access_token", data.access_token);
-        localStorage.setItem("solarpulse_refresh_token", data.refresh_token);
-        localStorage.setItem("solarpulse_user", email.trim());
-      }
-
+      await login(email, password);
       setMessage("Login successful! Redirecting…");
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
       setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
-    } catch {
+        window.location.href = next;
+      }, 600);
+    } catch (err) {
       setError(
-        "Could not connect to the backend server. Please verify FastAPI is running on http://localhost:8000.",
+        err instanceof ApiError && err.status === 401
+          ? "Invalid email or password."
+          : err instanceof Error
+            ? err.message
+            : "Login failed. Please try again.",
       );
     } finally {
       setPending(false);

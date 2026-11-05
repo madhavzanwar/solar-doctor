@@ -14,6 +14,7 @@ import {
   type PlantConfig,
   type WeatherData,
 } from "@/lib/api";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 
 function ForecastChart({ records }: { records: ForecastRecord[] }) {
   if (records.length < 2) {
@@ -338,7 +339,7 @@ export default function PlantDetailPage({
               className={`dash-status-dot ${plant.is_active ? "dash-status-active" : "dash-status-inactive"}`}
               style={{ marginRight: "0.45rem", verticalAlign: "middle" }}
             />
-            {plant.name}
+            {plant.name} <SourceBadge source={plant.source} />
           </h1>
           <p className="dash-page-sub">
             {plant.location ?? `${plant.latitude}, ${plant.longitude}`} · {plant.timezone}
@@ -404,9 +405,7 @@ export default function PlantDetailPage({
         <div className="dash-card">
           <div className="dash-card-title">
             Live weather
-            {weather?.source === "mock" && (
-              <span className="dash-badge dash-badge-muted">mock</span>
-            )}
+            <SourceBadge source={weather?.source} />
           </div>
 
           {!weather ? (

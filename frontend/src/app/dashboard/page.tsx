@@ -12,6 +12,7 @@ import {
   type Plant,
   type WeatherData,
 } from "@/lib/api";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 import ForecastActualChart from "@/components/forecast/ForecastActualChart";
 import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
 
@@ -29,13 +30,12 @@ function WeatherWidget({ weather }: { weather: WeatherData | null }) {
   }
 
   const c = weather.current;
-  const isMock = weather.source === "mock";
 
   return (
     <div className="dash-card">
       <div className="dash-card-title">
         Current weather
-        {isMock && <span className="dash-badge dash-badge-muted">mock</span>}
+        <SourceBadge source={weather.source} />
       </div>
 
       <div style={{ marginBottom: "0.85rem" }}>
@@ -348,7 +348,7 @@ export default function DashboardPage() {
                     <span
                       className={`dash-status-dot ${plant.is_active ? "dash-status-active" : "dash-status-inactive"}`}
                     />
-                    {plant.name}
+                    {plant.name} <SourceBadge source={plant.source} />
                   </div>
                   <div className="dash-plant-loc">
                     {plant.location ??

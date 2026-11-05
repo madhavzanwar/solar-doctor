@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { register } from "@/lib/api";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -25,61 +26,20 @@ export function RegisterForm() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      // Generate clean username from email or name
-      const emailPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "");
-      const username = emailPrefix.length >= 3 ? emailPrefix : (name.replace(/\s+/g, "") || "user").padEnd(3, "0");
-
-      const res = await fetch(`${apiUrl}/api/v1/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email: email.trim(),
-          password,
-          full_name: name.trim() || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        const detail = errorData?.detail;
-        const errorMsg = Array.isArray(detail)
-          ? detail.map((d: { msg: string }) => d.msg).join(", ")
-          : detail || "Registration failed. Please try again.";
-        setError(errorMsg);
-        setPending(false);
-        return;
-      }
-
-      // Auto-login after successful registration
-      setMessage("Account created! Signing you in…");
-      const params = new URLSearchParams();
-      params.append("username", email.trim());
-      params.append("password", password);
-      const loginRes = await fetch(`${apiUrl}/api/v1/auth/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString(),
-      });
-      if (loginRes.ok) {
-        const loginData = await loginRes.json();
-        if (typeof window !== "undefined") {
-          localStorage.setItem("solarpulse_access_token", loginData.access_token);
-          localStorage.setItem("solarpulse_refresh_token", loginData.refresh_token);
-          localStorage.setItem("solarpulse_user", email.trim());
-        }
-        setTimeout(() => { window.location.href = "/dashboard"; }, 800);
+      const signedIn = await register({ email, password, full_name: name.trim() || undefined });
+      if (signedIn) {
+        setMessage("Account created! Signing you in…");
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 600);
       } else {
         setMessage("Account created! Please log in.");
-        setTimeout(() => { window.location.href = "/login"; }, 1500);
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1200);
       }
-    } catch {
-      setError(
-        "Could not connect to the backend server. Please verify that FastAPI is running on http://localhost:8000.",
-      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
     } finally {
       setPending(false);
     }

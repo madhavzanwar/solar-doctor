@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { plantsApi, weatherApi, type Plant, type WeatherData } from "@/lib/api";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 
 export default function PlantsPage() {
   const [plants, setPlants] = useState<Plant[]>([]);
@@ -93,7 +94,9 @@ export default function PlantsPage() {
                   const wx = weathers[plant.id];
                   return (
                     <tr key={plant.id}>
-                      <td style={{ fontWeight: 600 }}>{plant.name}</td>
+                      <td style={{ fontWeight: 600 }}>
+                        {plant.name} <SourceBadge source={plant.source} />
+                      </td>
                       <td style={{ color: "var(--dash-muted)" }}>
                         {plant.location ??
                           `${plant.latitude.toFixed(3)}, ${plant.longitude.toFixed(3)}`}
@@ -107,11 +110,7 @@ export default function PlantsPage() {
                             <span style={{ fontSize: "0.8rem", color: "var(--dash-muted)" }}>
                               {wx.current.condition}
                             </span>
-                            {wx.source === "mock" && (
-                              <span className="dash-badge dash-badge-muted" style={{ fontSize: "0.6rem", padding: "0.05rem 0.3rem" }}>
-                                mock
-                              </span>
-                            )}
+                            <SourceBadge source={wx.source} />
                           </div>
                         ) : (
                           <span style={{ color: "var(--dash-muted)", fontSize: "0.8rem" }}>—</span>
