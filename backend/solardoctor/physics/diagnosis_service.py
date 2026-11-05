@@ -32,6 +32,11 @@ logger = logging.getLogger("solardoctor.physics.diagnosis")
 # Standard Commercial PPA Energy Rate ($/kWh)
 DEFAULT_PPA_TARIFF_PER_KWH = 0.08
 DEFAULT_PEAK_SUN_HOURS = 5.5
+CURRENCY_UNSET = "unset"
+
+
+class InsufficientDataError(ValueError):
+    """Not enough real telemetry to diagnose; the API maps this to 422 (nothing is invented or persisted)."""
 
 
 # ── Diagnostic Knowledge Base ─────────────────────────────────────────────────
@@ -442,7 +447,8 @@ def diagnose_root_cause(
     loss_kw = max(0.0, exp_kw - act_kw)
     # SolarDoctor: a plant-specific tariff (INR/kWh) overrides SolarPulse's fixed $0.08/kWh.
     tariff = DEFAULT_PPA_TARIFF_PER_KWH if tariff_per_kwh is None else tariff_per_kwh
-    daily_revenue_loss = round(loss_kw * DEFAULT_PEAK_SUN_HOURS * tariff, 2)
+    unpriced = currency == CURRENCY_UNSET  # no plant tariff: do not invent a price
+    daily_revenue_loss = 0.0 if unpriced else round(loss_kw * DEFAULT_PEAK_SUN_HOURS * tariff, 2)
     sym = {"USD": "$", "INR": "₹"}.get(currency, currency + " ")
 
     category: str
@@ -505,9 +511,13 @@ def diagnose_root_cause(
         "detected_error_code": matched_code or inverter_error_code,
     }
 
+    if unpriced:
+        money = "has an unquantified revenue impact (no tariff configured for this plant)."
+    else:
+        money = f"represents {sym}{daily_revenue_loss:.2f}/day revenue impact."
     summary = (
         f"AI Diagnosis identified {tax_entry['title']} with {confidence:.0f}% confidence. "
-        f"Estimated power deficit of {loss_kw:.1f} kW represents {sym}{daily_revenue_loss:.2f}/day revenue impact."
+        f"Estimated power deficit of {loss_kw:.1f} kW {money}"
     )
 
     return DiagnosisResponse(
@@ -523,6 +533,9 @@ def diagnose_root_cause(
         estimated_loss_kw=round(loss_kw, 2),
         financial_impact_per_day=daily_revenue_loss,
         currency=currency,
+        financial_assumption=(
+            "No tariff configured: financial impact not estimated (0.0 is a placeholder, not a value)."
+            if unpriced else None),
         urgency_level=tax_entry["urgency"],
         summary=summary,
         root_cause_details=tax_entry["description"],
@@ -598,6 +611,25 @@ def get_diagnosis_by_alert_id(db: Session, alert_id: int) -> Optional[DiagnosisR
     return _record_to_response(record) if record else None
 
 
+def resolve_power_inputs(db: Session, plant: Plant, expected: Optional[float], actual: Optional[float]):
+    """Expected/actual kW from the request, else the plant's latest telemetry row that has both.
+
+    Raises InsufficientDataError rather than substituting SolarPulse's capacity*0.75 / *0.65 guesses.
+    """
+    if expected is not None and actual is not None:
+        return expected, actual, None
+    tel = db.execute(
+        select(Telemetry).where(Telemetry.plant_id == plant.id, Telemetry.p_expected_kw.is_not(None),
+                                Telemetry.p_ac_kw.is_not(None)).order_by(Telemetry.ts.desc()).limit(1)
+    ).scalar_one_or_none()
+    if tel is None:
+        raise InsufficientDataError(
+            "expected_power_kw and actual_power_kw are required (or ingest telemetry with an expected "
+            "power) - refusing to invent values.")
+    return (expected if expected is not None else tel.p_expected_kw,
+            actual if actual is not None else tel.p_ac_kw, tel)
+
+
 def run_diagnosis_for_alert(db: Session, alert_id: int) -> DiagnosisResponse:
     """Diagnose a PlantAlert from plant metadata + the telemetry row at/just before the alert."""
     alert = db.execute(select(PlantAlert).where(PlantAlert.id == alert_id)).scalar_one_or_none()
@@ -619,11 +651,12 @@ def run_diagnosis_for_alert(db: Session, alert_id: int) -> DiagnosisResponse:
         .limit(1)
     ).scalar_one_or_none()
 
-    # SolarPulse falls back to fixed values (750 W/m2, 32 C, 48 C) when no telemetry exists.
     irradiance = (tel.poa_wm2 if tel and tel.poa_wm2 is not None else (tel.ghi_wm2 if tel else None))
-    irradiance = 750.0 if irradiance is None else irradiance
-    temp = tel.t_amb if tel and tel.t_amb is not None else 32.0
-    mod_temp = tel.t_mod if tel and tel.t_mod is not None else 48.0
+    # No invented substitutes: missing telemetry stays None (the engine then relies on the alert itself).
+    temp = tel.t_amb if tel else None
+    mod_temp = tel.t_mod if tel else None
+    if alert.expected_power_kw is None or alert.actual_power_kw is None:
+        raise InsufficientDataError(f"Alert {alert_id} has no expected/actual power to diagnose.")
 
     diagnosis = diagnose_root_cause(
         plant_id=alert.plant_id,
@@ -638,7 +671,7 @@ def run_diagnosis_for_alert(db: Session, alert_id: int) -> DiagnosisResponse:
         module_temp_c=mod_temp,
         timestamp=alert.timestamp,
         tariff_per_kwh=plant.tariff_inr_kwh if plant else None,
-        currency="INR" if plant and plant.tariff_inr_kwh is not None else "USD",
+        currency="INR" if plant and plant.tariff_inr_kwh is not None else CURRENCY_UNSET,
     )
     saved = persist_diagnosis(db, diagnosis)
     diagnosis.id = saved.id

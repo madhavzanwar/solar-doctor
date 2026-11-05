@@ -201,7 +201,7 @@ def generate_forecast(db: Session, plant: Plant, horizon_minutes: int = 60, weat
         wd = weather_service.get_forecast_weather(plant.lat, plant.lon, days=3, db=db,
                                                   transport=weather_transport)
     except Exception as exc:
-        logger.warning("Could not fetch weather for plant %s: %s", plant.id, exc)
+        logger.warning("Could not fetch weather for plant %s: %s", plant.id, weather_service.redact(exc))
 
     times = pd.DatetimeIndex([forecast_time])
     soil = _soiling_fraction()
@@ -297,7 +297,7 @@ def generate_probabilistic_forecast(
         wd = weather_service.get_forecast_weather(plant.lat, plant.lon, days=3, db=db,
                                                   transport=weather_transport)
     except Exception as exc:
-        logger.warning("Could not fetch weather for plant %s: %s", plant.id, exc)
+        logger.warning("Could not fetch weather for plant %s: %s", plant.id, weather_service.redact(exc))
 
     soil = _soiling_fraction()
     base = _physics_ac_series(plant, times, wd, soiling_loss=soil)["p_ac_kw"].to_numpy()

@@ -49,33 +49,45 @@ def _from_create(d: ScadaReadingCreate) -> Telemetry:
     )
 
 
-def _trigger_online_adapter_update(db: Session, reading: Telemetry) -> None:
-    """Step the OnlineResidualAdapter from a new reading. Best-effort: never raises."""
+def _online_adapter_updates(db: Session, rows: List[Telemetry]) -> None:
+    """Step the OnlineResidualAdapter for new readings. Best-effort: never raises.
+
+    Lookups are batched per plant (one forecast query over the batch's time span, one active-alert
+    count) and the adapter checkpoint is written once per plant, not once per row.
+    """
     try:
-        if reading.p_ac_kw is None:
-            return
         window = timedelta(minutes=_FORECAST_MATCH_WINDOW_MINUTES)
-        ts = reading.ts
-        cands = db.execute(
-            select(Forecast).where(
-                Forecast.plant_id == reading.plant_id,
-                Forecast.forecast_time >= ts - window, Forecast.forecast_time <= ts + window,
-            )
-        ).scalars().all()
-        if not cands:
-            return
-        match = min(cands, key=lambda f: abs((f.forecast_time - ts).total_seconds()))
-        active = db.execute(
-            select(func.count(PlantAlert.id)).where(
-                PlantAlert.plant_id == reading.plant_id, PlantAlert.is_resolved.is_(False))
-        ).scalar_one() or 0
-        base_kw = match.ml_power_kw or match.predicted_power_kw
-        get_registry().update_online_state(
-            plant_id=str(reading.plant_id), y_actual=reading.p_ac_kw, y_pred_base=base_kw,
-            ghi=reading.ghi_wm2 or 0.0, has_active_anomaly=active > 0, persist=True,
-        )
+        by_plant: Dict[int, List[Telemetry]] = {}
+        for r in rows:
+            if r.p_ac_kw is not None:
+                by_plant.setdefault(r.plant_id, []).append(r)
+        registry = get_registry()
+        for plant_id, rs in by_plant.items():
+            rs.sort(key=lambda r: r.ts)
+            forecasts = db.execute(
+                select(Forecast).where(
+                    Forecast.plant_id == plant_id,
+                    Forecast.forecast_time >= rs[0].ts - window, Forecast.forecast_time <= rs[-1].ts + window)
+            ).scalars().all()
+            if not forecasts:
+                continue
+            active = db.execute(
+                select(func.count(PlantAlert.id)).where(
+                    PlantAlert.plant_id == plant_id, PlantAlert.is_resolved.is_(False))
+            ).scalar_one() or 0
+            applied = False
+            for r in rs:
+                near = [f for f in forecasts if abs((f.forecast_time - r.ts).total_seconds()) <= window.total_seconds()]
+                if not near:
+                    continue
+                match = min(near, key=lambda f: abs((f.forecast_time - r.ts).total_seconds()))
+                applied |= registry.update_online_state(
+                    plant_id=str(plant_id), y_actual=r.p_ac_kw, y_pred_base=match.ml_power_kw or match.predicted_power_kw,
+                    ghi=r.ghi_wm2 or 0.0, has_active_anomaly=active > 0, persist=False)
+            if applied:
+                registry._persist_adapter(registry.get_online_adapter(str(plant_id)))
     except Exception as exc:
-        logger.warning("Online adapter update failed for plant %s: %s", reading.plant_id, exc)
+        logger.warning("Online adapter update failed: %s", exc)
 
 
 def assert_plant_exists(db: Session, plant_id: int) -> None:
@@ -89,20 +101,22 @@ def insert_reading(db: Session, data: ScadaReadingCreate) -> Telemetry:
     db.add(reading)
     db.commit()
     db.refresh(reading)
-    _trigger_online_adapter_update(db, reading)
+    _online_adapter_updates(db, [reading])
     return reading
 
 
 def batch_insert_readings(db: Session, readings: List[ScadaReadingCreate]) -> List[Telemetry]:
     if not readings:
         return []
-    for pid in {r.plant_id for r in readings}:
-        assert_plant_exists(db, pid)
+    pids = {r.plant_id for r in readings}
+    found = set(db.execute(select(Plant.id).where(Plant.id.in_(pids))).scalars())
+    missing = pids - found
+    if missing:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Plant {sorted(missing)[0]} not found")
     rows = [_from_create(r) for r in readings]
     db.add_all(rows)
     db.commit()
-    for r in rows:
-        _trigger_online_adapter_update(db, r)
+    _online_adapter_updates(db, rows)
     return rows
 
 

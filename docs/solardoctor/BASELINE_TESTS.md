@@ -26,3 +26,5 @@ so every test that runs the real YOLO model fails with "unknown" weights:
 
 Rule for later phases: pass count must stay >= 632 and the failing set must not grow.
 These 10 become runnable once the weights are served from Hugging Face (`scripts/fetch_weights.py`).
+
+Note (Phase E, this sandbox): `tests/backend` shows 9 failed + 1 skipped (the real-checkpoint test is skipped when weights are absent), i.e. the same 10 weight-dependent tests.

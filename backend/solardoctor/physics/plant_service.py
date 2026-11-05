@@ -13,6 +13,7 @@ from typing import List
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from solardoctor.db.models import Park
@@ -47,12 +48,21 @@ def _check_park(db: Session, park_id: str | None, plant_id: int | None = None) -
         raise HTTPException(status.HTTP_409_CONFLICT, f"Park {park_id} is already linked to plant {other.id}")
 
 
+def _commit(db: Session, park_id: str | None) -> None:
+    """Commit; a concurrent link to the same park (unique park_id) becomes 409, not 500."""
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Park {park_id} is already linked to another plant")
+
+
 def create_plant(db: Session, data: PlantCreate) -> Plant:
     fields = _map(data.model_dump())
     _check_park(db, fields.get("park_id"))
     plant = Plant(**fields)
     db.add(plant)
-    db.commit()
+    _commit(db, fields.get("park_id"))
     db.refresh(plant)
     logger.info("Created plant id=%s name=%s", plant.id, plant.name)
     return plant
@@ -79,7 +89,7 @@ def update_plant(db: Session, plant_id: int, data: PlantUpdate) -> Plant:
         _check_park(db, fields["park_id"], plant_id)
     for k, v in fields.items():
         setattr(plant, k, v)
-    db.commit()
+    _commit(db, fields.get("park_id"))
     db.refresh(plant)
     return plant
 

@@ -18,9 +18,9 @@ Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/`
 
 | Source | Destination | Changes |
 |---|---|---|
-| `ml/{config,features,models,postprocessing,serving,training}` | `ml/forecast/` | import paths only (+ artifact dir env override) |
+| `ml/{config,features,models,postprocessing,serving,training}` | `ml/forecast/` (+ new `ml/forecast/artifacts/README.md`, not ported) | import paths only (+ artifact dir env override) |
 | `app/services/{forecast,anomaly,diagnosis,weather,scada,plant,clipping,soiling}_service.py`, `app/workers/*`, `app/api/websockets/scada_ws.py` | `backend/solardoctor/physics/` | async SQLAlchemy/asyncpg -> sync SQLAlchemy 2.0 session; new table names |
-| `app/schemas/*`, `app/api/v1/routes/*` | `backend/solardoctor/physics/schemas.py`, `backend/solardoctor/api/routers/` | sync routes, Axalon session pattern |
+| `app/schemas/*`, `app/api/v1/routes/*` | `backend/solardoctor/physics/schemas/` (package), `backend/solardoctor/api/routers/{plants,forecast,diagnosis,weather,scada,physics_alerts}.py` | sync routes, Axalon session pattern |
 
 ## Model weights
 

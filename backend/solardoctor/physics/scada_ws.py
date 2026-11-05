@@ -59,12 +59,14 @@ def _latest_frame(plant_id: int) -> dict | None:
         session.close()
 
 
-async def scada_ws_handler(websocket: WebSocket, plant_id: int, poll_interval: float | None = None) -> None:
+async def scada_ws_handler(websocket: WebSocket, plant_id: int, poll_interval: float | None = None,
+                           accepted: bool = False, subprotocol: str | None = None) -> None:
     interval = POLL_INTERVAL_SECONDS if poll_interval is None else poll_interval
     if not await run_in_threadpool(_plant_exists, plant_id):
         await websocket.close(code=4004, reason=f"Plant {plant_id} not found")
         return
-    await websocket.accept()
+    if not accepted:
+        await websocket.accept(subprotocol=subprotocol)
     await websocket.send_text(json.dumps({
         "plant_id": plant_id, "timestamp": datetime.now(tz=timezone.utc).isoformat(),
         "status": "connected", "power_kw": 0.0, "_source": "stream_init",

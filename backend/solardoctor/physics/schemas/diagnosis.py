@@ -50,7 +50,8 @@ class DiagnosisResponse(BaseModel):
     inverter_error_code: Optional[str] = None
     estimated_loss_kw: float
     financial_impact_per_day: float = Field(..., description="Estimated revenue loss in USD/day")
-    currency: str = Field(default="USD", description="Currency of financial_impact_per_day (INR when the plant has a tariff)")
+    currency: str = Field(default="USD", description="Currency of financial_impact_per_day: INR with a plant tariff, 'unset' when none is configured")
+    financial_assumption: Optional[str] = Field(default=None, description="Set when the financial figure is a placeholder")
     urgency_level: str  # CRITICAL | HIGH | MEDIUM | LOW
     summary: str
     root_cause_details: str

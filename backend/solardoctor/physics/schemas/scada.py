@@ -51,5 +51,8 @@ class ScadaReadingResponse(BaseModel):
     created_at: datetime
 
 
+MAX_BATCH_READINGS = 1000
+
+
 class ScadaBatchCreate(BaseModel):
-    readings: List[ScadaReadingCreate]
+    readings: List[ScadaReadingCreate] = Field(..., max_length=MAX_BATCH_READINGS)

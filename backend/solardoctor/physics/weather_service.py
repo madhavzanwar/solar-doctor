@@ -37,6 +37,7 @@ import json
 import logging
 import math
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -157,7 +158,7 @@ def _parse_hourly_forecast(raw: dict) -> List[WeatherPoint]:
                     )
                 )
             except Exception as exc:
-                logger.debug(f"Skipping malformed hourly entry: {exc}")
+                logger.debug("Skipping malformed hourly entry: %s", redact(exc))
     return points
 
 
@@ -262,6 +263,18 @@ def _mock_weather_data(lat: float, lon: float) -> WeatherData:
 # -- API client (sync) ---------------------------------------------------------
 
 
+_KEY_RE = re.compile(r"(?<![\w])((?:key|api_?key|token)=)[^&\s'\"]+", re.I)
+
+
+def redact(text: object) -> str:
+    """Strip credentials (``key=...`` query parameters) from any text before logging/raising."""
+    return _KEY_RE.sub(r"\1***", str(text))
+
+
+class WeatherAPIError(RuntimeError):
+    """Weather provider failure; the message never contains the request URL or API key."""
+
+
 def _api_key() -> str:
     return os.getenv("SOLARDOCTOR_WEATHER_API_KEY") or os.getenv("WEATHER_API_KEY", "")
 
@@ -278,10 +291,16 @@ class WeatherAPIClient:
     def get_forecast(self, lat: float, lon: float, days: int = 1) -> dict:
         days = max(1, min(days, 3))  # free tier: max 3 days
         params = {"key": self._api_key, "q": f"{lat},{lon}", "days": days, "aqi": "no", "alerts": "no"}
-        with httpx.Client(timeout=REQUEST_TIMEOUT_S, transport=self._transport) as client:
-            resp = client.get(f"{self._base_url}/forecast.json", params=params)
-            resp.raise_for_status()
-            return resp.json()
+        try:
+            with httpx.Client(timeout=REQUEST_TIMEOUT_S, transport=self._transport) as client:
+                resp = client.get(f"{self._base_url}/forecast.json", params=params)
+                resp.raise_for_status()
+                return resp.json()
+        except httpx.HTTPStatusError as exc:
+            # httpx puts the full URL (with ?key=) in the message: report only the status.
+            raise WeatherAPIError(f"WeatherAPI HTTP {exc.response.status_code}") from None
+        except httpx.HTTPError as exc:
+            raise WeatherAPIError(f"WeatherAPI request failed: {type(exc).__name__}") from None
 
 
 def _fetch(lat: float, lon: float, days: int, transport=None) -> WeatherData:
@@ -301,7 +320,8 @@ def _fetch(lat: float, lon: float, days: int, transport=None) -> WeatherData:
             source="weatherapi.com",
         )
     except Exception as exc:  # HTTP errors, timeouts, malformed payloads
-        logger.warning("WeatherAPI request failed for (%s, %s): %s; falling back to mock.", lat, lon, exc)
+        logger.warning("WeatherAPI request failed for (%s, %s): %s; falling back to mock.",
+                       lat, lon, redact(f"{type(exc).__name__}: {exc}"))
         return _mock_weather_data(lat, lon)
 
 

@@ -12,35 +12,49 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+def _check_tz(v):
+    if v is None:
+        return v
+    try:
+        ZoneInfo(v)
+    except (ZoneInfoNotFoundError, ValueError, KeyError):
+        raise ValueError(f"unknown IANA timezone: {v!r}")
+    return v
+
+
 class PlantCreate(BaseModel):
-    name: str
-    location: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=256)
+    location: Optional[str] = Field(default=None, max_length=512)
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
-    timezone: str = "UTC"
+    timezone: str = Field(default="UTC", max_length=64)
     capacity_kw: float = Field(..., gt=0)
     inverter_capacity_kw: float = Field(..., gt=0)
     module_count: Optional[int] = Field(default=None, gt=0)
     # SolarDoctor additions (all optional; SolarPulse clients can omit them)
-    park_id: Optional[str] = Field(default=None, description="Axalon Park to link 1:1")
+    park_id: Optional[str] = Field(default=None, max_length=200, description="Axalon Park to link 1:1")
     altitude_m: float = 0.0
     tilt: float = Field(default=20.0, ge=0.0, le=90.0)
     azimuth: float = Field(default=180.0, ge=0.0, le=360.0)
     module_wp: Optional[float] = Field(default=None, gt=0)
     temp_coeff: float = Field(default=-0.004, le=0.0, description="Pmp temperature coefficient, 1/degC")
     tariff_inr_kwh: Optional[float] = Field(default=None, ge=0)
-    source: str = "USER"
+    source: str = Field(default="USER", max_length=32)
+
+    _tz = field_validator("timezone")(_check_tz)
 
 
 class PlantUpdate(BaseModel):
-    name: Optional[str] = None
-    location: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=256)
+    location: Optional[str] = Field(default=None, max_length=512)
     latitude: Optional[float] = Field(default=None, ge=-90.0, le=90.0)
     longitude: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
-    timezone: Optional[str] = None
+    timezone: Optional[str] = Field(default=None, max_length=64)
     capacity_kw: Optional[float] = Field(default=None, gt=0)
     inverter_capacity_kw: Optional[float] = Field(default=None, gt=0)
     module_count: Optional[int] = Field(default=None, gt=0)
@@ -50,6 +64,8 @@ class PlantUpdate(BaseModel):
     module_wp: Optional[float] = Field(default=None, gt=0)
     temp_coeff: Optional[float] = Field(default=None, le=0.0)
     tariff_inr_kwh: Optional[float] = Field(default=None, ge=0)
+
+    _tz = field_validator("timezone")(_check_tz)
 
 
 class PlantResponse(BaseModel):

@@ -53,24 +53,70 @@ def get_stats(plant_id: int, db: Session = Depends(get_db)) -> Dict[str, Optiona
     return scada_service.get_scada_statistics(db, plant_id)
 
 
-def _ws_authorised(websocket: WebSocket) -> bool:
+WS_SUBPROTOCOL_BEARER = "solardoctor.bearer"      # client offers: ["solardoctor.bearer", "<token>"]
+WS_SUBPROTOCOL_AUTH_FIRST = "solardoctor.auth-first"  # client sends {"type":"auth","token":...} first
+_AUTH_FIRST_TIMEOUT_S = 5.0
+
+
+def _check_token(token: str) -> bool:
     mode = auth_mode()
-    if mode not in (MODE_APIKEY, MODE_USERS):
-        return True
-    bearer = websocket.headers.get("authorization", "")
-    token = (bearer.split(" ", 1)[1].strip() if bearer.lower().startswith("bearer ") else "") \
-        or websocket.query_params.get("api_key", "") or websocket.query_params.get("token", "")
     if mode == MODE_APIKEY:
         expected = os.environ.get("SOLARDOCTOR_API_KEY", "").strip()
         return bool(expected) and hmac.compare_digest(token.encode(), expected.encode())
     from solardoctor.api.support.principal import resolve_users_principal
-    return resolve_users_principal(token, "") is not None
+    return bool(token) and resolve_users_principal(token, "") is not None
+
+
+def _ws_credentials(websocket: WebSocket) -> str:
+    """Token from (in order) Authorization header, Sec-WebSocket-Protocol, then the query string.
+
+    Prefer the header or subprotocol: query-string credentials end up in server and proxy access logs.
+    """
+    bearer = websocket.headers.get("authorization", "")
+    if bearer.lower().startswith("bearer "):
+        return bearer.split(" ", 1)[1].strip()
+    protos = [p.strip() for p in websocket.headers.get("sec-websocket-protocol", "").split(",") if p.strip()]
+    if WS_SUBPROTOCOL_BEARER in protos:
+        i = protos.index(WS_SUBPROTOCOL_BEARER)
+        if i + 1 < len(protos):
+            return protos[i + 1]
+    return websocket.query_params.get("api_key", "") or websocket.query_params.get("token", "")
 
 
 @ws_router.websocket("/ws/scada/{plant_id}")
 async def scada_websocket(websocket: WebSocket, plant_id: int) -> None:
-    """Real-time telemetry stream (DB poll every few seconds) for one plant."""
-    if not await run_in_threadpool(_ws_authorised, websocket):
-        await websocket.close(code=4401, reason="Not authenticated")
-        return
-    await scada_ws_handler(websocket, plant_id)
+    """Real-time telemetry stream (DB poll every few seconds) for one plant.
+
+    Auth (when SOLARDOCTOR_AUTH_MODE is apikey/users): Authorization header, subprotocol
+    ``solardoctor.bearer, <token>``, a first ``{"type":"auth","token":...}`` message (offer subprotocol
+    ``solardoctor.auth-first``), or ``?token=`` / ``?api_key=`` (logged by proxies: avoid).
+    """
+    import asyncio
+    import json as _json
+
+    subprotocol = None
+    accepted = False
+    if auth_mode() in (MODE_APIKEY, MODE_USERS):
+        token = _ws_credentials(websocket)
+        offered = [p.strip() for p in websocket.headers.get("sec-websocket-protocol", "").split(",")]
+        if token:
+            if not await run_in_threadpool(_check_token, token):
+                await websocket.close(code=4401, reason="Not authenticated")
+                return
+            if WS_SUBPROTOCOL_BEARER in offered:
+                subprotocol = WS_SUBPROTOCOL_BEARER
+        elif WS_SUBPROTOCOL_AUTH_FIRST in offered:
+            await websocket.accept(subprotocol=WS_SUBPROTOCOL_AUTH_FIRST)
+            accepted = True
+            try:
+                msg = _json.loads(await asyncio.wait_for(websocket.receive_text(), _AUTH_FIRST_TIMEOUT_S))
+                ok = msg.get("type") == "auth" and await run_in_threadpool(_check_token, str(msg.get("token", "")))
+            except Exception:
+                ok = False
+            if not ok:
+                await websocket.close(code=4401, reason="Not authenticated")
+                return
+        else:
+            await websocket.close(code=4401, reason="Not authenticated")
+            return
+    await scada_ws_handler(websocket, plant_id, accepted=accepted, subprotocol=subprotocol)

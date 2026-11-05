@@ -24,15 +24,20 @@ def get_taxonomy():
 def run_diagnosis(request: DiagnosisRequest, db: Session = Depends(get_db)):
     plant = plant_service.get_plant(db, request.plant_id)
     has_tariff = plant.tariff_inr_kwh is not None
+    try:
+        expected, actual, _tel = diagnosis_service.resolve_power_inputs(
+            db, plant, request.expected_power_kw, request.actual_power_kw)
+    except diagnosis_service.InsufficientDataError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
     diag = diagnosis_service.diagnose_root_cause(
         plant_id=plant.id, plant_name=plant.name, capacity_kw=plant.dc_kw,
         alert_id=request.alert_id, inverter_error_code=request.inverter_error_code,
-        expected_power_kw=request.expected_power_kw, actual_power_kw=request.actual_power_kw,
+        expected_power_kw=expected, actual_power_kw=actual,
         irradiance_w_m2=request.irradiance_w_m2, temperature_c=request.temperature_c,
         module_temp_c=request.module_temp_c, days_since_cleaning=request.days_since_cleaning,
         notes=request.notes,
         tariff_per_kwh=plant.tariff_inr_kwh if has_tariff else None,
-        currency="INR" if has_tariff else "USD",
+        currency="INR" if has_tariff else diagnosis_service.CURRENCY_UNSET,
     )
     diag.id = diagnosis_service.persist_diagnosis(db, diag).id
     return diag
@@ -43,6 +48,8 @@ def run_diagnosis(request: DiagnosisRequest, db: Session = Depends(get_db)):
 def diagnose_alert(alert_id: int, db: Session = Depends(get_db)):
     try:
         return diagnosis_service.run_diagnosis_for_alert(db, alert_id)
+    except diagnosis_service.InsufficientDataError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc))
 
