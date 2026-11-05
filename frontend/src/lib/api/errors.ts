@@ -4,6 +4,8 @@ export class ApiError extends Error {
   readonly details?: unknown;
   /** Seconds from the Retry-After header (429 only). */
   readonly retryAfterSeconds?: number;
+  /** Machine-readable `detail.status` when the backend sends an object detail (e.g. baseline_unsupported_for_trackers). */
+  readonly code?: string;
 
   constructor(status: number, message: string, details?: unknown, retryAfterSeconds?: number) {
     super(message);
@@ -11,7 +13,27 @@ export class ApiError extends Error {
     this.status = status;
     this.details = details;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.code = codeFromBody(details);
   }
+}
+
+/** Backend status for plants whose fixed-tilt physics baseline is invalid (single-axis trackers). */
+export const BASELINE_UNSUPPORTED_FOR_TRACKERS = "baseline_unsupported_for_trackers";
+
+/** `detail.status` of an object-style error body, if any. */
+export function codeFromBody(body: unknown): string | undefined {
+  if (body && typeof body === "object") {
+    const detail = (body as { detail?: unknown }).detail;
+    if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+      const status = (detail as { status?: unknown }).status;
+      if (typeof status === "string" && status) return status;
+    }
+  }
+  return undefined;
+}
+
+export function isTrackerUnsupported(err: unknown): boolean {
+  return err instanceof ApiError && err.code === BASELINE_UNSUPPORTED_FOR_TRACKERS;
 }
 
 interface ValidationItem {
@@ -24,6 +46,10 @@ export function messageFromBody(body: unknown, fallback: string): string {
   if (body && typeof body === "object") {
     const detail = (body as { detail?: unknown }).detail;
     if (typeof detail === "string" && detail) return detail;
+    if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+      const m = (detail as { message?: unknown }).message;
+      if (typeof m === "string" && m) return m;
+    }
     if (Array.isArray(detail)) {
       const parts = (detail as ValidationItem[])
         .map((d) => {

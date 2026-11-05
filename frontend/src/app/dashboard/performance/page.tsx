@@ -8,6 +8,9 @@ import {
   type Plant,
   type ProbabilisticForecastResponse,
 } from "@/lib/api";
+import { isTrackerUnsupported } from "@/lib/api/errors";
+import { isTrackerPlant } from "@/lib/tracker";
+import { TrackerUnsupported } from "@/components/ui/TrackerUnsupported";
 import ProbabilisticBandChart from "@/components/forecast/ProbabilisticBandChart";
 import ForecastActualChart from "@/components/forecast/ForecastActualChart";
 import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
@@ -28,6 +31,8 @@ export default function ForecastsPage() {
   const [loadingFc, setLoadingFc] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Set when the API answered 422 baseline_unsupported_for_trackers for this plant. */
+  const [unsupportedState, setUnsupportedState] = useState<{ plantId: number; message: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -51,6 +56,11 @@ export default function ForecastsPage() {
         const data = await forecastApi.getProbabilistic(plantId, horizon, interval);
         setProbData(data);
       } catch (err: unknown) {
+        if (isTrackerUnsupported(err)) {
+          setUnsupportedState({ plantId, message: (err as Error).message });
+          setProbData(null);
+          return;
+        }
         setError(err instanceof Error ? err.message : "Failed to load probabilistic forecast.");
       } finally {
         setLoadingProb(false);
@@ -66,6 +76,10 @@ export default function ForecastsPage() {
       const data = await forecastApi.list(plantId, 100);
       setForecasts(data);
     } catch (err: unknown) {
+      if (isTrackerUnsupported(err)) {
+        setUnsupportedState({ plantId, message: (err as Error).message });
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to load forecasts.");
     } finally {
       setLoadingFc(false);
@@ -73,14 +87,16 @@ export default function ForecastsPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedPlantId != null) {
+    const plant = plants.find((p) => p.id === selectedPlantId);
+    // Trackers are known up front from the plant record: do not call endpoints that answer 422.
+    if (selectedPlantId != null && !isTrackerPlant(plant)) {
       if (activeTab === "probabilistic") {
         loadProbabilistic(selectedPlantId, horizonMinutes, intervalMinutes);
       } else {
         loadForecasts(selectedPlantId);
       }
     }
-  }, [selectedPlantId, activeTab, horizonMinutes, intervalMinutes, loadProbabilistic, loadForecasts]);
+  }, [selectedPlantId, plants, activeTab, horizonMinutes, intervalMinutes, loadProbabilistic, loadForecasts]);
 
   const handleGenerate = async () => {
     if (!selectedPlantId) return;
@@ -93,6 +109,10 @@ export default function ForecastsPage() {
         loadProbabilistic(selectedPlantId, horizonMinutes, intervalMinutes);
       }
     } catch (err: unknown) {
+      if (isTrackerUnsupported(err)) {
+        setUnsupportedState({ plantId: selectedPlantId, message: (err as Error).message });
+        return;
+      }
       setError(err instanceof Error ? err.message : "Forecast generation failed.");
     } finally {
       setGenerating(false);
@@ -100,6 +120,11 @@ export default function ForecastsPage() {
   };
 
   const selectedPlant = plants.find((p) => p.id === selectedPlantId);
+  const unsupported: { message?: string } | null = isTrackerPlant(selectedPlant)
+    ? {}
+    : unsupportedState && unsupportedState.plantId === selectedPlantId
+      ? unsupportedState
+      : null;
 
   const sortedForecasts = [...forecasts].sort(
     (a, b) => new Date(b.forecast_time).getTime() - new Date(a.forecast_time).getTime()
@@ -234,7 +259,7 @@ export default function ForecastsPage() {
                 selectedPlantId &&
                 loadProbabilistic(selectedPlantId, horizonMinutes, intervalMinutes)
               }
-              disabled={loadingProb || !selectedPlantId}
+              disabled={loadingProb || !selectedPlantId || !!unsupported}
             >
               {loadingProb ? "Refreshing…" : "Refresh"}
             </button>
@@ -242,7 +267,8 @@ export default function ForecastsPage() {
             <button
               className="dash-btn dash-btn-primary"
               onClick={handleGenerate}
-              disabled={generating || !selectedPlantId}
+              disabled={generating || !selectedPlantId || !!unsupported}
+              title={unsupported ? "Not supported for single-axis trackers" : undefined}
             >
               {generating ? "Generating…" : "Generate forecast"}
             </button>
@@ -250,7 +276,9 @@ export default function ForecastsPage() {
         </div>
       </div>
 
-      {activeTab === "probabilistic" && (
+      {activeTab !== "adaptive" && unsupported && <TrackerUnsupported detail={unsupported.message} />}
+
+      {activeTab === "probabilistic" && !unsupported && (
         <>
           {loadingProb ? (
             <div className="dash-loading">
@@ -664,7 +692,7 @@ export default function ForecastsPage() {
         </>
       )}
 
-      {activeTab === "history" && (
+      {activeTab === "history" && !unsupported && (
         <>
           {loadingFc ? (
             <div className="dash-loading">
