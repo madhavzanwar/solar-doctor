@@ -157,6 +157,7 @@ ml/thermal/checkpoints/*_legacy.pt
 
 # SolarDoctor
 ml/thermal/checkpoints/*.pt
+ml/thermal/checkpoints/*.part
 ml/rgb/checkpoints/
 data/cache/
 *.db
