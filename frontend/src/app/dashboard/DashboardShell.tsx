@@ -9,8 +9,14 @@ import { getCurrentUser, isLoggedIn, logout } from "@/lib/api";
 const navItems = [
   { label: "Overview", href: "/dashboard", index: "01" },
   { label: "Plants", href: "/dashboard/plants", index: "02" },
-  { label: "Forecasts", href: "/dashboard/forecasts", index: "03" },
-  { label: "Alerts", href: "/dashboard/alerts", index: "04" },
+  { label: "Performance", href: "/dashboard/performance", index: "03" },
+  { label: "Inspections", href: "/dashboard/inspections", index: "04" },
+  { label: "Alerts", href: "/dashboard/alerts", index: "05" },
+  { label: "Work orders", href: "/dashboard/work-orders", index: "06" },
+  { label: "ROI", href: "/dashboard/roi", index: "07" },
+  { label: "Map", href: "/dashboard/map", index: "08" },
+  { label: "Reports", href: "/dashboard/reports", index: "09" },
+  { label: "Settings", href: "/dashboard/settings", index: "10" },
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {

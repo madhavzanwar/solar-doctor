@@ -278,7 +278,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                   <OnlineAdapterChip plantId={selectedPlantId ?? (plants[0]?.id || null)} />
-                  <Link href="/dashboard/forecasts" className="dash-btn dash-btn-ghost dash-btn-sm">
+                  <Link href="/dashboard/performance" className="dash-btn dash-btn-ghost dash-btn-sm">
                     Forecast detail →
                   </Link>
                 </div>

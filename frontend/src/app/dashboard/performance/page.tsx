@@ -130,7 +130,7 @@ export default function ForecastsPage() {
       <div className="dash-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <p className="dash-eyebrow">Forecasting</p>
-          <h1 className="dash-section-title">Forecasts</h1>
+          <h1 className="dash-section-title">Performance</h1>
           <p className="dash-page-sub">
             Probabilistic bands, live online learning from SCADA, and point forecast history.
           </p>
