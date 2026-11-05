@@ -5,7 +5,7 @@ PIP     := $(VENV)/bin/pip
 PYBIN   := $(VENV)/bin/python
 export PYTHONSAFEPATH := 1
 
-.PHONY: setup dev api web test test-backend test-frontend lint seed weights openapi clean
+.PHONY: setup dev api web test test-backend test-frontend lint seed seed-pvdaq weights openapi clean
 
 setup:            ## create venv, install backend (+ frontend if present)
 	$(PY) -m venv $(VENV)
@@ -35,8 +35,11 @@ lint:
 	$(PYBIN) -m ruff check backend tests scripts
 	@if [ -f frontend/package.json ]; then cd frontend && npm run lint; fi
 
-seed:             ## demo plants + 30 d simulated telemetry (labelled SIMULATED)
+seed:             ## demo plants + 30 d simulated telemetry (labelled SIMULATED); idempotent
 	$(PYBIN) scripts/seed.py
+
+seed-pvdaq:       ## import real PVDAQ system 9068 as a 4th plant (source=PVDAQ; needs network)
+	$(PYBIN) scripts/import_pvdaq.py --system-id 9068 --start 2024-06-01 --end 2024-06-30
 
 weights:          ## download thermal weights from Hugging Face
 	$(PYBIN) scripts/fetch_weights.py
