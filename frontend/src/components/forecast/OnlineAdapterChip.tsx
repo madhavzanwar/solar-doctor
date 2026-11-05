@@ -12,7 +12,7 @@ interface OnlineAdapterChipProps {
   className?: string;
 }
 
-type AdapterMode = "optimal" | "damping" | "boosted";
+type AdapterMode = "nodata" | "optimal" | "damping" | "boosted";
 
 function resolveMode(gamma: number, statusLabel: string): AdapterMode {
   if (gamma < 0.95 || statusLabel === "ADAPTING_SOILING_HAZE") return "damping";
@@ -21,6 +21,15 @@ function resolveMode(gamma: number, statusLabel: string): AdapterMode {
 }
 
 const MODE_CONFIG = {
+  nodata: {
+    color: "var(--muted)",
+    bg: "rgba(20, 24, 20, 0.06)",
+    border: "rgba(20, 24, 20, 0.2)",
+    badgeText: "No data yet",
+    shortLabel: "No data yet",
+    description:
+      "No live readings have been received for this plant yet, so no adjustment is being measured. This is not a healthy or unhealthy signal.",
+  },
   optimal: {
     color: "var(--field)",
     bg: "rgba(26, 58, 42, 0.08)",
@@ -143,15 +152,21 @@ export default function OnlineAdapterChip({
 
   if (!plantId) return null;
 
+  // Never invent a healthy state: without a status, or with no samples observed, there is nothing to report.
+  const noData = !status || status.samples_observed_today <= 0;
   const gamma = status?.scaling_factor ?? 1.0;
   const biasKw = status?.bias_kw ?? 0.0;
   const samples = status?.samples_observed_today ?? 0;
   const rmse = status?.recent_rmse_kw ?? 0.0;
-  const statusLabel = status?.status ?? "BASELINE_OPTIMAL";
-  const mode = resolveMode(gamma, statusLabel);
+  const statusLabel = status?.status ?? "";
+  const mode: AdapterMode = noData ? "nodata" : resolveMode(gamma, statusLabel);
   const modeConfig = MODE_CONFIG[mode];
-  const pctLabel = formatPct(gamma);
+  const pctLabel = noData ? "—" : formatPct(gamma);
   const gaugePct = gammaToGaugePct(gamma);
+  const dash = "—";
+  const mult = noData ? dash : `${gamma.toFixed(3)}×`;
+  const biasText = noData ? dash : biasKw >= 0 ? `+${biasKw.toFixed(1)}` : biasKw.toFixed(1);
+  const rmseText = noData ? dash : rmse.toFixed(1);
 
   if (expanded) {
     return (
@@ -214,7 +229,7 @@ export default function OnlineAdapterChip({
 
         {error && (
           <div className="online-adapter-notice" role="status">
-            Status unavailable — showing defaults until the adapter responds. ({error})
+            Status unavailable. ({error})
           </div>
         )}
 
@@ -222,8 +237,8 @@ export default function OnlineAdapterChip({
           <div>
             <div className="online-adapter-metric-label">Clearness multiplier</div>
             <div className="online-adapter-metric-value" style={{ color: modeConfig.color }}>
-              {gamma.toFixed(3)}×
-              <span className="online-adapter-metric-pct">({pctLabel})</span>
+              {mult}
+              {!noData && <span className="online-adapter-metric-pct">({pctLabel})</span>}
             </div>
             <div className="online-adapter-metric-hint">
               Scales the base forecast. 1.00 = no change.
@@ -233,8 +248,8 @@ export default function OnlineAdapterChip({
           <div>
             <div className="online-adapter-metric-label">Bias offset</div>
             <div className="online-adapter-metric-value">
-              {biasKw >= 0 ? `+${biasKw.toFixed(1)}` : biasKw.toFixed(1)}
-              <span className="online-adapter-metric-unit">kW</span>
+              {biasText}
+              {!noData && <span className="online-adapter-metric-unit">kW</span>}
             </div>
             <div className="online-adapter-metric-hint">Constant kW shift applied after scaling.</div>
           </div>
@@ -242,8 +257,8 @@ export default function OnlineAdapterChip({
           <div>
             <div className="online-adapter-metric-label">Recent error</div>
             <div className="online-adapter-metric-value">
-              {rmse.toFixed(1)}
-              <span className="online-adapter-metric-unit">kW</span>
+              {rmseText}
+              {!noData && <span className="online-adapter-metric-unit">kW</span>}
             </div>
             <div className="online-adapter-metric-hint">
               Rolling gap between adapted forecast and measured power.
@@ -265,13 +280,15 @@ export default function OnlineAdapterChip({
           </div>
           <div className="online-adapter-gauge-track" aria-hidden>
             <div className="online-adapter-gauge-center" />
-            <div
-              className="online-adapter-gauge-marker"
-              style={{
-                left: `${gaugePct}%`,
-                backgroundColor: modeConfig.color,
-              }}
-            />
+            {!noData && (
+              <div
+                className="online-adapter-gauge-marker"
+                style={{
+                  left: `${gaugePct}%`,
+                  backgroundColor: modeConfig.color,
+                }}
+              />
+            )}
           </div>
           <div className="online-adapter-gauge-scale">
             <span>0.70×</span>
@@ -342,18 +359,18 @@ export default function OnlineAdapterChip({
             <div>
               <div className="online-adapter-metric-label">Multiplier</div>
               <div style={{ fontWeight: 700, color: modeConfig.color, fontSize: "1rem" }}>
-                {gamma.toFixed(3)}× ({pctLabel})
+                {noData ? dash : `${mult} (${pctLabel})`}
               </div>
             </div>
             <div>
               <div className="online-adapter-metric-label">Bias</div>
               <div style={{ fontWeight: 700, fontSize: "1rem" }}>
-                {biasKw >= 0 ? `+${biasKw.toFixed(1)}` : biasKw.toFixed(1)} kW
+                {noData ? dash : `${biasText} kW`}
               </div>
             </div>
             <div>
               <div className="online-adapter-metric-label">Recent error</div>
-              <div style={{ fontWeight: 700, fontSize: "1rem" }}>{rmse.toFixed(1)} kW</div>
+              <div style={{ fontWeight: 700, fontSize: "1rem" }}>{noData ? dash : `${rmseText} kW`}</div>
             </div>
             <div>
               <div className="online-adapter-metric-label">Samples today</div>
