@@ -40,20 +40,18 @@ Auth must be on: set `SOLARDOCTOR_AUTH_MODE=users` in `.env`.
 
 | Area | State | Evidence |
 |---|---|---|
-| Backend (FastAPI, package `solardoctor`) | Axalon platform, renamed, all routes under `/api/v1` | 777 backend tests pass; 9 fail only because thermal weights are missing (see section 5) |
+| Backend (FastAPI, package `solardoctor`) | Axalon platform, renamed, all routes under `/api/v1` | 817 backend tests pass without the weights file; the 10 weight tests are deselected only when `best.pt` is absent and all pass with it (787/787 verified when weights were placed) |
 | Auth and roles | admin / operator / technician / viewer, rotating single-use refresh tokens, technician limited to assigned faults | `docs/solardoctor/API_AUTH.md`, 3 independent review rounds |
 | Physics | pvlib PVWatts expected power, forecast, soiling, clipping, anomaly detection, diagnosis taxonomy, weather, SCADA + WebSocket; Alembic head `0011` | golden tests against SolarPulseAI originals, sanity tests, 3 review rounds |
 | Seed and PVDAQ | 3 SIMULATED plants (known S-04 string fault, soiling ramps, cloudy spell); real PVDAQ system 9068 importer (CC BY 4.0) | 2 review rounds; `docs/solardoctor/SEED_PLAN.md` |
-| Frontend | SolarPulseAI UI clone rebranded to SolarDoctor, 10-item nav, typed API client, auth guard, CSP headers | 58 unit tests, axe 0 violations on 15 routes, 390 px overflow check, visual diffs, 2 review rounds |
+| Frontend | SolarPulseAI UI clone rebranded to SolarDoctor, 10-item nav, typed API client, auth guard, CSP headers, labelled state for tracker plants | 68 unit tests, axe 0 violations on 15 routes, 390 px overflow check, a real browser smoke test (`npm run test:smoke`, 47 checks against a live seeded API), visual gate with preset thresholds |
 | CI (GitHub Actions) | ruff, mypy (physics), pytest, Alembic up/down on SQLite and Postgres, frontend lint/tsc/vitest/build, smoke, gitleaks, audits | all green on `main` |
 
 Independent review reports (read these, they list every finding and how it was resolved): `docs/solardoctor/qa/REVIEW_*.md`.
 How it was built: one agent builds on its own branch, a separate `sd-qa` agent reviews it, only a sign-off merges.
 The agent definitions are in `.claude/agents/`.
 
-**Visual fidelity:** dashboard screens are within about 0.1 to 1.0 % pixel difference of the SolarPulse reference screenshots
-(`docs/solardoctor/qa/visual/`). Landing is 10.0 % (desktop) and 16.1 % (mobile) off because of the new hero photo and copy.
-The reference set only covers 12 screens, and fixtures were reverse-engineered from screenshots, so treat these as indicative.
+**Visual fidelity:** `npm run test:visual` gates dashboard/auth screens at <= 2 % pixel difference (measured 0.1 to 1.05 %) and desktop landing at <= 3 % with photo and text masked (1.76 %). Mobile landing is **report-only** (13.7 % masked): the new copy re-wraps every section, so the reference text sits elsewhere (DECISIONS #8). Some mobile screens have no reference image. Fixtures were reverse-engineered from the 12 screenshots, so treat the numbers as indicative.
 
 ## 4. What is NOT built yet (Prompt 2 and 3)
 
@@ -65,28 +63,29 @@ Work orders, ROI, Map, Reports and Settings pages exist as real routes with head
 
 | Item | Why it matters |
 |---|---|
-| **Thermal weights `best.pt` and an `HF_TOKEN`** | The 114 MB YOLO weights were stored in the original project's Git LFS and could not be fetched. They must be uploaded to Hugging Face (`scripts/publish_weights_hf.py`, repo `madhavzanwar/solar-doctor-thermal-yolo11x`). Until then thermal is off (`ENABLE_THERMAL=false`) and 9 backend tests (listed in `tests/weights_required.txt`) are skipped in CI. |
+| **`HF_TOKEN` (write scope)** | The thermal weights `best.pt` were **recovered** from the original project's public Hugging Face Space (sha256-pinned, verified; see `docs/solardoctor/WEIGHTS.md`) and all 10 weight-dependent tests pass with the file in place. They are still fetched from that third-party Space; publish our own copy with `scripts/publish_weights_hf.py` (needs your token) to remove the dependency. CI caches the file and runs those tests when it is present. |
 | **Kaggle credentials** (`KAGGLE_USERNAME`, `KAGGLE_KEY`) | Prompt 2 downloads the 6-class panel dataset. Licence on Kaggle is "Unknown": train privately, never redistribute images. |
 | **Hugging Face token (write scope)** | Publish the RGB model and the demo Space. |
-| **Confirm image licences** | Photos in `frontend/public/images/` are credited in `docs/IMAGE_CREDITS.md` as Unsplash licence, but it could not be verified from the sandbox. A "cleaning" photo was removed because it might have been a sponsored image. Open the Unsplash pages and confirm before launch. |
+| **Photos and licences** | Only the hero photo ships (Unsplash licence, **not verified** from the sandbox). Four more are wanted (Indian rooftop, dusty close-up, technician cleaning, drone over a farm): the sandbox could not read Unsplash/Pexels pages, so none were added. Pick free-licence photos, check each page, and add them to `docs/IMAGE_CREDITS.md`. |
 | **Real phone photos of panels (about 30)** | Prompt 3 asks for them to test the model honestly. |
 | **Vercel / Hugging Face Spaces / Postgres accounts** | Prompt 3 deployment. |
 | **Branch policy** | These sessions pushed straight to `main`. Decide whether to use pull requests from now on. |
+
+**Tag:** `v0.1.0-foundation` could not be pushed from the sandbox (tag pushes and releases are blocked). Run `git tag -a v0.1.0-foundation <latest main commit> -m "SolarDoctor foundation" && git push origin v0.1.0-foundation` from a machine with push access.
 
 Secrets go in GitHub / Hugging Face secrets or a local `.env`. **Never commit them.** Share tokens privately.
 
 ## 6. Known issues (all non-blocking, each reviewed)
 
 Frontend:
-- Alerts page, "Fault sandbox" > "Run diagnosis": focus is not returned to the button after the modal closes (it still uses `disabled`).
-- `/dashboard/plants` with the API down shows the error plus "No plants registered yet"; the empty state should only show when there is no error.
 - The topbar date range is stored but no page uses it yet. The Settings page is a skeleton with disabled fields.
 - CSP keeps `script-src 'unsafe-inline'` (Next.js needs it). A nonce-based CSP is feasible via `middleware.ts` but makes pages dynamic; recommended follow-up.
 - `next build` fetches Google Fonts and needs network. The frontend has no Lighthouse score yet.
 - Unused photos ship in `public/`. dev-only npm audit advisories are unreviewed. axe packages are MPL-2.0 (dev only): add a notice line.
 
 Backend / data:
-- The PVDAQ plant is a **single-axis tracker** but is stored fixed-tilt, marked only in its `location` text. The fixed-tilt baseline is invalid for it: the expected-power code should flag or skip it (physics work).
+- The PVDAQ plant is a **single-axis tracker**: forecasts, probabilistic forecast and diagnosis-without-values return 422 `baseline_unsupported_for_trackers`, no deficit alerts are raised for it, and the UI shows a labelled state. A pvlib tracker model was tried on real data and was too unstable (0.95-1.18x measured), so it is not enabled. Tracker status is a free-text marker in `plants.location` (API users cannot add or strip it); a real `mount` column and a `currency` column on `diagnoses` are recommended migrations (DECISIONS E15).
+- Fresh-clone path (`make setup`, `make seed`, `make dev`) was run twice from brand-new clones and fixed (`make` now loads `.env`, migrates before seeding, and `scripts/dev.sh` handles busy ports). The Next.js dev server's Google Fonts fetch failed once transiently; retry.
 - Seeded telemetry ends about 2 months ago (NASA POWER lags) unless you seed with `--shift-to-now` (labelled `NASA_POWER_TIME_SHIFTED`). The diagnosis endpoint rejects telemetry older than 24 h or SIMULATED unless `allow_simulated=true`; for demos set `SOLARDOCTOR_DIAGNOSIS_MAX_TELEMETRY_AGE_H=48` or re-seed daily.
 - Healthy seeded strings read about 1.0 by construction (data and baseline share one physics model). The seed tests the pipeline, not model accuracy.
 - Plants have no per-project scoping (any authenticated viewer sees all plants). The Timescale hypertable branch of migration `0011` has never been run (plain Postgres and SQLite pass).
