@@ -254,6 +254,28 @@ def get_forecasts(db: Session, plant_id: int, start: Optional[datetime] = None,
     return list(db.execute(q.order_by(Forecast.forecast_time.asc()).limit(limit)).scalars().all())
 
 
+DEFAULT_TIMESTEP_HOURS = 1.0 / 60.0  # SolarPulse's assumed 1-minute spacing (fallback)
+
+
+def infer_timestep_hours(times: List[datetime], default: float = DEFAULT_TIMESTEP_HOURS) -> float:
+    """Timestep of a power series in hours: the median positive gap between sorted timestamps.
+
+    Falls back to ``default`` (1 minute, SolarPulse's assumption) with fewer than two distinct
+    timestamps. Energy is then ``sum(kW) * dt_hours``; at exactly 1-minute spacing this is
+    ``sum(kW) / 60``, identical to SolarPulse.
+    """
+    ts = sorted(set(times))
+    gaps = [(b - a).total_seconds() for a, b in zip(ts, ts[1:])]
+    gaps = [g for g in gaps if g > 0]
+    if not gaps:
+        return default
+    return float(np.median(gaps)) / 3600.0
+
+
+def energy_kwh(power_kw: List[float], dt_hours: float) -> float:
+    return float(sum(power_kw)) * dt_hours
+
+
 def get_forecast_summary(db: Session, plant_id: int, start: Optional[datetime] = None,
                          end: Optional[datetime] = None) -> ForecastSummary:
     records = get_forecasts(db, plant_id, start=start, end=end, limit=10000)
@@ -261,8 +283,11 @@ def get_forecast_summary(db: Session, plant_id: int, start: Optional[datetime] =
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No forecast records found for plant {plant_id}")
     predicted = [r.predicted_power_kw for r in records]
     actual = [r.actual_power_kw for r in records if r.actual_power_kw is not None]
-    total_pred_kwh = sum(predicted) / 60.0  # SolarPulse assumes 1-minute spacing
-    total_act_kwh = sum(actual) / 60.0 if actual else None
+    # SolarPulse divided by 60 (1-minute spacing). Derive the real spacing so 5/15/60-minute series
+    # are not understated; identical to SolarPulse when the spacing is 1 minute.
+    dt_hours = infer_timestep_hours([r.forecast_time for r in records])
+    total_pred_kwh = energy_kwh(predicted, dt_hours)
+    total_act_kwh = energy_kwh(actual, dt_hours) if actual else None
     mae = None
     if actual and len(actual) == len(records):
         mae = float(np.mean([abs(r.predicted_power_kw - (r.actual_power_kw or 0)) for r in records]))
