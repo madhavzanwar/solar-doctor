@@ -37,6 +37,7 @@ def init_db(db_url: str | None = None) -> None:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
 
+    import solardoctor.physics.models  # noqa: F401  (registers physics tables on Base)
     Base.metadata.create_all(_engine)
 
     # Apply local-dev migrations for columns added to existing tables.
