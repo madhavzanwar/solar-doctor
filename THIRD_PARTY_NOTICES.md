@@ -41,3 +41,15 @@ OpenCV (Apache-2.0), pvlib (BSD-3), Next.js (MIT), React (MIT), Tailwind CSS (MI
 
 Listed in `docs/IMAGE_CREDITS.md` and `frontend/` font packages (Bricolage Grotesque, Geist, Geist Mono,
 Instrument Serif: SIL OFL 1.1).
+
+## Frontend (Phase D)
+
+- **SolarPulseAI frontend** (MIT, Copyright (c) 2026 anugrahpatil-creator): `frontend/` is derived file-by-file from
+  https://github.com/anugrahpatil-creator/SolarPulseAI (`frontend/` at the commit referenced in DESIGN.md).
+  `src/app/globals.css` and `src/app/dashboard/dashboard.css` are byte-identical to upstream; the dashboard, plant,
+  alert and performance (formerly Forecasts) pages, the SVG chart components and the diagnosis modal are copied and
+  modified (rebrand, nav, API client, source badges).
+- **Fonts** (SIL OFL 1.1, fetched and self-hosted at build time by `next/font/google`): Bricolage Grotesque, Geist,
+  Geist Mono, Instrument Serif; Syne and Source Sans 3 for `NEXT_PUBLIC_FONT_MODE=clone`.
+- **Photography**: Unsplash License, per-photo credits in `docs/IMAGE_CREDITS.md`.
+- **Dev tooling** (MIT/Apache-2.0): openapi-typescript, Vitest, jsdom, Playwright (Apache-2.0), pixelmatch (ISC), pngjs (MIT), sharp (Apache-2.0).
