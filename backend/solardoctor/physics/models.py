@@ -15,11 +15,11 @@ plants through ``plant.park`` / ``park.plant``.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from sqlalchemy import (
-    BigInteger, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text,
+    BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, backref, mapped_column, relationship
@@ -232,6 +232,23 @@ class PlantAlert(Base):
         Integer, ForeignKey("strings.id", ondelete="SET NULL"), nullable=True)
     baseline: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     evidence_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class PlantAnalytics(Base):
+    """Latest soiling / degradation analysis per plant and day (physics.soiling_analytics), upserted."""
+
+    __tablename__ = "plant_analytics"
+    __table_args__ = (UniqueConstraint("plant_id", "kind", "day", name="uq_plant_analytics_plant_kind_day"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    plant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("plants.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # soiling | degradation
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    method: Mapped[str] = mapped_column(String(32), nullable=False)
+    label: Mapped[str] = mapped_column(String(16), nullable=False)  # measured | modelled | none
+    result_json: Mapped[str] = mapped_column(Text, nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
 
 
 class Diagnosis(Base):

@@ -72,10 +72,13 @@ def test_0012_up_down_and_idempotent_over_create_all(tmp_path, monkeypatch):
     command.upgrade(cfg, "0011")
     for t, cols in new.items():
         assert not cols & {c["name"] for c in sa.inspect(eng).get_columns(t)}
+    assert "plant_analytics" not in sa.inspect(eng).get_table_names()
     command.upgrade(cfg, "0012")
     for t, cols in new.items():
         assert cols <= {c["name"] for c in sa.inspect(eng).get_columns(t)}
+    assert "plant_analytics" in sa.inspect(eng).get_table_names()
     command.downgrade(cfg, "0011")
+    assert "plant_analytics" not in sa.inspect(eng).get_table_names()
     for t, cols in new.items():
         assert not cols & {c["name"] for c in sa.inspect(eng).get_columns(t)}
 

@@ -1,4 +1,4 @@
-"""deficit detector columns: plant_alerts scope/ids/baseline/evidence, plants PI thresholds, telemetry.curtailed
+"""deficit detector columns: plant_alerts scope/ids/baseline/evidence, plants PI thresholds, telemetry.curtailed, plant_analytics table
 
 Revision ID: 0012
 Revises: 0011
@@ -39,6 +39,19 @@ def _have(table: str) -> set[str]:
 
 
 def upgrade() -> None:
+    if not sa.inspect(op.get_bind()).has_table('plant_analytics'):
+        op.create_table(
+            'plant_analytics',
+            sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+            sa.Column('plant_id', sa.Integer(), sa.ForeignKey('plants.id', ondelete='CASCADE'), nullable=False, index=True),
+            sa.Column('kind', sa.String(16), nullable=False),
+            sa.Column('day', sa.Date(), nullable=False),
+            sa.Column('method', sa.String(32), nullable=False),
+            sa.Column('label', sa.String(16), nullable=False),
+            sa.Column('result_json', sa.Text(), nullable=False),
+            sa.Column('computed_at', sa.DateTime(timezone=True), nullable=False),
+            sa.UniqueConstraint('plant_id', 'kind', 'day', name='uq_plant_analytics_plant_kind_day'),
+        )
     for table, cols in _COLUMNS.items():
         have = _have(table)
         todo = [c for c in cols if c.name not in have]
@@ -53,6 +66,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    if sa.inspect(op.get_bind()).has_table('plant_analytics'):
+        op.drop_table('plant_analytics')
     for table, cols in _COLUMNS.items():
         have = _have(table)
         names = [c.name for c in cols if c.name in have]
