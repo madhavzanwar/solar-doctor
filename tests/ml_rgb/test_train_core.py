@@ -146,3 +146,40 @@ def test_layer_decay_and_head_mult_give_distinct_effective_lrs():
     head = {id(p) for p in head_params(model)}
     hg = [g for g in opt.param_groups if any(id(p) in head for p in g["params"])][0]
     assert hg["lr"] == pytest.approx(hp["lr"] * hp["head_lr_mult"] * 0.5)
+
+
+TINY_HF = {
+    "hf_dinov2": ({"hidden_size": 32, "num_hidden_layers": 2, "num_attention_heads": 2, "intermediate_size": 64,
+                   "image_size": 32, "patch_size": 8}, "transformers.Dinov2Config"),
+    "hf_clip": ({"hidden_size": 32, "intermediate_size": 64, "num_hidden_layers": 2, "num_attention_heads": 2,
+                 "image_size": 32, "patch_size": 8, "projection_dim": 16}, "transformers.CLIPVisionConfig"),
+}
+
+
+def _tiny_hf_cfg(arch):
+    import transformers
+    kw, cls = TINY_HF[arch]
+    hf = getattr(transformers, cls.split(".")[1])(**kw).to_dict()
+    bid = {"hf_dinov2": "facebook/dinov2-small", "hf_clip": "openai/clip-vit-base-patch32"}[arch]
+    return {"arch": arch, "backbone_id": bid, "img_size": 32, "grayscale": False, "hf_config": hf,
+            **{k: configs.CONFIGS["B3a" if arch == "hf_dinov2" else "B4"]["bundle"][k]
+               for k in ("mean", "std", "gradcam_target_layer")},
+            "gradcam_reshape": {"type": "vit", "grid": 4, "prefix_tokens": 1}}
+
+
+@pytest.mark.parametrize("arch", ["hf_dinov2", "hf_clip"])
+def test_hf_config_builds_offline_and_is_written_to_bundle(arch, tmp_path, monkeypatch):
+    import transformers
+    from ml.rgb.train import write_bundle
+    cfg = _tiny_hf_cfg(arch)
+
+    def no_net(*a, **k):
+        raise AssertionError("hub access")
+    for name in ("Dinov2Config", "CLIPVisionConfig", "Dinov2Model", "CLIPVisionModelWithProjection"):
+        monkeypatch.setattr(getattr(transformers, name), "from_pretrained", no_net)
+    model = build_model(cfg)
+    assert model(torch.zeros(1, 3, 32, 32)).shape == (1, 6)
+    out = write_bundle(model, {k: v for k, v in cfg.items() if k != "hf_config"}, tmp_path, "v", 1.0, {})
+    written = json.loads((out / "config.json").read_text())
+    assert written["hf_config"] == json.loads(json.dumps(cfg["hf_config"]))
+    assert build_model(written).state_dict().keys() == model.state_dict().keys()

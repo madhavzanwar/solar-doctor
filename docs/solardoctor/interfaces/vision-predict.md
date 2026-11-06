@@ -20,8 +20,10 @@ If no model bundle is available (no dir, no pinned revision, download or load fa
 Configuration (env): `SOLARDOCTOR_RGB_MODEL_DIR` (local bundle dir, wins), else Hugging Face
 `SOLARDOCTOR_RGB_MODEL_REPO` (default `solar-doctor/solar-doctor-rgb`) at `SOLARDOCTOR_RGB_MODEL_REVISION`
 (**required**, pinned). The model loads lazily on first use (never at import); at API startup it is warmed in a
-background thread only if the dir or revision is set, and a failure there just keeps the 503. OOD methods
-`mahalanobis_dinov2` / `clip_zeroshot` download their small backbone from the Hugging Face hub on first load.
+background thread only if the dir or revision is set, and a failure there just keeps the 503. The classifier itself
+never touches the hub when the bundle's `config.json` carries `hf_config` (hf_* archs); OOD methods
+`mahalanobis_dinov2` / `clip_zeroshot` download their small backbone from the Hugging Face hub on first load,
+pinned to `ood.backbone_revision` (commit sha) from the bundle config.
 
 ## HTTP
 

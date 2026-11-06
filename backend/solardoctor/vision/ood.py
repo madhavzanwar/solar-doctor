@@ -55,10 +55,11 @@ class ClipZeroShot:
     """OOD score = 1 - P(positive prompts) under a softmax over positive + negative prompts."""
 
     def __init__(self, model_id: str = CLIP_ID, prompts_pos: list[str] = DEFAULT_PROMPTS_POS,
-                 prompts_neg: list[str] = DEFAULT_PROMPTS_NEG, model=None, processor=None):
+                 prompts_neg: list[str] = DEFAULT_PROMPTS_NEG, model=None, processor=None,
+                 revision: str | None = None):
         from transformers import CLIPModel, CLIPProcessor
-        self.model = (model or CLIPModel.from_pretrained(model_id)).eval()
-        self.processor = processor or CLIPProcessor.from_pretrained(model_id)
+        self.model = (model or CLIPModel.from_pretrained(model_id, revision=revision)).eval()
+        self.processor = processor or CLIPProcessor.from_pretrained(model_id, revision=revision)
         self.prompts_pos, self.prompts_neg = list(prompts_pos), list(prompts_neg)
 
     def score(self, pil_images: list) -> np.ndarray:
@@ -98,9 +99,9 @@ class AutoencoderOOD:
 
 
 # ── bundle loading ───────────────────────────────────────────────────────────
-def _load_dinov2(backbone_id: str):
+def _load_dinov2(backbone_id: str, revision: str | None = None):
     from transformers import Dinov2Model
-    return Dinov2Model.from_pretrained(backbone_id)
+    return Dinov2Model.from_pretrained(backbone_id, revision=revision)
 
 
 def load_scorer(cfg: dict[str, Any], bundle: Path):
@@ -111,10 +112,11 @@ def load_scorer(cfg: dict[str, Any], bundle: Path):
         return None
     if method == "mahalanobis_dinov2":
         with np.load(bundle / "ood_stats.npz") as st:
-            return MahalanobisDinov2(_load_dinov2(o.get("backbone_id", DINOV2_ID)), st["mean"], st["precision"])
+            return MahalanobisDinov2(_load_dinov2(o.get("backbone_id", DINOV2_ID), o.get("backbone_revision")), st["mean"], st["precision"])
     if method == "clip_zeroshot":
         return ClipZeroShot(o.get("backbone_id", CLIP_ID), o.get("prompts_pos", DEFAULT_PROMPTS_POS),
-                            o.get("prompts_neg", DEFAULT_PROMPTS_NEG))
+                            o.get("prompts_neg", DEFAULT_PROMPTS_NEG),
+                            revision=o.get("backbone_revision"))
     if method == "autoencoder":
         from safetensors.torch import load_file
         ae = build_autoencoder(100)

@@ -54,7 +54,9 @@ def build_model(cfg: dict[str, Any], pretrained: bool = False):
       - "torchvision": torchvision VGG16 (backbone_id "vgg16"), last classifier layer replaced (works at 100x100)
       - "hf_dinov2":   transformers Dinov2Model + Linear on [CLS ‖ mean(patch tokens)]
       - "hf_clip":     transformers CLIPVisionModelWithProjection + Linear on image_embeds
-    pretrained=False never downloads weights (HF archs still fetch the small config.json unless cached).
+    pretrained=False never downloads weights. For HF archs, if cfg["hf_config"] (the backbone's `config.to_dict()`,
+    written into every trained bundle) is present the backbone is built from it, so serving never touches the
+    network; without it the small config.json is fetched from the hub.
     """
     import torch.nn as nn
 
@@ -71,7 +73,7 @@ def build_model(cfg: dict[str, Any], pretrained: bool = False):
         m.classifier[-1] = nn.Linear(m.classifier[-1].in_features, n)
         return m
     if arch in ("hf_dinov2", "hf_clip"):
-        return _HFHead(arch, bid, n, pretrained)
+        return _HFHead(arch, bid, n, pretrained, cfg.get("hf_config"))
     raise ValueError(f"unknown arch {arch!r}")
 
 
@@ -80,18 +82,20 @@ def _hf_head_cls():  # defined lazily so importing this module never imports tor
     import torch.nn as nn
 
     class HFHead(nn.Module):
-        def __init__(self, arch: str, bid: str, n: int, pretrained: bool):
+        def __init__(self, arch: str, bid: str, n: int, pretrained: bool, hf_config: dict | None = None):
             super().__init__()
             self.arch = arch
             if arch == "hf_dinov2":
                 from transformers import Dinov2Config, Dinov2Model
-                self.backbone = (Dinov2Model.from_pretrained(bid) if pretrained
-                                 else Dinov2Model(Dinov2Config.from_pretrained(bid)))
+                self.backbone = (Dinov2Model.from_pretrained(bid) if pretrained else Dinov2Model(
+                    Dinov2Config(**hf_config) if hf_config else Dinov2Config.from_pretrained(bid)))
                 dim = 2 * self.backbone.config.hidden_size
             else:
                 from transformers import CLIPVisionConfig, CLIPVisionModelWithProjection
                 self.backbone = (CLIPVisionModelWithProjection.from_pretrained(bid) if pretrained
-                                 else CLIPVisionModelWithProjection(CLIPVisionConfig.from_pretrained(bid)))
+                                 else CLIPVisionModelWithProjection(
+                                     CLIPVisionConfig(**hf_config) if hf_config
+                                     else CLIPVisionConfig.from_pretrained(bid)))
                 dim = self.backbone.config.projection_dim
             self.head = nn.Linear(dim, n)
 
@@ -108,8 +112,8 @@ def _hf_head_cls():  # defined lazily so importing this module never imports tor
     return HFHead
 
 
-def _HFHead(arch: str, bid: str, n: int, pretrained: bool):
-    return _hf_head_cls()(arch, bid, n, pretrained)
+def _HFHead(arch: str, bid: str, n: int, pretrained: bool, hf_config: dict | None = None):
+    return _hf_head_cls()(arch, bid, n, pretrained, hf_config)
 
 
 def build_autoencoder(img_size: int = 100):

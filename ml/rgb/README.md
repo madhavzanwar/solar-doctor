@@ -30,8 +30,10 @@ Exact duplicates (same sha256) keep one row; dropped rows are listed in `ml/rgb/
    "backbone_id": "convnext_tiny.fb_in22k_ft_in1k", "classes": [...6...], "img_size": 224, "grayscale": false,
    "mean": [0.485,0.456,0.406], "std": [0.229,0.224,0.225], "temperature": 1.0, "conf_threshold": 0.6,
    "gradcam_target_layer": "stages.3", "gradcam_reshape": null,
+   "hf_config": {"...": "backbone.config.to_dict(); hf_* archs only, serving builds the backbone from it offline"},
    "ood": {"method": "none|mahalanobis_dinov2|clip_zeroshot|autoencoder", "threshold": 0.0,
-           "backbone_id": "facebook/dinov2-small", "prompts_pos": [...], "prompts_neg": [...]},
+           "backbone_id": "facebook/dinov2-small", "backbone_revision": "<commit sha>",
+           "prompts_pos": [...], "prompts_neg": [...]},
    "metrics": {}}
   ```
   `gradcam_target_layer` is a dotted module path inside the model (`"backbone.encoder.layer.11.norm1"` for DINOv2);

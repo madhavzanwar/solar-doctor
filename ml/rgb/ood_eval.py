@@ -34,6 +34,16 @@ def evaluate_ood(in_scores: dict[str, np.ndarray], ood_scores: dict[str, np.ndar
     return {"methods": res, "best": best, "n_in": len(i), "n_ood": len(o)}
 
 
+def backbone_revision(model_id: str) -> str:
+    """Commit sha of an OOD backbone: from reports/hf_ids.json if recorded, else asked from the hub."""
+    p = Path(__file__).parent / "reports" / "hf_ids.json"
+    rec = json.loads(p.read_text())["resolved"].get(model_id) if p.exists() else None
+    if rec:
+        return rec["sha"]
+    from huggingface_hub import model_info
+    return model_info(model_id).sha
+
+
 def split_ood(names: list[str], seed: int = 42) -> tuple[list[str], list[str]]:
     """Deterministic OOD-dev / OOD-test halves of the (sorted) file names."""
     names = sorted(names)
@@ -105,7 +115,7 @@ def main() -> None:
     save_file({k: v.contiguous() for k, v in ae.state_dict().items()}, str(work / "autoencoder.safetensors"))
 
     from transformers import Dinov2Model
-    bb = Dinov2Model.from_pretrained(DINO_ID).eval()
+    bb = Dinov2Model.from_pretrained(DINO_ID, revision=backbone_revision(DINO_ID)).eval()
     dcfg = {"img_size": 224}
 
     def dino(imgs):
@@ -115,7 +125,7 @@ def main() -> None:
 
     mean, prec = ood.fit_mahalanobis(dino(train_imgs))
     np.savez(work / "ood_stats.npz", mean=mean, precision=prec)
-    clip = ood.ClipZeroShot(CLIP_ID, PROMPTS_POS, PROMPTS_NEG)
+    clip = ood.ClipZeroShot(CLIP_ID, PROMPTS_POS, PROMPTS_NEG, revision=backbone_revision(CLIP_ID))
     scorers = {"mahalanobis_dinov2": lambda im: ood.mahalanobis_score(dino(im), mean, prec),
                "clip_zeroshot": lambda im: clip.score(im),
                "autoencoder": lambda im: ood.autoencoder_score(ae, gray100(im))}
@@ -129,9 +139,10 @@ def main() -> None:
     cfg = json.loads((bundle / "config.json").read_text())
     cfg["ood"] = {"method": best, "threshold": res["selection"]["methods"][best]["threshold"]}
     if best == "mahalanobis_dinov2":
-        cfg["ood"]["backbone_id"] = DINO_ID
+        cfg["ood"].update(backbone_id=DINO_ID, backbone_revision=backbone_revision(DINO_ID))
     elif best == "clip_zeroshot":
-        cfg["ood"].update(backbone_id=CLIP_ID, prompts_pos=PROMPTS_POS, prompts_neg=PROMPTS_NEG)
+        cfg["ood"].update(backbone_id=CLIP_ID, backbone_revision=backbone_revision(CLIP_ID),
+                          prompts_pos=PROMPTS_POS, prompts_neg=PROMPTS_NEG)
     if ARTEFACT[best]:
         shutil.copy(work / ARTEFACT[best], bundle / ARTEFACT[best])
     (bundle / "config.json").write_text(json.dumps(cfg, indent=2))

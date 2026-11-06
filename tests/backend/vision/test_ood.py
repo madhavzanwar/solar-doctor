@@ -68,3 +68,25 @@ def test_load_scorer_none_and_unknown(tmp_path):
     assert ood.load_scorer({}, tmp_path) is None
     with pytest.raises(ValueError):
         ood.load_scorer({"ood": {"method": "bogus"}}, tmp_path)
+
+
+def test_ood_backbones_are_loaded_at_the_pinned_revision(tmp_path, monkeypatch):
+    import numpy as np
+    import transformers
+    from solardoctor.vision import ood
+    seen = []
+
+    class Fake:
+        def eval(self):
+            return self
+
+    monkeypatch.setattr(transformers.Dinov2Model, "from_pretrained",
+                        classmethod(lambda cls, i, **k: seen.append(("dino", k.get("revision"))) or Fake()))
+    monkeypatch.setattr(transformers.CLIPModel, "from_pretrained",
+                        classmethod(lambda cls, i, **k: seen.append(("clip", k.get("revision"))) or Fake()))
+    monkeypatch.setattr(transformers.CLIPProcessor, "from_pretrained",
+                        classmethod(lambda cls, i, **k: seen.append(("proc", k.get("revision"))) or Fake()))
+    np.savez(tmp_path / "ood_stats.npz", mean=np.zeros(2), precision=np.eye(2))
+    ood.load_scorer({"ood": {"method": "mahalanobis_dinov2", "backbone_revision": "abc123"}}, tmp_path)
+    ood.load_scorer({"ood": {"method": "clip_zeroshot", "backbone_revision": "def456"}}, tmp_path)
+    assert seen == [("dino", "abc123"), ("clip", "def456"), ("proc", "def456")]

@@ -237,6 +237,8 @@ def write_bundle(model, bundle_cfg: dict, out_dir: Path, model_version: str, tem
     cfg = {"model_version": model_version, **bundle_cfg, "classes": list(CLASSES), "temperature": temperature,
            "conf_threshold": conf_threshold,
            "ood": {"method": "none", "threshold": 0.0}, "metrics": metrics_}
+    if bundle_cfg["arch"].startswith("hf_"):  # lets serving rebuild the backbone without any hub access
+        cfg["hf_config"] = model.backbone.config.to_dict()
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=2))
     save_file({k: v.detach().cpu().contiguous() for k, v in model.state_dict().items()},
               str(out_dir / "model.safetensors"))
