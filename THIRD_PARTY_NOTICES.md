@@ -22,6 +22,15 @@ Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/`
 | `app/services/{forecast,anomaly,diagnosis,weather,scada,plant,clipping,soiling}_service.py`, `app/workers/*`, `app/api/websockets/scada_ws.py` | `backend/solardoctor/physics/` | async SQLAlchemy/asyncpg -> sync SQLAlchemy 2.0 session; new table names |
 | `app/schemas/*`, `app/api/v1/routes/*` | `backend/solardoctor/physics/schemas/` (package), `backend/solardoctor/api/routers/{plants,forecast,diagnosis,weather,scada,physics_alerts}.py` | sync routes, Axalon session pattern |
 
+## Libraries used by the RGB vision module (installed, not vendored)
+
+| Library | Licence | Use |
+|---|---|---|
+| [timm](https://github.com/huggingface/pytorch-image-models) | Apache-2.0 | Classifier backbones |
+| [transformers](https://github.com/huggingface/transformers) | Apache-2.0 | DINOv2 / CLIP out-of-distribution scorers |
+| [lime](https://github.com/marcotcr/lime) | BSD-2-Clause | LIME image explanations |
+| [pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam) | MIT | Grad-CAM heatmaps |
+
 ## Model weights
 
 | Asset | Licence | Note |

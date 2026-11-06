@@ -57,3 +57,13 @@ numpy>=1.26.0,<3
 scipy>=1.11.0
 httpx>=0.27.0                    # weather / NASA POWER clients
 boto3>=1.34   # anonymous S3 access for PVDAQ import (scripts/import_pvdaq.py)
+
+# ── RGB vision (solardoctor.vision; torch comes from ml/thermal/requirements.txt) ──
+timm>=1.0.0                      # classifier backbones (build_model)
+transformers>=4.40.0             # DINOv2 / CLIP OOD scorers
+safetensors>=0.4.0               # model bundle weights
+huggingface_hub>=0.23.0          # pinned-revision bundle download
+lime>=0.2.0.1                    # LIME superpixel explanations
+grad-cam>=1.5.0                  # Grad-CAM heatmaps
+scikit-image>=0.22.0             # SLIC segmentation + outlines (also a lime dependency)
+matplotlib>=3.8.0                # viridis colormap for overlays
