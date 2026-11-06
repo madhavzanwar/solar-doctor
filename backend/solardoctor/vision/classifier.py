@@ -19,7 +19,7 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
-from solardoctor.vision.model_def import CLASSES, load_image, preprocess
+from solardoctor.vision.model_def import CLASSES, load_image, preprocess, shrink
 
 log = logging.getLogger("solardoctor.vision")
 
@@ -142,7 +142,7 @@ class Classifier:
                     return {**self._lime_cache[key], "cached": True}
 
         size = int(self.cfg["img_size"])
-        small = np.asarray(img.resize((size, size), Image.BILINEAR), dtype=np.uint8)
+        small = np.asarray(shrink(img, size).resize((size, size), Image.BILINEAR), dtype=np.uint8)
         target = int(np.argmax(self._probs(img)))
         with self._lock:
             if lime:

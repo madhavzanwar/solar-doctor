@@ -25,7 +25,7 @@ def main() -> None:
     from PIL import Image
     from ml.rgb.export_onnx import load_bundle
     from solardoctor.vision import xai
-    from solardoctor.vision.model_def import load_image, preprocess
+    from solardoctor.vision.model_def import load_image, preprocess, shrink
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--bundle", required=True)
@@ -53,7 +53,7 @@ def main() -> None:
 
     res = {"gradcam": [], "lime": []}
     for rel in rows.rel_path:
-        img = load_image((Path(a.raw_dir) / rel).read_bytes()).resize((size, size))
+        img = shrink(load_image((Path(a.raw_dir) / rel).read_bytes()), size).resize((size, size), Image.BILINEAR)
         u8 = np.asarray(img)
         x = torch.as_tensor(preprocess(img, cfg))[None]
         target = int(probs_t(x).argmax())

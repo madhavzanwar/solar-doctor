@@ -9,7 +9,7 @@ from PIL import Image
 from torch.utils.data import Dataset, WeightedRandomSampler
 
 from ml.rgb.augment import normalize, train_transform
-from solardoctor.vision.model_def import CLASSES, load_image, preprocess
+from solardoctor.vision.model_def import CLASSES, load_image, preprocess, shrink
 
 
 class RGBPanelDataset(Dataset):
@@ -18,15 +18,11 @@ class RGBPanelDataset(Dataset):
         self.cfg, self.train = cfg, train
         self.labels = [CLASSES.index(l) for l in rows["label"]]
         self.tf = train_transform(int(cfg["img_size"])) if train else None
-        short = max(int(cfg["img_size"] * 1.15), 256 if cfg["img_size"] <= 224 else 0)
         self.images = []
         for rel in rows["rel_path"]:
             with Image.open(Path(raw_dir) / rel) as im:
                 img = load_image(im)
-            scale = short / min(img.size)
-            if scale < 1:
-                img = img.resize((round(img.width * scale), round(img.height * scale)), Image.BILINEAR)
-            self.images.append(img)
+            self.images.append(shrink(img, int(cfg["img_size"])))
 
     def __len__(self) -> int:
         return len(self.images)

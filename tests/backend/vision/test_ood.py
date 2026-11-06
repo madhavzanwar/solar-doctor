@@ -32,7 +32,7 @@ def test_dinov2_features_and_scorer(tmp_path, monkeypatch):
         assert ood.dinov2_features(backbone, x).shape == (3, 64)
     mean, prec = ood.fit_mahalanobis(np.random.default_rng(0).normal(size=(50, 64)))
     np.savez(tmp_path / "ood_stats.npz", mean=mean, precision=prec)
-    monkeypatch.setattr(ood, "_load_dinov2", lambda _id: backbone)
+    monkeypatch.setattr(ood, "_load_dinov2", lambda _id, _rev=None: backbone)
     scorer = ood.load_scorer({"ood": {"method": "mahalanobis_dinov2"}}, tmp_path)
     assert scorer(Image.new("RGB", (40, 40), (10, 200, 30))) >= 0.0
 

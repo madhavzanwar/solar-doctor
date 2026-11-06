@@ -32,12 +32,26 @@ def load_image(data: bytes | Image.Image) -> Image.Image:
     return ImageOps.exif_transpose(img).convert("RGB")
 
 
+def shrink(img: Image.Image, img_size: int) -> Image.Image:
+    """Step 1 of the eval resize: BILINEAR downscale so the shorter side is round(img_size*256/224) (if larger).
+
+    Idempotent; the training dataset caches this, so cached eval tensors equal `preprocess` on the original.
+    """
+    target = round(img_size * 256 / 224)
+    m = min(img.size)
+    if m <= target:
+        return img
+    s = target / m
+    return img.resize((round(img.width * s), round(img.height * s)), Image.BILINEAR)
+
+
 def preprocess(img: Image.Image, cfg: dict[str, Any]) -> np.ndarray:
-    """RGB PIL -> float32 CHW array (resize to img_size square, optional grayscale, normalise).
+    """RGB PIL -> float32 CHW array (`shrink`, BILINEAR square resize to img_size, optional grayscale, normalise).
 
     The training *eval* transform must produce exactly this; train-time augmentation happens before it.
     """
     size = int(cfg["img_size"])
+    img = shrink(img, size)
     if cfg.get("grayscale"):
         img = img.convert("L").convert("RGB")  # 3 identical channels so ImageNet backbones still fit
     arr = np.asarray(img.resize((size, size), Image.BILINEAR), dtype=np.float32) / 255.0

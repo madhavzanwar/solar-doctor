@@ -212,3 +212,14 @@ def test_embedding_edge_with_injected_features(tmp_path):
     assert {ex["a"], ex["b"]} == {"Clean/3.jpg", "Clean/5.jpg"} and ex["cosine"] > 0.95
     m0 = prepare(raw, tmp_path / "o2").set_index("rel_path")["group_id"]
     assert m0["Clean/3.jpg"] != m0["Clean/5.jpg"]
+
+
+@pytest.mark.parametrize("cfg", [{"img_size": 224, "grayscale": False}, {"img_size": 100, "grayscale": True}])
+def test_dataset_eval_tensor_equals_serving_preprocess(tmp_path, cfg):
+    rng = np.random.default_rng(0)
+    img = Image.fromarray(rng.integers(0, 256, (1600, 1200, 3), dtype=np.uint8))
+    (tmp_path / "Clean").mkdir()
+    img.save(tmp_path / "Clean" / "a.png")
+    rows = pd.DataFrame({"rel_path": ["Clean/a.png"], "label": ["clean"]})
+    x, _ = RGBPanelDataset(rows, tmp_path, cfg, train=False)[0]
+    assert np.array_equal(x.numpy(), preprocess(img, cfg))
