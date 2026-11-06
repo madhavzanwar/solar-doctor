@@ -1,0 +1,82 @@
+# Physics deficit engine: interface for Workstream 3 (fusion / ROI / work orders)
+
+Code: `backend/solardoctor/physics/`. Everything below matches the code on branch `feat/physics-deficit`.
+Units: power kW, energy kWh, irradiance W/m2, temperature C, wind m/s, rain mm, PI (performance index =
+actual / expected) dimensionless, `deviation_percent` = (expected - actual) / expected x 100 (positive = shortfall).
+All timestamps are UTC.
+
+## Python functions
+
+| Function | Signature (short) | Returns |
+|---|---|---|
+| `deficit.scan_and_persist` | `(db, plant_id, start, end, baseline="pvwatts", now=None, nasa_fetch=..., openmeteo_fetch=...)` | `{status, baseline, data_source, events: [DeficitEvent], alerts: [alert ids], qc, provenance}`; status `ok`, `no_telemetry` or `baseline_unsupported_for_trackers`. Idempotent: one open alert per (plant, `deficit`, scope, inverter_id, string_id); a re-scan updates it. |
+| `deficit.load_inputs` | `(db, plant, start, end, now=None, nasa_fetch=..., openmeteo_fetch=...)` | `(telemetry_df, weather_df, strings, inverters)` or `None` without telemetry |
+| `deficit.performance` | `(plant, telemetry_df, weather, baseline="pvwatts", strings=(), inverters=())` | `Performance`: hourly PI per scope on QC-usable clear hours (`hourly[(scope, id)]` with `pi, actual_kw, expected_kw, n`), `qc`, `provenance`, `data_source` |
+| `deficit.detect` | `(perf, plant)` | `list[DeficitEvent]` (scope, scope_id, name, severity, start, end, pi_median, expected_kw_mean, actual_kw_mean, deviation_percent, clear_hours, peer_z, evidence) |
+| `deficit.peer_z` / `deficit.plant_hourly` | `(perf, min_hours)` / `(perf)` | per-string median PI + robust z / plant hourly frame (all hours) |
+| `baseline.expected_power` | `(plant, weather, baseline="pvwatts"\|"clearsky"\|"hybrid")` | DataFrame `p_dc_kw, p_ac_kw, poa_global, cell_temp, solar_zenith`. 422 for trackers; 422 `hybrid_model_unavailable` when no trained artifact |
+| `irradiance.resolve_weather` | `(plant, times, telemetry=None, db=None, now=None, nasa_fetch=..., openmeteo_fetch=...)` | DataFrame `ghi, poa, temp_air, wind_speed, precip_mm, ghi_clearsky, source` |
+| `soiling_analytics.soiling_analysis` | `(plant, daily, rain_mm_hourly=None, reps=300)` | dict (below) |
+| `soiling_analytics.degradation_analysis` | `(plant, daily)` | dict (below) |
+| `soiling_analytics.latest` / `.save` | `(db, plant_id, kind)` / `(db, plant_id, kind, day, result)` | latest `plant_analytics` row as dict / idempotent upsert |
+| `jobs.run_hourly` / `jobs.run_daily` | `(db, now=None, nasa_fetch=..., openmeteo_fetch=...)` | `{plant_id: status \| "error"}`. Hourly: scan of the last 24 h. Daily: rescan of 7 days + soiling + degradation (lookback 800 days). Active non-tracker plants only; a failing plant is logged and skipped. |
+
+`daily` for the soiling functions: UTC-day index with `actual_kwh`, `expected_kwh` (QC-usable clear hours, so the ratio is a
+PI), `insolation` (kWh/m2). Built by `jobs.daily_series`.
+
+Jobs: `python -m solardoctor.physics.jobs hourly|daily`, or in the API with `SOLARDOCTOR_PHYSICS_JOBS=1` (default off; hourly
+at each full hour, daily at 02:00 UTC). The repo has no generic scheduler (Axalon's jobs are FastAPI BackgroundTasks for
+inspections), so this is a small asyncio loop in the API lifespan.
+
+## Endpoints (`/api/v1`, viewer+ for GET, operator+ for POST/PUT)
+
+All return 404 for an unknown plant/string and **422** `{"status": "baseline_unsupported_for_trackers", "message": ...}` for tracker
+plants. Windows: default last 7 days, max 92 days, `start < end` (else 422). `baseline`: `clearsky|pvwatts|hybrid`, default `pvwatts`.
+
+- `GET /performance/{plant_id}?start&end&baseline` -> `PerformanceResponse`: `status` (`ok` | `no_telemetry`), `data_source`,
+  `series[]` (`ts, expected_kw, actual_kw, pi, clear, usable, source`), `events[]` (computed for the window, not persisted),
+  `open_alerts[]` (persisted open deficit alerts), `soiling`, `degradation` (latest `plant_analytics` or null), `qc`, `provenance`.
+- `POST /performance/{plant_id}/scan?start&end&baseline` -> `ScanResponse` (`status, baseline, data_source, events, alert_ids, qc, provenance`); persists alerts.
+- `PUT /performance/{plant_id}/thresholds` body `{"pi_warning": 0.95, "pi_critical": 0.90, "deficit_min_clear_hours": 3}`;
+  needs `0 < pi_critical < pi_warning <= 1`, hours 1..24 -> same body plus `plant_id`.
+- `GET /strings/{string_id}/peers?start&end` -> `{string_id, plant_id, status, normalised_yield, plant_median, peer_z, peers: [{string_id, name, normalised_yield, peer_z, clear_hours}]}`;
+  `peer_z` is null with fewer than 4 comparable strings.
+- Existing `GET /alerts`, `/alerts/{id}`, `/anomaly/{plant_id}` additionally return `scope, inverter_id, string_id, baseline, evidence` (parsed JSON); nothing removed.
+
+Example shape (`GET /performance/1`, schematic: `<n>` stands for a number, no real values): `{"plant_id":1,"baseline":"pvwatts","status":"ok","data_source":"SIMULATED","series":[{"ts":"<utc>","expected_kw":<n>,"actual_kw":<n>,"pi":<n>,"clear":true,"usable":true,"source":"site_sensor"}],"events":[{"scope":"string","scope_id":<id>,"severity":"CRITICAL","pi_median":<n>,"peer_z":<n>,"clear_hours":<n>}],"open_alerts":[],"soiling":null,"degradation":null}`.
+
+## Alert rows (`plant_alerts`, `alert_type = "deficit"`)
+
+`scope` (`plant|inverter|string`), `inverter_id`, `string_id`, `baseline`, `expected_power_kw`, `actual_power_kw`,
+`deviation_percent`, `severity`, `source` (= telemetry source), `is_resolved`, `message`, `evidence_json`.
+`evidence_json` keys: `baseline, samples_used, data_source, qc, weather_provenance, cause_hint, pi_rolling_min, pi_series
+{hours,min,median,max}, thresholds {pi_warning,pi_critical,min_clear_hours}, peer_z, window_start, window_end, pi_median, clear_hours`.
+
+Severity: rolling median of hourly PI over `deficit_min_clear_hours` clear usable hours; `CRITICAL` if its lowest value is
+< `pi_critical`, `WARNING` if < `pi_warning`; `INFO` only for a string with peer z <= -3 whose PI never went below `pi_warning`.
+A plant-scope event means the strings are uniformly low (soiling, haze, curtailment class); a string event means one string
+is an outlier among peers (drone target). One bad string does not raise a plant event.
+
+Provenance (`source` per weather row): `site_sensor`, `nasa_power`, `openmeteo`, `clearsky_model`. With only `clearsky_model`
+irradiance nothing can be verified as clear-sky, so no sample is usable and no alert is raised.
+Telemetry `source`: `SIMULATED`, `PVDAQ`, `USER`.
+
+## How WS3 should read it
+
+- "Deficit >= threshold": open alert with `alert_type="deficit"` and `severity` in `WARNING|CRITICAL`; `INFO` is a peer hint only.
+- "Cloudy / no QC data" (inconclusive, not healthy): `status == "no_telemetry"`, or `qc.plant.usable == 0` (scan/performance), or
+  no `usable` hour in `series`. Absence of an alert in that case means nothing.
+- Attributable deficit fraction: plant event `1 - pi_median` (= `deviation_percent / 100`) of plant energy; string event
+  `(1 - pi_median) x module_count / sum(module_count)` of plant energy.
+- Soiling rate for ROI: `soiling.soiling_loss_rate_per_day` (fraction/day, positive = loss) with `soiling_loss_rate_ci_per_day`
+  when `method == "rdtools_srr"` (`label: measured`, >= 60 days). `pvlib_kimber` (`label: modelled`) reports the assumed
+  default rate and its parameters, not a fit. `status` `insufficient_data` / `unavailable` carries a `reason`.
+  Degradation: `rate_pct_per_year` + CI, needs >= 2 years.
+- Trackers: no baseline, no alerts, 422 everywhere. `reference_9068.py` is a pvlib-gallery reference chain for tests only.
+
+## What is SIMULATED
+
+Seeded plants and the test generator (`tests/backend/physics/deficit_synth.py`) write `source="SIMULATED"`; alerts from them
+carry `source="SIMULATED"` and `evidence.data_source="SIMULATED"`. Precision/recall in `docs/solardoctor/physics/DEFICIT_METRICS.md`
+are measured on SIMULATED data only. Solar Data Tools is not installed, so with no irradiance-normalised energy the soiling
+method is `unavailable`.
