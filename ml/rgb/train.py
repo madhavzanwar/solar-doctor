@@ -211,6 +211,11 @@ def run_one(bundle_cfg: dict, hp: dict, train_ds, val_ds, test_ds, class_w, devi
                    "test_logits": tl, "test_y": ty, **extra}
 
 
+def fold_rows(pool, k: int):
+    """CV fold k: train on every other fold, validate on fold k (pool = train+val manifest rows)."""
+    return pool[pool.fold != k], pool[pool.fold == k]
+
+
 def count_params(model) -> int:
     return sum(p.numel() for p in model.parameters())
 
@@ -316,7 +321,7 @@ def main() -> None:
         pool = df[df.split != "test"]
         (run_dir / "cv").mkdir(parents=True, exist_ok=True)
         for k in [int(f) for f in a.folds.split(",")]:
-            tr, va = pool[pool.fold != k], pool[pool.fold == k]
+            tr, va = fold_rows(pool, k)
             model, res = run_one(bcfg, hp, mk(tr, not probe), mk(va, False), mk(test_rows, False),
                                  class_weights(tr.label.map(CLASSES.index).values), a.device, a.seed + k,
                                  groups=tr.group_id.values if probe else None)

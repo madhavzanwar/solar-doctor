@@ -214,3 +214,48 @@ def test_run_one_seeds_before_building_the_model(monkeypatch):
         torch.manual_seed(prior)  # different RNG state before each run
         run_one(BUNDLE, hp, toy_ds(), toy_ds(24, 1), toy_ds(24, 2), np.ones(6), "cpu", 7, pretrained=False)
     assert torch.equal(heads[0], heads[1])
+
+
+def test_fit_probe_head_reproduces_sklearn_predict_proba():
+    from sklearn.linear_model import LogisticRegression
+    from ml.rgb.train import fit_probe
+
+    class Probe(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.head = torch.nn.Linear(8, 6)
+
+        def features(self, x):
+            return x.flatten(1)
+
+    rng = np.random.default_rng(0)
+    y = np.arange(120) % 6
+    X = (rng.normal(size=(120, 8)) + np.eye(6, 8)[y] * 2).astype(np.float32)
+    ds = TensorDataset(torch.as_tensor(X), torch.as_tensor(y))
+    model = Probe()
+    C = fit_probe(model, ds, {"batch_size": 32}, "cpu")
+    ref = LogisticRegression(C=C, max_iter=3000, class_weight="balanced").fit(X, y).predict_proba(X)
+    with torch.no_grad():
+        got = torch.softmax(model.head(torch.as_tensor(X)), 1).numpy()
+    assert np.abs(got - ref).max() <= 1e-5
+
+
+def test_cv_fold_selection_trains_on_other_folds_and_validates_on_k():
+    import pandas as pd
+    from ml.rgb.train import fold_rows
+    pool = pd.DataFrame({"rel_path": list("abcdefghij"), "fold": [0, 1, 2, 3, 4] * 2})
+    for k in range(5):
+        tr, va = fold_rows(pool, k)
+        assert (va.fold == k).all() and (tr.fold != k).all() and len(tr) + len(va) == len(pool)
+        assert not set(tr.rel_path) & set(va.rel_path)
+
+
+@pytest.mark.parametrize("name", ["B3a", "B3b", "B4"])
+def test_gradcam_target_layers_exist_for_hf_configs(name):
+    import transformers
+    b = dict(configs.CONFIGS[name]["bundle"])
+    cls = transformers.Dinov2Config if b["arch"] == "hf_dinov2" else transformers.CLIPVisionConfig
+    kw = dict(hidden_size=16, intermediate_size=32, num_hidden_layers=12, num_attention_heads=2, image_size=32,
+              patch_size=8)
+    b["hf_config"] = cls(**kw, **({"projection_dim": 8} if b["arch"] == "hf_clip" else {})).to_dict()
+    assert b["gradcam_target_layer"] in {n for n, _ in build_model(b).named_modules()}
