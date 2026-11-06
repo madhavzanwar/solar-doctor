@@ -50,7 +50,23 @@ async def lifespan(_app: FastAPI):
         # Same reasoning as _requeue_stale_jobs: housekeeping must never be the
         # reason the API refuses to start.
         logger.exception("Startup: results cleanup failed")
+    physics_task = _start_physics_jobs()
     yield
+    if physics_task is not None:
+        physics_task.cancel()
+
+
+def _start_physics_jobs():
+    """Hourly/daily physics deficit jobs, opt-in (SOLARDOCTOR_PHYSICS_JOBS=1). Never raises."""
+    if os.getenv("SOLARDOCTOR_PHYSICS_JOBS", "0") != "1":
+        return None
+    try:
+        import asyncio
+        from solardoctor.physics.jobs import scheduler
+        return asyncio.create_task(scheduler())
+    except Exception:
+        logger.exception("Startup: could not start physics jobs")
+        return None
 
 
 def _bootstrap_admin() -> None:

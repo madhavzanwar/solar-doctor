@@ -61,6 +61,7 @@ class Performance:
     baseline: str
     data_source: str
     parent: dict[int, Optional[int]]  # string id -> inverter id
+    plant_samples: Optional[pd.DataFrame] = None  # plant scope at full resolution: actual_kw, expected_kw, clear, usable, source
 
 
 def _qc_name(key: Key) -> str:
@@ -129,7 +130,7 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
     if act is not None:
         series[("plant", None)] = (act, exp["p_ac_kw"], plant.name)
 
-    hourly, names, qc = {}, {}, {}
+    hourly, names, qc, plant_samples = {}, {}, {}, None
     for key, (act, ex, name) in series.items():
         flags, stats = qa.qc_flags(act, weather, exp, plant, curtailed)
         if key[0] == "plant":
@@ -140,12 +141,15 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
             limit = np.inf
         usable = flags["usable"] & (ex < qa.CLIP_FRACTION * limit)  # a clipped expectation says nothing about PI
         stats["usable"] = int(usable.sum())
+        if key[0] == "plant":
+            plant_samples = pd.DataFrame({"actual_kw": act, "expected_kw": ex, "clear": flags["clearsky"],
+                                          "usable": usable, "source": weather["source"]})
         hourly[key], names[key], qc[_qc_name(key)] = _hourly(act, ex, usable, per_hour), name, stats
     modes = telemetry["source"].mode() if "source" in telemetry and len(telemetry) else []
     return Performance(
         hourly=hourly, names=names, qc=qc, provenance={k: int(v) for k, v in weather["source"].value_counts().items()},
         baseline=baseline, data_source=str(modes.iloc[0]) if len(modes) else "unknown",
-        parent={s.id: s.inverter_id for s in strings})
+        parent={s.id: s.inverter_id for s in strings}, plant_samples=plant_samples)
 
 
 def _low_span(pi: pd.Series, n: int, thr: float) -> Optional[tuple[int, int, float]]:
@@ -273,6 +277,24 @@ def _upsert(db: Session, plant: Plant, ev: DeficitEvent, baseline: str, source: 
     return alert
 
 
+def load_inputs(db: Session, plant: Plant, start: datetime, end: datetime, now: Optional[datetime] = None,
+                nasa_fetch: Callable = ws.fetch_nasa_power_hourly,
+                openmeteo_fetch: Callable = irradiance.fetch_openmeteo_hourly):
+    """(telemetry, weather, strings, inverters) for [start, end], or None without telemetry."""
+    tel = _telemetry_frame(db, plant.id, start, end)
+    if tel.empty:
+        return None
+    gaps = tel.index.to_series().diff()
+    step = gaps[gaps > pd.Timedelta(0)].median()
+    step = pd.Timedelta(minutes=15) if pd.isna(step) else step
+    grid = pd.date_range(tel.index.min(), tel.index.max(), freq=step)
+    weather = irradiance.resolve_weather(plant, grid, tel[["ghi_wm2", "poa_wm2", "t_amb", "wind_ms"]], db=db, now=now,
+                                         nasa_fetch=nasa_fetch, openmeteo_fetch=openmeteo_fetch)
+    strings = db.execute(select(PvString).where(PvString.plant_id == plant.id)).scalars().all()
+    inverters = db.execute(select(Inverter).where(Inverter.plant_id == plant.id)).scalars().all()
+    return tel, weather, strings, inverters
+
+
 def scan_and_persist(db: Session, plant_id: int, start: datetime, end: datetime, baseline: str = "pvwatts",
                      now: Optional[datetime] = None, nasa_fetch: Callable = ws.fetch_nasa_power_hourly,
                      openmeteo_fetch: Callable = irradiance.fetch_openmeteo_hourly) -> dict:
@@ -283,17 +305,10 @@ def scan_and_persist(db: Session, plant_id: int, start: datetime, end: datetime,
     empty = {"events": [], "alerts": [], "qc": {}, "provenance": {}}
     if is_tracker_plant(plant):
         return {"status": BASELINE_UNSUPPORTED_STATUS, **empty}
-    tel = _telemetry_frame(db, plant_id, start, end)
-    if tel.empty:
+    inputs = load_inputs(db, plant, start, end, now, nasa_fetch, openmeteo_fetch)
+    if inputs is None:
         return {"status": "no_telemetry", **empty}
-    gaps = tel.index.to_series().diff()
-    step = gaps[gaps > pd.Timedelta(0)].median()
-    step = pd.Timedelta(minutes=15) if pd.isna(step) else step
-    grid = pd.date_range(tel.index.min(), tel.index.max(), freq=step)
-    weather = irradiance.resolve_weather(plant, grid, tel[["ghi_wm2", "poa_wm2", "t_amb", "wind_ms"]], db=db, now=now,
-                                         nasa_fetch=nasa_fetch, openmeteo_fetch=openmeteo_fetch)
-    strings = db.execute(select(PvString).where(PvString.plant_id == plant_id)).scalars().all()
-    inverters = db.execute(select(Inverter).where(Inverter.plant_id == plant_id)).scalars().all()
+    tel, weather, strings, inverters = inputs
     perf = performance(plant, tel, weather, baseline, strings, inverters)
     events = detect(perf, plant)
     alerts = [_upsert(db, plant, ev, baseline, perf.data_source) for ev in events]

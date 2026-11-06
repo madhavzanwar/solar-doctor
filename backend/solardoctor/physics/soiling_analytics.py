@@ -75,7 +75,7 @@ def soiling_analysis(plant, daily: pd.DataFrame, rain_mm_hourly: Optional[pd.Ser
                 "cleaning_events": [pd.Timestamp(s).date().isoformat() for s in iv["start"].iloc[1:]],
                 "intervals": int(len(ok)), "ci_level_pct": 68.2}
     if rain_mm_hourly is not None and len(rain_mm_hourly.dropna()):
-        return {**base, **_kimber(rain_mm_hourly.dropna())}
+        return {**base, **_kimber(rain_mm_hourly)}
     if not len(norm):
         return {**base, "status": "unavailable", "method": "unavailable", "label": "none", "reason": UNAVAILABLE}
     return {**base, "status": "insufficient_data", "method": "none", "label": "none",
