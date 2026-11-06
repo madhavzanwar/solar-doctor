@@ -118,3 +118,18 @@ def test_report_renders_and_marks_missing(tmp_path):
     assert d["winner"] == "B2"
     md = report.render(d)
     assert md.count("not run") >= 4 and "91.46" in md and "not comparable" in md
+
+
+def test_ood_protocol_selects_on_val_and_reports_test():
+    from ml.rgb.ood_eval import select_and_test, split_ood
+    names = [f"{i}.jpg" for i in range(100)]
+    dev, tst = split_ood(names)
+    assert len(dev) == len(tst) == 50 and not set(dev) & set(tst) and (dev, tst) == split_ood(names[::-1])
+    rng = np.random.default_rng(0)
+    mk = lambda mu, n: {"a": rng.normal(mu, 1, n), "b": rng.normal(0, 1, n)}  # noqa: E731
+    r = select_and_test(mk(0, 200), mk(5, 50), mk(0, 200), mk(5, 50))
+    assert r["best"] == "a" and set(r["test"]["methods"]) == {"a", "b"}
+    assert r["test"]["methods"]["a"]["threshold"] == r["selection"]["methods"]["a"]["threshold"]
+    assert r["test"]["methods"]["a"]["auroc"] > 0.99
+    d = {"configs": {}, "winner": None, "ood": r, "xai": None, "onnx": None}
+    assert "frozen threshold" in report.render(d)

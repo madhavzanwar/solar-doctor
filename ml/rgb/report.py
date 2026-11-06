@@ -104,9 +104,12 @@ def render(d: dict) -> str:
         L += [" ".join(f"{v:4d}" for v in row) for row in cal["confusion_matrix"]] + ["```", ""]
     L += ["## OOD guard (AUROC, OOD = positive)", ""]
     if d["ood"]:
-        L += ["| method | AUROC | threshold | TPR | FPR |", "|---|---|---|---|---|"]
+        L += ["Selection protocol: the 100 COCO images are split 50/50 (seed 42) into OOD-dev and OOD-test. Method "
+              "(best AUROC) and threshold (95th percentile of in-distribution scores) were chosen on the **val** split "
+              "+ OOD-dev only. Numbers below are on the **test** split + OOD-test at each method's frozen threshold.", "",
+              "| method | AUROC | threshold | TPR | FPR |", "|---|---|---|---|---|"]
         L += [f"| {m}{' (chosen)' if m == d['ood']['best'] else ''} | {_f(v['auroc'])} | {_f(v['threshold'])} | "
-              f"{_f(v['tpr'])} | {_f(v['fpr'])} |" for m, v in d["ood"]["methods"].items()]
+              f"{_f(v['tpr'])} | {_f(v['fpr'])} |" for m, v in d["ood"]["test"]["methods"].items()]
     else:
         L.append("not run")
     L += ["", "## XAI faithfulness (deletion: lower is better; insertion: higher is better)", ""]

@@ -1,7 +1,9 @@
 """Compare 3 "is this a solar panel photo?" guards by AUROC, pick the best, write it into a bundle.
 
-Score convention: higher = more out-of-distribution. Positives for AUROC = OOD images, negatives = in-distribution
-test split. Threshold = 95th percentile of in-distribution scores.
+Score convention: higher = more out-of-distribution. Positives for AUROC = OOD images, negatives = in-distribution.
+Protocol: the OOD images are split in half (seed 42) into OOD-dev and OOD-test. The method (best AUROC) and its
+threshold (95th percentile of in-distribution scores) are chosen on val + OOD-dev only; every method's AUROC and
+TPR/FPR at its frozen threshold are then reported on the test split + OOD-test.
 """
 from __future__ import annotations
 
@@ -30,6 +32,28 @@ def evaluate_ood(in_scores: dict[str, np.ndarray], ood_scores: dict[str, np.ndar
                   "threshold": thr, "tpr": float((o > thr).mean()), "fpr": float((i > thr).mean())}
     best = max(res, key=lambda m: res[m]["auroc"])
     return {"methods": res, "best": best, "n_in": len(i), "n_ood": len(o)}
+
+
+def split_ood(names: list[str], seed: int = 42) -> tuple[list[str], list[str]]:
+    """Deterministic OOD-dev / OOD-test halves of the (sorted) file names."""
+    names = sorted(names)
+    perm = np.random.default_rng(seed).permutation(len(names))
+    h = len(names) // 2
+    return sorted(names[i] for i in perm[:h]), sorted(names[i] for i in perm[h:])
+
+
+def select_and_test(val_in: dict, dev_ood: dict, test_in: dict, test_ood: dict) -> dict:
+    """Choose method + threshold on val/OOD-dev (`selection`); report all methods at frozen thresholds on test."""
+    from sklearn.metrics import roc_auc_score
+    sel = evaluate_ood(val_in, dev_ood)
+    test = {}
+    for m, v in sel["methods"].items():
+        i, o = np.asarray(test_in[m]), np.asarray(test_ood[m])
+        thr = v["threshold"]
+        test[m] = {"auroc": float(roc_auc_score(np.r_[np.zeros(len(i)), np.ones(len(o))], np.r_[i, o])),
+                   "threshold": thr, "tpr": float((o > thr).mean()), "fpr": float((i > thr).mean())}
+    return {"best": sel["best"], "selection": sel,
+            "test": {"methods": test, "n_in": len(i), "n_ood": len(o)}}
 
 
 def train_autoencoder(gray: "torch.Tensor", device: str, epochs: int = 30, seed: int = 42):
@@ -67,8 +91,10 @@ def main() -> None:
     df = pd.read_csv(a.manifest)
     load = lambda paths: [load_image(Path(p).read_bytes()) for p in paths]  # noqa: E731
     train_imgs = load(Path(a.raw_dir) / r for r in df[df.split == "train"].rel_path)
+    val_imgs = load(Path(a.raw_dir) / r for r in df[df.split == "val"].rel_path)
     in_imgs = load(Path(a.raw_dir) / r for r in df[df.split == "test"].rel_path)
-    ood_imgs = load(sorted(Path(a.ood_dir).glob("*.jpg")))
+    dev_names, test_names = split_ood([p.name for p in Path(a.ood_dir).glob("*.jpg")])
+    dev_imgs, ood_imgs = (load(Path(a.ood_dir) / n for n in ns) for ns in (dev_names, test_names))
     work = Path(a.out).parent / "_ood_work"; work.mkdir(parents=True, exist_ok=True)
 
     def gray100(imgs):
@@ -93,13 +119,15 @@ def main() -> None:
     scorers = {"mahalanobis_dinov2": lambda im: ood.mahalanobis_score(dino(im), mean, prec),
                "clip_zeroshot": lambda im: clip.score(im),
                "autoencoder": lambda im: ood.autoencoder_score(ae, gray100(im))}
-    res = evaluate_ood({m: f(in_imgs) for m, f in scorers.items()}, {m: f(ood_imgs) for m, f in scorers.items()})
+    score = lambda imgs: {m: f(imgs) for m, f in scorers.items()}  # noqa: E731
+    res = select_and_test(score(val_imgs), score(dev_imgs), score(in_imgs), score(ood_imgs))
+    res["split"] = {"ood_dev": dev_names, "ood_test": test_names, "seed": 42}
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(res, indent=2))
 
     best, bundle = res["best"], Path(a.bundle)
     cfg = json.loads((bundle / "config.json").read_text())
-    cfg["ood"] = {"method": best, "threshold": res["methods"][best]["threshold"]}
+    cfg["ood"] = {"method": best, "threshold": res["selection"]["methods"][best]["threshold"]}
     if best == "mahalanobis_dinov2":
         cfg["ood"]["backbone_id"] = DINO_ID
     elif best == "clip_zeroshot":
