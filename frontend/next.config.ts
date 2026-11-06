@@ -53,7 +53,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // next/image serves AVIF when the browser accepts it, WebP otherwise
-  images: { formats: ["image/avif", "image/webp"] },
+  images: { formats: ["image/avif", "image/webp"], qualities: [40, 75] },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

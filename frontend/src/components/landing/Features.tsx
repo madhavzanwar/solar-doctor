@@ -49,7 +49,7 @@ export function Features() {
           {features.map((feature, index) => (
             <li
               key={feature.title}
-              className="grid gap-4 py-8 sm:grid-cols-[5rem_1fr_15rem] sm:gap-10"
+              className="grid gap-4 py-8 sm:grid-cols-[5rem_1fr] sm:gap-10 lg:grid-cols-[5rem_1fr_15rem]"
             >
               <span className="font-[family-name:var(--font-display)] text-2xl font-bold text-[color:var(--field)]">
                 {String(index + 1).padStart(2, "0")}
@@ -62,13 +62,13 @@ export function Features() {
                   {feature.body}
                 </p>
               </div>
-              <div className="relative aspect-[4/3] overflow-hidden">
+              <div className="relative aspect-[4/3] overflow-hidden sm:col-start-2 lg:col-auto">
                 <Image
                   src={feature.image}
                   alt={feature.alt}
                   fill
                   className="object-cover"
-                  sizes="(min-width: 640px) 240px, 100vw"
+                  sizes="(min-width: 1024px) 240px, 100vw"
                   quality={40}
                 />
                 <div className="absolute inset-0 bg-[rgba(10,22,16,0.72)]" />
