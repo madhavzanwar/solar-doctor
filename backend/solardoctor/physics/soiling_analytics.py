@@ -62,17 +62,22 @@ def soiling_analysis(plant, daily: pd.DataFrame, rain_mm_hourly: Optional[pd.Ser
             try:
                 sr, ci, info = soiling_srr(norm.reindex(full), ins.reindex(full), reps=reps)
             except Exception as exc:  # rdtools raises ValueError when no valid soiling interval exists
+                if rain_mm_hourly is not None and len(rain_mm_hourly.dropna()):
+                    return {**base, **_kimber(rain_mm_hourly), "note": f"rdtools SRR found no usable interval ({exc}); "
+                            "Kimber model with assumed default parameters driven by NASA POWER rain, not fitted to this plant"}
                 return {**base, "status": "insufficient_data", "method": "rdtools_srr", "label": "measured",
                         "reason": f"rdtools SRR found no usable soiling interval: {exc}"}
         iv = info["soiling_interval_summary"]
         ok = iv[iv["valid"]]
-        return {**base, "status": "ok", "method": "rdtools_srr", "label": "measured",
+        ci_rate = ([round(float(-ok["soiling_rate_high"].median()), 6), round(float(-ok["soiling_rate_low"].median()), 6)]
+                   if len(ok) >= 2 else None)  # one interval has no spread: a [r, r] CI would be false precision
+        note = None if ci_rate else "fewer than 2 valid soiling intervals: no rate confidence interval"
+        return {**base, "status": "ok", "method": "rdtools_srr", "label": "measured", "note": note,
                 "soiling_ratio_p50": round(float(sr), 4), "soiling_ratio_ci": [round(float(v), 4) for v in ci],
                 "soiling_loss_rate_per_day": round(float(-ok["soiling_rate"].median()), 6),
-                "soiling_loss_rate_ci_per_day": [round(float(-ok["soiling_rate_high"].median()), 6),
-                                                 round(float(-ok["soiling_rate_low"].median()), 6)],
+                "soiling_loss_rate_ci_per_day": ci_rate,
                 "soiling_loss_rate_pct_per_day": round(float(-ok["soiling_rate"].median()) * 100, 4),
-                "cleaning_events": [pd.Timestamp(s).date().isoformat() for s in iv["start"].iloc[1:]],
+                "cleaning_events": [pd.Timestamp(t).date().isoformat() for t in iv["start"].iloc[1:][iv["valid"].iloc[1:]]],
                 "intervals": int(len(ok)), "ci_level_pct": 68.2}
     if rain_mm_hourly is not None and len(rain_mm_hourly.dropna()):
         return {**base, **_kimber(rain_mm_hourly)}
@@ -92,7 +97,10 @@ def degradation_analysis(plant, daily: pd.DataFrame) -> dict:
     full = norm.reindex(pd.date_range(norm.index.min(), norm.index.max(), freq="D", tz=norm.index.tz))
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        rate, ci, _ = degradation_year_on_year(full)
+        try:
+            rate, ci, _ = degradation_year_on_year(full)
+        except ValueError as exc:  # e.g. sparse days: no year-over-year pairs
+            return {**base, "status": "insufficient_data", "reason": f"rdtools year-on-year found no usable data: {exc}"}
     return {**base, "status": "ok", "rate_pct_per_year": round(float(rate), 4), "ci_pct_per_year": [round(float(v), 4) for v in ci]}
 
 

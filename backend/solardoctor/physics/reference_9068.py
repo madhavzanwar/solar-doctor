@@ -5,6 +5,10 @@ Developers; see THIRD_PARTY_NOTICES.md): same system parameters and model chain,
 caller-supplied weather. It is a REFERENCE for tests and for the tracker-baseline follow-up (DECISIONS P2-7); it is
 NOT a production baseline, and tracker plants still get no deficit alerts (DECISIONS E13).
 
+Deviations from the gallery: (1) the Prilliman cell-temperature model restarts every UTC day (it needs equal time
+steps), so the thermal history is lost at 00:00 UTC; (2) night output is the inverter tare loss (negative AC power,
+-Pnt) as the gallery's inverter model returns it, not zero.
+
 ``weather`` columns (UTC DatetimeIndex, W/m2 / C / m/s / cm): ghi, dni, dhi, temp_air, wind_speed, precipitable_water,
 albedo.
 """

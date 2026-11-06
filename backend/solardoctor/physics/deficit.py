@@ -303,11 +303,14 @@ def _upsert(db: Session, plant: Plant, ev: DeficitEvent, baseline: str, source: 
 
 def load_inputs(db: Session, plant: Plant, start: datetime, end: datetime, now: Optional[datetime] = None,
                 nasa_fetch: Callable = ws.fetch_nasa_power_hourly,
-                openmeteo_fetch: Callable = irradiance.fetch_openmeteo_hourly):
-    """(telemetry, weather, strings, inverters) for [start, end], or None without telemetry."""
+                openmeteo_fetch: Callable = irradiance.fetch_openmeteo_hourly, plant_level_only: bool = False):
+    """(telemetry, weather, strings, inverters) for [start, end], or None without telemetry.
+    ``plant_level_only`` drops inverter/string rows when plant-meter rows exist (long analytics windows)."""
     tel = _telemetry_frame(db, plant.id, start, end)
     if tel.empty:
         return None
+    if plant_level_only and (plant_rows := tel[tel["inverter_id"].isna() & tel["string_id"].isna()]).size:
+        tel = plant_rows
     gaps = tel.index.to_series().diff()
     step = gaps[gaps > pd.Timedelta(0)].median()
     step = pd.Timedelta(minutes=15) if pd.isna(step) else step

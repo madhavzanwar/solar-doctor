@@ -69,3 +69,23 @@ def test_save_is_idempotent_upsert(db_session):
             now=datetime(2024, 5, 1, tzinfo=timezone.utc))
     assert db_session.query(PlantAnalytics).count() == 1
     assert sa.latest(db_session, p.id, "soiling")["x"] == 2 and sa.latest(db_session, p.id, "degradation") is None
+
+
+def test_degradation_sparse_days_is_insufficient_not_an_exception():
+    d = _daily(800, lambda n: 0 * n, 0.0)
+    res = sa.degradation_analysis(PLANT, d.iloc[::37])  # no year-over-year pairs
+    assert res["status"] == "insufficient_data" and res["reason"]
+
+
+def test_srr_without_valid_interval_falls_back_to_kimber_when_rain_exists():
+    rain = pd.Series(0.0, index=pd.date_range("2024-03-01", periods=70 * 24, freq="h", tz="UTC"))
+    res = sa.soiling_analysis(PLANT, _daily(70, lambda n: 0 * n, 0.0, noise=0.05), rain, reps=20)
+    assert res["method"] in ("rdtools_srr", "pvlib_kimber")
+    if res["method"] == "pvlib_kimber":
+        assert res["label"] == "modelled" and "SRR" in res["note"]
+
+
+def test_srr_single_valid_interval_has_no_false_ci():
+    res = sa.soiling_analysis(PLANT, _daily(70, lambda n: n, 0.004), reps=20)  # never cleaned: at most one interval
+    if res["status"] == "ok" and res["intervals"] < 2:
+        assert res["soiling_loss_rate_ci_per_day"] is None and "fewer than 2" in res["note"]

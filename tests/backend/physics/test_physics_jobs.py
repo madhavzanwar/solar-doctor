@@ -73,3 +73,21 @@ def test_scheduler_is_off_unless_env_set(monkeypatch):
     from solardoctor.api.app import _start_physics_jobs
     monkeypatch.delenv("SOLARDOCTOR_PHYSICS_JOBS", raising=False)
     assert _start_physics_jobs() is None
+
+
+def test_failing_degradation_does_not_prevent_saving_soiling(db, monkeypatch):
+    from solardoctor.physics import soiling_analytics as sa
+    plant = _plant(db)
+    monkeypatch.setattr(sa, "degradation_analysis", lambda *a, **k: (_ for _ in ()).throw(ValueError("boom")))
+    res = jobs.run_daily(db, NOW, **NO_NET)
+    assert res[plant.id]["soiling"] == "insufficient_data" and res[plant.id]["degradation"] == "error"
+    assert {r.kind for r in db.query(PlantAnalytics)} == {"soiling"}
+
+
+def test_analytics_load_plant_level_rows_only(db, monkeypatch):
+    plant = _plant(db)
+    seen = []
+    real = deficit.performance
+    monkeypatch.setattr(deficit, "performance", lambda p, tel, *a, **k: (seen.append(len(tel)), real(p, tel, *a, **k))[1])
+    jobs._analytics(db, plant, NOW, NO_NET["nasa_fetch"], NO_NET["openmeteo_fetch"])
+    assert seen == [3 * 96]  # plant meter rows only, not the 2 inverters and 8 strings

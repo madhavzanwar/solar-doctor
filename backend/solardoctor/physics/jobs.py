@@ -53,16 +53,24 @@ def daily_series(perf: deficit.Performance, weather: pd.DataFrame) -> tuple[pd.D
 
 
 def _analytics(db: Session, plant: Plant, now: datetime, nasa_fetch: Callable, openmeteo_fetch: Callable) -> dict:
-    inputs = deficit.load_inputs(db, plant, now - ANALYTICS_LOOKBACK, now, now, nasa_fetch, openmeteo_fetch)
+    inputs = deficit.load_inputs(db, plant, now - ANALYTICS_LOOKBACK, now, now, nasa_fetch, openmeteo_fetch,
+                                 plant_level_only=True)
     if inputs is None:
         return {"soiling": "no_telemetry", "degradation": "no_telemetry"}
     tel, weather, strings, inverters = inputs
     perf = deficit.performance(plant, tel, weather, "pvwatts", strings, inverters)
     daily, rain = daily_series(perf, weather)
     out = {}
-    for kind, result in (("soiling", sa.soiling_analysis(plant, daily, rain)), ("degradation", sa.degradation_analysis(plant, daily))):
-        sa.save(db, plant.id, kind, now.date(), result, now)
-        out[kind] = result["status"]
+    for kind, fn in (("soiling", lambda: sa.soiling_analysis(plant, daily, rain)),
+                     ("degradation", lambda: sa.degradation_analysis(plant, daily))):
+        try:  # one analysis failing must not stop the other from being saved
+            result = fn()
+            sa.save(db, plant.id, kind, now.date(), result, now)
+            out[kind] = result["status"]
+        except Exception:
+            db.rollback()
+            logger.exception("physics %s analytics failed for plant %s", kind, plant.id)
+            out[kind] = "error"
     return out
 
 
