@@ -92,3 +92,15 @@ def test_auth_policy_viewer_reads_operator_posts(client, bundle_env, users_mode,
     assert client.get("/api/v1/vision/model", headers=viewer).status_code == 200
     assert client.post("/api/v1/vision/predict", files=_up(png), headers=viewer).status_code == 403
     assert client.post("/api/v1/vision/predict", files=_up(png), headers=operator).status_code == 200
+
+
+def test_mpo_jpeg_is_accepted(ready):
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 48), (200, 10, 10)).save(buf, "MPO", save_all=True,
+                                                    append_images=[Image.new("RGB", (64, 48), (10, 10, 200))])
+    data = buf.getvalue()
+    with Image.open(io.BytesIO(data)) as im:
+        assert im.format == "MPO"
+    assert ready.post("/api/v1/vision/predict", files=_up(data, "p.jpg", "image/jpeg")).status_code == 200

@@ -16,7 +16,7 @@ router = APIRouter(prefix="/vision", tags=["vision"])
 
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MAX_PIXELS = 50_000_000
-_FORMATS = {"JPEG", "PNG", "WEBP"}
+_FORMATS = {"JPEG", "MPO", "PNG", "WEBP"}  # MPO = JPEG with an MPF marker (phone/camera photos)
 
 
 async def _classifier():
