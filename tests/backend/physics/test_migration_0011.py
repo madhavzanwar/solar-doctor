@@ -53,3 +53,37 @@ def test_orm_models_match_migration_columns(tmp_path, monkeypatch):
         mig = {c["name"] for c in insp.get_columns(name)}
         orm = {c.name for c in Base.metadata.tables[name].columns}
         assert mig == orm, name
+
+
+def test_0012_up_down_and_idempotent_over_create_all(tmp_path, monkeypatch):
+    """0012 adds the deficit columns, removes them again, and tolerates create_all having run first."""
+    from solardoctor.physics import models  # noqa: F401
+    from solardoctor.db.models import Base
+
+    new = {
+        "plant_alerts": {"scope", "inverter_id", "string_id", "baseline", "evidence_json"},
+        "plants": {"pi_warning", "pi_critical", "deficit_min_clear_hours"},
+        "telemetry": {"curtailed"},
+    }
+    url = f"sqlite:///{tmp_path / 'm3.db'}"
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", url)
+    cfg = _cfg(url)
+    eng = sa.create_engine(url)
+    command.upgrade(cfg, "0011")
+    for t, cols in new.items():
+        assert not cols & {c["name"] for c in sa.inspect(eng).get_columns(t)}
+    command.upgrade(cfg, "0012")
+    for t, cols in new.items():
+        assert cols <= {c["name"] for c in sa.inspect(eng).get_columns(t)}
+    command.downgrade(cfg, "0011")
+    for t, cols in new.items():
+        assert not cols & {c["name"] for c in sa.inspect(eng).get_columns(t)}
+
+    # create_all (ORM, already has the columns) before 0012 must not make it fail
+    url2 = f"sqlite:///{tmp_path / 'm4.db'}"
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", url2)
+    cfg2 = _cfg(url2)
+    command.upgrade(cfg2, "0011")
+    command.downgrade(cfg2, "0010")
+    Base.metadata.create_all(sa.create_engine(url2))
+    command.upgrade(cfg2, "0012")

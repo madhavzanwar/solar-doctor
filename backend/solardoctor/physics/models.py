@@ -89,6 +89,10 @@ class Plant(Base):
     clipping_threshold: Mapped[float] = mapped_column(Float, default=95.0, nullable=False)
     forecast_horizon_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Deficit detector (physics.deficit): performance-index thresholds and clear hours needed to alert.
+    pi_warning: Mapped[float] = mapped_column(Float, default=0.95, server_default="0.95", nullable=False)
+    pi_critical: Mapped[float] = mapped_column(Float, default=0.90, server_default="0.9", nullable=False)
+    deficit_min_clear_hours: Mapped[int] = mapped_column(Integer, default=3, server_default="3", nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         UTCDateTime, default=utcnow, onupdate=utcnow, nullable=False
@@ -175,6 +179,7 @@ class Telemetry(Base):
     t_mod: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     wind_ms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     p_expected_kw: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    curtailed: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)  # SCADA curtailment flag
     source: Mapped[str] = mapped_column(String(32), default=SOURCE_USER, nullable=False)
 
 
@@ -219,6 +224,14 @@ class PlantAlert(Base):
     resolved_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
     source: Mapped[str] = mapped_column(String(32), default=SOURCE_USER, nullable=False)
+    # Deficit-detector fields (migration 0012)
+    scope: Mapped[str] = mapped_column(String(16), default="plant", server_default="plant", nullable=False)
+    inverter_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("inverters.id", ondelete="SET NULL"), nullable=True)
+    string_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("strings.id", ondelete="SET NULL"), nullable=True)
+    baseline: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    evidence_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class Diagnosis(Base):

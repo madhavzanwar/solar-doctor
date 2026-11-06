@@ -35,7 +35,7 @@ rithvik123/solar-panel-defect-detection, VishnuBhaiya/solarvision-inspection, mc
 ## Runtime libraries (selection; full lists in `requirements_platform.txt`, `frontend/package.json`)
 
 FastAPI (MIT), SQLAlchemy (MIT), Alembic (MIT), Pydantic (MIT), Ultralytics (AGPL-3.0), PyTorch (BSD-3),
-OpenCV (Apache-2.0), pvlib (BSD-3), Next.js (MIT), React (MIT), Tailwind CSS (MIT).
+OpenCV (Apache-2.0), pvlib (BSD-3), pvanalytics (MIT), rdtools (MIT), openmeteo-requests (MIT), Next.js (MIT), React (MIT), Tailwind CSS (MIT).
 
 ## Fonts and images
 

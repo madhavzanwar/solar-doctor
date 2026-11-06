@@ -49,6 +49,9 @@ python-dotenv>=1.0.1             # .env file support for secrets
 
 # ── Physics / forecasting (Phase E, ported from SolarPulseAI) ────────────────
 pvlib>=0.11.0                    # clear-sky, POA, PVWatts, cell temperature
+pvanalytics>=0.2.2               # data QA for the deficit detector (clipping, clear-sky, outliers, stale values)
+rdtools>=3.2.1                   # soiling / degradation analytics (NREL)
+openmeteo-requests>=1.7.5        # official Open-Meteo client (next-3-days weather)
 lightgbm>=4.5.0                  # hybrid + quantile forecasters (optional at runtime: falls back to physics baseline)
 scikit-learn>=1.6.0
 joblib>=1.3.0
