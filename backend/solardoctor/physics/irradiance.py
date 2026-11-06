@@ -110,7 +110,7 @@ def resolve_weather(plant, times, telemetry: Optional[pd.DataFrame] = None, db=N
         temp, wind = temp.fillna(frame["temp_air"]), wind.fillna(frame["wind_speed"])
         precip = precip.fillna(frame["precip_mm"])
 
-    past = idx <= now
+    past = (idx <= now) & (source == "")  # providers are only asked for rows the site sensor did not cover
     if past.any():
         try:
             # a day of margin each side so rows before the first / after the last hourly centre are covered
@@ -120,7 +120,7 @@ def resolve_weather(plant, times, telemetry: Optional[pd.DataFrame] = None, db=N
                 "temp_air": "temp_air", "wind_speed": "wind_speed", "precip_mm": "precip_mm"}, cs, loc), NASA)
         except Exception as exc:  # latency / outage: fall through to the next provider
             logger.warning("NASA POWER unavailable (%s: %s); falling back", type(exc).__name__, exc)
-    future = (idx > now) & (idx <= now + OPENMETEO_HORIZON)
+    future = (idx > now) & (idx <= now + OPENMETEO_HORIZON) & (source == "")
     if future.any():
         try:
             hourly = openmeteo_fetch(plant.lat, plant.lon, db=db)
