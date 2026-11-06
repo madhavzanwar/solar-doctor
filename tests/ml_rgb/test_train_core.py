@@ -133,3 +133,16 @@ def test_ood_protocol_selects_on_val_and_reports_test():
     assert r["test"]["methods"]["a"]["auroc"] > 0.99
     d = {"configs": {}, "winner": None, "ood": r, "xai": None, "onnx": None}
     assert "frozen threshold" in report.render(d)
+
+
+def test_layer_decay_and_head_mult_give_distinct_effective_lrs():
+    from ml.rgb.train import head_params, make_optimizer, set_lrs
+    hp = {**configs._HP, **configs.CONFIGS["B2"]["hp"]}
+    model = build_model({"arch": "timm", "backbone_id": "convnext_atto", "classes": list(CLASSES)})
+    opt = make_optimizer(model, hp)
+    set_lrs(opt, hp["lr"], 0.5)
+    lrs = {round(g["lr"], 12) for g in opt.param_groups}
+    assert len(lrs) > 2 and min(lrs) < hp["lr"] * 0.5 < max(lrs)
+    head = {id(p) for p in head_params(model)}
+    hg = [g for g in opt.param_groups if any(id(p) in head for p in g["params"])][0]
+    assert hg["lr"] == pytest.approx(hp["lr"] * hp["head_lr_mult"] * 0.5)

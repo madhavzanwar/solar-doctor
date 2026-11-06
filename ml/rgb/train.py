@@ -90,15 +90,29 @@ def set_trainable(model, mode: str) -> None:
 
 
 def make_optimizer(model, hp: dict):
+    """AdamW whose param groups carry `lr_scale`; effective lr = hp["lr"] * lr_scale * schedule (see `fit`).
+
+    Head groups get an extra `head_lr_mult`; layer decay (timm) gives earlier layers smaller scales.
+    """
+    head = {id(p) for p in head_params(model)}
     if hp["layer_decay"]:
         from timm.optim import create_optimizer_v2
-        return create_optimizer_v2(model, "adamw", lr=hp["lr"], weight_decay=hp["weight_decay"],
-                                   layer_decay=hp["layer_decay"])
-    head = {id(p) for p in head_params(model)}
+        opt = create_optimizer_v2(model, "adamw", lr=hp["lr"], weight_decay=hp["weight_decay"],
+                                  layer_decay=hp["layer_decay"])
+        for g in opt.param_groups:
+            g["lr_scale"] = g.get("lr_scale", 1.0) * (hp["head_lr_mult"] if any(id(p) in head for p in g["params"])
+                                                       else 1.0)
+        return opt
     body = [p for p in model.parameters() if p.requires_grad and id(p) not in head]
-    groups = [{"params": body, "lr": hp["lr"]},
-              {"params": [p for p in model.parameters() if id(p) in head], "lr": hp["lr"] * hp["head_lr_mult"]}]
+    groups = [{"params": body, "lr": hp["lr"], "lr_scale": 1.0},
+              {"params": [p for p in model.parameters() if id(p) in head], "lr": hp["lr"],
+               "lr_scale": hp["head_lr_mult"]}]
     return torch.optim.AdamW(groups, weight_decay=hp["weight_decay"])
+
+
+def set_lrs(opt, base_lr: float, factor: float) -> None:
+    for g in opt.param_groups:
+        g["lr"] = base_lr * g.get("lr_scale", 1.0) * factor
 
 
 def fit(model, train_ds, val_ds, hp: dict, class_w: np.ndarray, device: str, seed: int):
@@ -111,7 +125,6 @@ def fit(model, train_ds, val_ds, hp: dict, class_w: np.ndarray, device: str, see
     dl = DataLoader(train_ds, batch_size=bs, shuffle=True, drop_last=len(train_ds) > bs, num_workers=0,
                     generator=torch.Generator().manual_seed(seed))
     total, warm = hp["epochs"] * len(dl), hp["warmup_epochs"] * len(dl)
-    base_lrs = [g["lr"] for g in opt.param_groups]
 
     def lr_at(step: int) -> float:
         if step < warm:
@@ -131,8 +144,7 @@ def fit(model, train_ds, val_ds, hp: dict, class_w: np.ndarray, device: str, see
         model.train()
         tot = 0.0
         for x, y in dl:
-            for g, b in zip(opt.param_groups, base_lrs):
-                g["lr"] = b * lr_at(step)
+            set_lrs(opt, hp["lr"], lr_at(step))
             x, y = x.to(device), y.to(device)
             with torch.autocast(device_type=device.split(":")[0], dtype=torch.float16, enabled=use_amp):
                 loss = loss_fn(model(x).float(), y)
