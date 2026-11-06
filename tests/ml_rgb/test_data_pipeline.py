@@ -167,3 +167,48 @@ def test_dataset(raw, out):
     w = class_weights([0, 0, 0, 1])
     assert abs(float(w[[0, 1]].mean()) - 1) < 1e-6 and w[1] > w[0]
     assert len(list(balanced_sampler([0, 0, 0, 1]))) == 4
+
+
+def _variant_raw(tmp_path):
+    raw = tmp_path / "raw"
+    for cls, folder in FOLDERS.items():
+        (raw / folder).mkdir(parents=True)
+        for i in range(8):
+            _tex(100 + 10 * CLASSES.index(cls) + i).save(raw / folder / f"{i}.jpg", quality=95)
+    base = Image.open(raw / FOLDERS["clean"] / "0.jpg")
+    base.transpose(Image.Transpose.FLIP_LEFT_RIGHT).save(raw / "Clean" / "flip.jpg", quality=95)
+    base.transpose(Image.Transpose.ROTATE_90).save(raw / "Clean" / "rot90.jpg", quality=95)
+    return raw
+
+
+def test_flipped_and_rotated_copies_share_a_group(tmp_path):
+    raw = _variant_raw(tmp_path)
+    m = prepare(raw, tmp_path / "o").set_index("rel_path")["group_id"]
+    assert m["Clean/0.jpg"] == m["Clean/flip.jpg"] == m["Clean/rot90.jpg"]
+    verify_no_leak(pd.read_csv(tmp_path / "o" / "manifest.csv"), raw)
+    leaked = pd.read_csv(tmp_path / "o" / "manifest.csv")
+    leaked.loc[leaked.rel_path == "Clean/rot90.jpg", ["group_id", "split", "fold"]] = [999, "test", -1]
+    leaked.loc[leaked.rel_path == "Clean/0.jpg", ["group_id", "split", "fold"]] = [998, "train", 0]
+    with pytest.raises(AssertionError, match="within dedupe threshold"):
+        verify_no_leak(leaked, raw)
+
+
+def test_embedding_edge_with_injected_features(tmp_path):
+    raw = _variant_raw(tmp_path)
+    # rows are sorted by rel_path, so locate the two images by their position
+    all_paths = sorted(p.relative_to(raw).as_posix() for p in raw.rglob("*.jpg"))
+    i3, i5 = all_paths.index("Clean/3.jpg"), all_paths.index("Clean/5.jpg")
+
+    def fake2(imgs):
+        f = np.eye(len(imgs), 64)
+        f[i5] = f[i3] + 0.01
+        return f
+
+    m = prepare(raw, tmp_path / "o", embed_fn=fake2, cos_thr=0.95).set_index("rel_path")["group_id"]
+    assert m["Clean/3.jpg"] == m["Clean/5.jpg"]
+    st = json.loads((tmp_path / "o" / "stats.json").read_text())
+    assert st["edges"]["embedding_only"] == 1
+    ex = st["embedding_only_examples"][0]
+    assert {ex["a"], ex["b"]} == {"Clean/3.jpg", "Clean/5.jpg"} and ex["cosine"] > 0.95
+    m0 = prepare(raw, tmp_path / "o2").set_index("rel_path")["group_id"]
+    assert m0["Clean/3.jpg"] != m0["Clean/5.jpg"]

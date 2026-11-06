@@ -15,7 +15,7 @@ trained privately, images are never committed or redistributed. Raw data: `ml/rg
 | `label` | normalised class name (one of the 6) |
 | `sha256` | of the file bytes |
 | `phash`, `dhash` | hex strings from `imagehash` (hash_size 8) |
-| `group_id` | int; near-duplicates (pHash **or** dHash Hamming ≤ 6, transitive) share a group; a group never spans splits |
+| `group_id` | int; near-duplicates share a group (transitive edges: pHash **or** dHash Hamming ≤ 6, minimised over the other image's hflip/vflip/rot90/180/270 variants; **or** DINOv2-small cosine ≥ 0.95 unless `--no-embed`); a group never spans splits |
 | `split` | `train` / `val` / `test` (≈70/15/15, stratified by label, grouped by group_id) |
 | `fold` | 0-4 for train+val rows (5-fold StratifiedGroupKFold over train+val), -1 for test |
 

@@ -58,7 +58,7 @@ def _pm(m, d=4):
 METHOD = """## Method
 
 - Source data: Kaggle "Solar Panel Images Clean and Faulty" (licence unknown; trained privately, never redistributed).
-- Exact duplicates removed by sha256; near-duplicates (pHash or dHash Hamming <= 6, transitive) grouped.
+- Exact duplicates removed by sha256; near-duplicates grouped (pHash or dHash Hamming <= 6 incl. flip/rotation variants, or DINOv2-small cosine >= 0.95; transitive).
 - Group-aware stratified split 70/15/15 (train/val/test) so a duplicate group never spans splits; 5-fold
   StratifiedGroupKFold over train+val. The test split is never used for selection.
 - Same splits and seeds (seed + fold) for every config; epoch selection and model selection by validation macro-F1.
