@@ -66,7 +66,7 @@ def test_explain_gradcam_and_lime(ready, png):
     assert ready.post(q, files=_up(png)).json()["cached"] is True
 
 
-@pytest.mark.parametrize("qs", ["method=shap", "num_samples=49", "num_samples=5001", "top_k=0", "top_k=21"])
+@pytest.mark.parametrize("qs", ["method=shap", "num_samples=49", "num_samples=2001", "num_samples=5001", "top_k=0", "top_k=21"])
 def test_explain_validates_query(ready, png, qs):
     assert ready.post(f"/api/v1/vision/explain?{qs}", files=_up(png)).status_code == 422
 
@@ -114,3 +114,8 @@ def test_oversize_content_length_rejected_before_form_is_read(ready, monkeypatch
                    headers={"content-length": str(16 * 1024 * 1024 + 70_000),
                             "content-type": "multipart/form-data; boundary=b"})
     assert r.status_code == 413
+
+
+def test_explain_num_samples_upper_boundary(ready, png):
+    q = "/api/v1/vision/explain?method=lime&top_k=1"
+    assert ready.post(q + "&num_samples=2001", files=_up(png)).status_code == 422

@@ -85,7 +85,7 @@ async def predict(file: UploadFile = File(..., description="JPEG/PNG/WebP, max 1
 async def explain(
     file: UploadFile = File(..., description="JPEG/PNG/WebP, max 15 MB"),
     method: Literal["gradcam", "lime"] = Query("gradcam"),
-    num_samples: int = Query(600, ge=50, le=5000),
+    num_samples: int = Query(600, ge=50, le=2000),
     top_k: int = Query(5, ge=1, le=20),
 ):
     data = await _read_image(file)
