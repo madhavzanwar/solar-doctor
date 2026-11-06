@@ -38,6 +38,8 @@ Exact duplicates (same sha256) keep one row; dropped rows are listed in `ml/rgb/
   ```
   `gradcam_target_layer` is a dotted module path inside the model (`"backbone.encoder.layer.11.norm1"` for DINOv2);
   `gradcam_reshape` is `null` for CNNs or `{"type": "vit", "grid": 16, "prefix_tokens": 1}` for ViTs.
+  Preprocessing (shared by training eval and serving): `model_def.shrink` (BILINEAR so the shorter side is
+  `round(img_size*256/224)` if larger) then `preprocess` (BILINEAR square resize, optional grayscale, normalise).
   OOD score convention: **higher = more out-of-distribution**; `is_ood = score > threshold`.
 - `model.safetensors`: `state_dict` of `build_model(config)`.
 - `model.onnx` (opset 17, input `pixel_values` float32 [N,3,S,S], output `logits`), optional.

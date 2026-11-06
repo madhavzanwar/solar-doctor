@@ -194,6 +194,7 @@ def fit_probe(model, train_ds, hp: dict, device: str, groups=None, seed: int = 4
 def run_one(bundle_cfg: dict, hp: dict, train_ds, val_ds, test_ds, class_w, device: str, seed: int,
             groups=None, pretrained: bool = True):
     """Train one model; returns (model with best weights, result dict with val/test logits)."""
+    seed_everything(seed)  # head init must not depend on prior RNG use
     model = build_model(bundle_cfg, pretrained=pretrained)
     t0 = time.time()
     extra = {}

@@ -62,7 +62,8 @@ METHOD = """## Method
 - Group-aware stratified split 70/15/15 (train/val/test) so a duplicate group never spans splits; 5-fold
   StratifiedGroupKFold over train+val. The test split is never used for selection.
 - Same splits and seeds (seed + fold) for every config; epoch selection and model selection by validation macro-F1.
-- Class imbalance: class-weighted cross-entropy. Temperature scaling is fitted on the validation split only.
+- Class imbalance: class-weighted cross-entropy. Temperature scaling is fitted on the validation split only, the same split used for epoch
+  selection (so calibration on val is slightly optimistic; the reported test ECE/NLL are held-out).
 - B0_gray100 is a PyTorch reproduction of the original Keras VGG16 (100x100 grayscale).
 """
 
@@ -75,16 +76,19 @@ HybridSolarNet (arXiv 2601.02928) 92.37 %. Public repos often exceed these becau
 
 def render(d: dict) -> str:
     L = ["# SolarDoctor RGB classifier bake-off", "", METHOD, "## Model comparison (5-fold CV, mean ± std)", "",
-         "| config | val macro-F1 | val accuracy | held-out test macro-F1 (5 fold models) | params | size MB | CPU p95 ms |",
+         "| config | val macro-F1 (epoch selected on this fold, optimistic) | held-out test macro-F1 (mean ± std of the 5 "
+         "fold models) | val accuracy | params | size MB | CPU p95 ms |",
          "|---|---|---|---|---|---|---|"]
     for n, c in d["configs"].items():
         L.append(f"| {n}{' (winner)' if n == d['winner'] else ''} | {_pm(c['val_macro_f1'])} | "
-                 f"{_pm(c['val_accuracy'])} | {_pm(c['test_macro_f1_over_folds'])} | "
+                 f"{_pm(c['test_macro_f1_over_folds'])} | {_pm(c['val_accuracy'])} | "
                  f"{'not run' if c['params'] is None else format(c['params'], ',')} | {_f(c['size_mb'], 1)} | "
                  f"{_f(c['cpu_p95_ms'], 1)} |")
     if not d["configs"]:
         L.append("| not run | | | | | | |")
-    L += ["", f"Winner (val macro-F1 mean; ties: latency, then size): **{d['winner'] or 'not run'}**", ""]
+    L += ["", "The CV val column is optimistic: each fold's epoch is selected on that same fold. The held-out test "
+          "column is the unbiased estimate.", "",
+          f"Winner (val macro-F1 mean; ties: latency, then size): **{d['winner'] or 'not run'}**", ""]
     fin = d["configs"][d["winner"]]["final"] if d["winner"] else None
     L.append("## Winner: held-out test metrics")
     if not fin:

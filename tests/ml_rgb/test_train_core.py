@@ -183,3 +183,34 @@ def test_hf_config_builds_offline_and_is_written_to_bundle(arch, tmp_path, monke
     written = json.loads((out / "config.json").read_text())
     assert written["hf_config"] == json.loads(json.dumps(cfg["hf_config"]))
     assert build_model(written).state_dict().keys() == model.state_dict().keys()
+
+
+def test_report_labels_cv_val_as_optimistic_and_shows_test_next_to_it(tmp_path):
+    runs = tmp_path / "runs"
+    (runs / "B1" / "cv").mkdir(parents=True)
+    m = metrics(np.eye(6)[np.arange(6)], np.arange(6))
+    for k in range(5):
+        (runs / "B1" / "cv" / f"fold{k}.json").write_text(json.dumps({"val": m, "test": m}))
+    md = report.render(report.build(runs, tmp_path / "reports"))
+    header = next(l for l in md.splitlines() if l.startswith("| config |"))
+    cols = [c.strip() for c in header.strip("|").split("|")]
+    assert cols[1] == "val macro-F1 (epoch selected on this fold, optimistic)"
+    assert cols[2].startswith("held-out test macro-F1 (mean ± std")
+    assert "same split used for epoch" in md
+
+
+def test_run_one_seeds_before_building_the_model(monkeypatch):
+    import ml.rgb.train as tr
+    heads = []
+    real = tr.build_model
+
+    def spy(*a, **k):
+        m = real(*a, **k)
+        heads.append(tr.head_params(m)[0].detach().clone())
+        return m
+    monkeypatch.setattr(tr, "build_model", spy)
+    hp = {**HP, "epochs": 1}
+    for prior in (111, 222):
+        torch.manual_seed(prior)  # different RNG state before each run
+        run_one(BUNDLE, hp, toy_ds(), toy_ds(24, 1), toy_ds(24, 2), np.ones(6), "cpu", 7, pretrained=False)
+    assert torch.equal(heads[0], heads[1])
