@@ -34,7 +34,7 @@ background thread only if the dir or revision is set, and a failure there just k
 Auth: same policy as other internal routers (viewer+ read; POST = operator+ in users mode). Also served on the
 hidden legacy alias without the `/api/v1` prefix.
 
-Upload validation (`file` multipart field): ≤ 15 MB (**413**, read in chunks), non-empty (**400**), sniffed by PIL, not
+Upload validation (`file` multipart field): ≤ 15 MB (**413**: rejected up front when `Content-Length` exceeds 15 MB + 64 KB multipart allowance, before the form is read; the chunked read is still enforced), non-empty (**400**), sniffed by PIL, not
 the client MIME: must be JPEG (incl. MPO phone/camera JPEGs)/PNG/WebP and ≤ 50 MP, else **422**. `/explain` query: `method` ∈ gradcam|lime,
 `num_samples` 50..5000, `top_k` 1..20, else **422**. Model not loadable: **503**. CPU inference runs in a threadpool.
 

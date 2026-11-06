@@ -5,16 +5,34 @@ import io
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi.routing import APIRoute
 from PIL import Image
 from starlette.concurrency import run_in_threadpool
 
 from solardoctor.vision import VisionModelUnavailable, get_classifier
 
 logger = logging.getLogger("solardoctor.api")
-router = APIRouter(prefix="/vision", tags=["vision"])
-
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+MULTIPART_ALLOWANCE = 64 * 1024  # boundaries + headers around the file part
+
+
+class _EarlyLimitRoute(APIRoute):
+    """Reject an oversized Content-Length with 413 before FastAPI buffers the multipart form."""
+
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def guarded(request: Request):
+            declared = request.headers.get("content-length", "")
+            if declared.isdigit() and int(declared) > MAX_UPLOAD_BYTES + MULTIPART_ALLOWANCE:
+                raise HTTPException(status_code=413, detail="image exceeds 15 MB limit")
+            return await handler(request)
+        return guarded
+
+
+router = APIRouter(prefix="/vision", tags=["vision"], route_class=_EarlyLimitRoute)
+
 MAX_PIXELS = 50_000_000
 _FORMATS = {"JPEG", "MPO", "PNG", "WEBP"}  # MPO = JPEG with an MPF marker (phone/camera photos)
 

@@ -104,3 +104,13 @@ def test_mpo_jpeg_is_accepted(ready):
     with Image.open(io.BytesIO(data)) as im:
         assert im.format == "MPO"
     assert ready.post("/api/v1/vision/predict", files=_up(data, "p.jpg", "image/jpeg")).status_code == 200
+
+
+def test_oversize_content_length_rejected_before_form_is_read(ready, monkeypatch, png):
+    def boom(*a, **k):
+        raise AssertionError("form was read")
+    monkeypatch.setattr("starlette.requests.Request.form", boom)
+    r = ready.post("/api/v1/vision/predict", content=b"x",
+                   headers={"content-length": str(16 * 1024 * 1024 + 70_000),
+                            "content-type": "multipart/form-data; boundary=b"})
+    assert r.status_code == 413
