@@ -1,29 +1,25 @@
 # Image credits
 
 All photos are self-hosted in `frontend/public/images/` (AVIF + WebP, max 2400 px wide, re-encoded from the
-originals; the hero is 1920 px wide and under 200 KB; next/image serves AVIF or WebP by browser support). None are hotlinked. All are published under the
-[Unsplash License](https://unsplash.com/license) (free to use, attribution appreciated). Titles, authors and licence
-status were read from each photo's Unsplash page on 2026-11-05.
+originals; the hero is 1920 px wide and under 200 KB; next/image serves AVIF or WebP by browser support). None are hotlinked. Each is published under the
+[Unsplash License](https://unsplash.com/license) or the [Pexels License](https://www.pexels.com/license/) (both free
+to use, attribution appreciated). Titles, authors and licences were read from each photo's source page (hero on
+2026-11-05, the other four on 2026-11-06).
 
 | File (`frontend/public/images/`) | Title | Author | Source page | Licence | Used |
 |---|---|---|---|---|---|
 | `hero-desert-array.{avif,webp}` | A large field of solar panels in the desert | Priamo Mendez (@elprimetimerd) | https://unsplash.com/photos/a-large-field-of-solar-panels-in-the-desert-E4XEBPEkgUs | Unsplash License | Landing hero |
+| `rooftop-navi-mumbai.{avif,webp}` | An aerial view of Podar International School with solar panels on the roof in Navi Mumbai | Zoshua Colah (@zoshuacolah) | https://unsplash.com/photos/podar-international-school-in-navi-mumbai-K5Mw_ZUoRPc | Unsplash License | Landing "Detect" row |
+| `drone-solar-farm.{avif,webp}` | Drone Shot of a Solar Panels | K (@kelly on Pexels) | https://www.pexels.com/photo/drone-shot-of-a-solar-panels-11815854/ | Pexels License | Landing "Diagnose" row |
+| `dusty-panel-closeup.{avif,webp}` | Close-Up Shot of Solar Panels | Kindel Media | https://www.pexels.com/photo/close-up-shot-of-solar-panels-9799712/ | Pexels License | Landing "Explain" row |
+| `technician-cleaning.{avif,webp}` | Men Cleaning Solar Panels | Trinh Trần | https://www.pexels.com/photo/men-cleaning-solar-panels-11645003/ | Pexels License | Landing "Act" row |
 
-## Update 2026-11-05 (sd-frontend, finish pass)
+## Update 2026-11-06
 
-Attempted to source the four missing photos (Indian rooftop, dusty close-up, technician cleaning, drone over a farm)
-from Pexels/Unsplash. The sandbox has no web search or page-fetch tool, and unsplash.com / pexels.com answer plain
-curl with bot checks (HTTP 403/307); working around the check was not attempted. Without reading each photo page
-(title, author, licence, not sponsored) nothing could be verified, so **no new image was added**. `array-aerial` and
-`technician-panel` were unused ("Reserved"), so they were deleted from `frontend/public/images/` (they remain in git
-history; their table rows are dropped). Only the hero is shipped; its licence is still as unverified from the sandbox
-as stated above. A human with a browser should pick the four photos, check each page, and add them here.
-
-## Not yet sourced (open issue)
-
-DESIGN.md §9 also asks for an Indian rooftop array and a close-up of a dusty panel. The rooftop candidates found
-were Unsplash+ (paid licence) and no clearly dusty close-up was verified, so neither is included. Do not substitute
-Kaggle dataset images on public pages (licence "Unknown").
+The four missing photos (rooftop, dusty close-up, technician cleaning, drone) were sourced and their title, author and
+licence verified on each photo page in a browser. The rooftop original was fetched from the Unsplash image CDN
+(`images.unsplash.com`, 2400 px) because the download URL sits behind a bot check; the Pexels originals came from
+`images.pexels.com`. The earlier unused `array-aerial` and `technician-panel` files stay deleted (in git history).
 
 ## Removed
 
