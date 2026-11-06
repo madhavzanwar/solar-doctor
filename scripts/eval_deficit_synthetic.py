@@ -64,12 +64,19 @@ def main(n_seeds: int = 10) -> None:
         sev = dict(collections.Counter(e.severity for e in evs))
         lines.append(f"| {sc} | {len(evs)} | {sev} | {statistics.median(pis):.3f} ({min(pis):.3f}..{max(pis):.3f}) | "
                      f"{min(lows):.3f}..{max(lows):.3f} |")
-    s5 = [e for r in runs if r["scenario"] == "string_5" for e in r["events"]]
-    near = sum(1 for e in s5 if e.evidence["pi_rolling_min"] is None)
-    lines += ["", "## Notes", "",
-              f"- The 5 % case sits right at the 0.95 WARNING threshold: of {len(s5)} detections, {near} were only INFO "
-              "(rolling median never dropped below 0.95), the rest WARNING. Whether a 5 % loss becomes an alert depends on noise and the baseline mismatch; the peer rule still localises the string.",
-              "- The 10 % case sits at the 0.90 CRITICAL boundary: severity is CRITICAL or WARNING depending on the run (see counts above), as the rule implies.",
+    lines += ["", "## Notes", ""]
+    for sc, thr, label in (("string_5", 0.95, "5 %"), ("string_10", 0.90, "10 %")):
+        evs = [e for r in runs if r["scenario"] == sc for e in r["events"]]
+        sev = collections.Counter(e.severity for e in evs)
+        lows = [e.evidence["pi_rolling_min"] for e in evs if e.evidence["pi_rolling_min"] is not None]
+        span = f"{min(lows):.3f}..{max(lows):.3f}" if lows else "n/a"
+        side = sum(1 for v in lows if v < thr)
+        lines.append(f"- {label} case ({sc}): {len(evs)} detections, severities {dict(sev)}; lowest rolling-median PI per run "
+                     f"{span} against the {thr:.2f} threshold ({side} of {len(lows)} runs below it, "
+                     f"{len(lows) - side} at or above it). "
+                     + ("The margin to the threshold is " + f"{min(abs(v - thr) for v in lows):.3f} PI at the closest run, "
+                        "so the severity is set by noise and baseline mismatch at that boundary." if lows else ""))
+    lines += [
               "- Healthy PI is ~1.0 here because the generator and the baseline share the same underlying pvlib physics apart from small implementation differences; real plants add model error, sensor calibration drift and soiling baselines that this test does not exercise.",
               "- Cloudy-day immunity relies on the clear-sky QC (pvanalytics `reno` on measured GHI); one cloudy day among three clear days is tested, not a fully overcast week.", ""]
     OUT.parent.mkdir(parents=True, exist_ok=True)

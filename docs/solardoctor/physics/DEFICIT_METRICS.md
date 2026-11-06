@@ -43,7 +43,7 @@ A true positive is an event on exactly the injected scope (the right string, or 
 
 ## Notes
 
-- The 5 % case sits right at the 0.95 WARNING threshold: of 10 detections, 0 were only INFO (rolling median never dropped below 0.95), the rest WARNING. Whether a 5 % loss becomes an alert depends on noise and the baseline mismatch; the peer rule still localises the string.
-- The 10 % case sits at the 0.90 CRITICAL boundary: severity is CRITICAL or WARNING depending on the run (see counts above), as the rule implies.
+- 5 % case (string_5): 10 detections, severities {'WARNING': 10}; lowest rolling-median PI per run 0.941..0.947 against the 0.95 threshold (10 of 10 runs below it, 0 at or above it). The margin to the threshold is 0.003 PI at the closest run, so the severity is set by noise and baseline mismatch at that boundary.
+- 10 % case (string_10): 10 detections, severities {'CRITICAL': 10}; lowest rolling-median PI per run 0.892..0.897 against the 0.90 threshold (10 of 10 runs below it, 0 at or above it). The margin to the threshold is 0.003 PI at the closest run, so the severity is set by noise and baseline mismatch at that boundary.
 - Healthy PI is ~1.0 here because the generator and the baseline share the same underlying pvlib physics apart from small implementation differences; real plants add model error, sensor calibration drift and soiling baselines that this test does not exercise.
 - Cloudy-day immunity relies on the clear-sky QC (pvanalytics `reno` on measured GHI); one cloudy day among three clear days is tested, not a fully overcast week.
