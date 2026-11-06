@@ -63,7 +63,7 @@ Work orders, ROI, Map, Reports and Settings pages exist as real routes with head
 
 | Item | Why it matters |
 |---|---|
-| **`HF_TOKEN` (write scope)** | The thermal weights `best.pt` were **recovered** from the original project's public Hugging Face Space (sha256-pinned, verified; see `docs/solardoctor/WEIGHTS.md`) and all 10 weight-dependent tests pass with the file in place. They are still fetched from that third-party Space; publish our own copy with `scripts/publish_weights_hf.py` (needs your token) to remove the dependency. CI caches the file and runs those tests when it is present. |
+| **`HF_TOKEN` (write scope)** | The thermal weights `best.pt` were **recovered** from the original project's public Hugging Face Space (sha256-pinned, verified; see `docs/solardoctor/WEIGHTS.md`) and all 10 weight-dependent tests pass with the file in place. Since 2026-11-06 our own copy is published (public, AGPL-3.0) at https://huggingface.co/solar-doctor/solar-doctor-thermal-yolo11x and `scripts/fetch_weights.py` tries it first, falling back to that Space. CI caches the file and runs those tests when it is present. |
 | **Kaggle credentials** (`KAGGLE_USERNAME`, `KAGGLE_KEY`) | Prompt 2 downloads the 6-class panel dataset. Licence on Kaggle is "Unknown": train privately, never redistribute images. |
 | **Hugging Face token (write scope)** | Publish the RGB model and the demo Space. |
 | **Photos and licences** | Only the hero photo ships (Unsplash licence, **not verified** from the sandbox). Four more are wanted (Indian rooftop, dusty close-up, technician cleaning, drone over a farm): the sandbox could not read Unsplash/Pexels pages, so none were added. Pick free-licence photos, check each page, and add them to `docs/IMAGE_CREDITS.md`. |

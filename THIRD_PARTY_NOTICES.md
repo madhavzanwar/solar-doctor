@@ -26,7 +26,7 @@ Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/`
 
 | Asset | Licence | Note |
 |---|---|---|
-| Thermal YOLO11x `best.pt` (from AxalonSystems) | **AGPL-3.0** (Ultralytics-trained) | Not stored in this repo; served from Hugging Face `madhavzanwar/solar-doctor-thermal-yolo11x`. Network use of the weights has AGPL implications. mAP@0.5 0.792 is AxalonSystems' own figure on their split. |
+| Thermal YOLO11x `best.pt` (from AxalonSystems) | **AGPL-3.0** (Ultralytics-trained) | Not stored in this repo; served from Hugging Face `solar-doctor/solar-doctor-thermal-yolo11x`. Network use of the weights has AGPL implications. mAP@0.5 0.792 is AxalonSystems' own figure on their split. |
 
 ## Study-only (no licence, nothing copied)
 

@@ -97,7 +97,7 @@ Log in at http://localhost:3000/login as `admin@solardoctor.example` with the pa
 Thermal detection is off by default (`ENABLE_THERMAL=false`). Weights are **not** in git:
 
 ```bash
-make weights      # downloads madhavzanwar/solar-doctor-thermal-yolo11x from Hugging Face
+make weights      # downloads solar-doctor/solar-doctor-thermal-yolo11x from Hugging Face
 ```
 
 Set `ENABLE_THERMAL=true` afterwards. The weights are AGPL-3.0 (Ultralytics); see `THIRD_PARTY_NOTICES.md`.
