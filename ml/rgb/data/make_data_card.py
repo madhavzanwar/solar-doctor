@@ -4,7 +4,9 @@
 """
 from __future__ import annotations
 
+import csv
 import json
+from collections import Counter
 from pathlib import Path
 
 from solardoctor.vision.model_def import CLASSES
@@ -20,6 +22,14 @@ def _table(first: str, rows: dict[str, dict]) -> list[str]:
     return out
 
 
+def ood_licences() -> dict[str, int]:
+    p = DATA_DIR / "ood_manifest.csv"
+    if not p.exists():
+        return {}
+    with open(p, newline="", encoding="utf-8") as f:
+        return dict(sorted(Counter(r["license_name"] for r in csv.DictReader(f)).items()))
+
+
 def render(stats: dict) -> str:
     t = stats["thresholds"]
     leak = stats["leak_check"]
@@ -30,8 +40,12 @@ def render(stats: dict) -> str:
         "**Unknown** on Kaggle, so the images are used for private training only: they are not in git, not "
         "redistributed and not on Hugging Face. Only file names and hashes (`manifest.csv`) are committed.", "",
         "## Cleaning", "",
-        f"Near-duplicate rule: pHash Hamming <= {t['phash']} or dHash Hamming <= {t['dhash']} (hash size 8), "
-        f"transitive groups. Split seed {t['seed']}.", "",
+        f"Near-duplicate rule: two images are linked when pHash Hamming <= {t['phash']} or dHash Hamming <= "
+        f"{t['dhash']} (hash size 8), taking the minimum distance over the other image's horizontal flip, vertical "
+        "flip and 90/180/270 degree rotations as well as the original"
+        + (f", or when their DINOv2-small embeddings have cosine similarity >= {t['cosine']}"
+           if t.get("cosine") is not None else " (embedding edge disabled for this run)")
+        + f". Groups are the transitive closure of the links. Split seed {t['seed']}.", "",
         "Images per class before and after removing corrupt files and exact duplicates:", "",
         *_table("stage", {"raw (decodable)": stats["raw_per_class"], "after exact dedupe": stats["after_cleaning_per_class"]}),
         "", "Removed files by reason: " + (", ".join(f"{k}: {v}" for k, v in sorted(stats["removed_per_reason"].items())) or "none"),
@@ -48,12 +62,27 @@ def render(stats: dict) -> str:
           for e in stats["near_duplicate_examples"]]
     if not (stats["exact_duplicate_examples"] or stats["near_duplicate_examples"]):
         L.append("- none")
+    if "edges" in stats:
+        e = stats["edges"]
+        L += ["", f"Links found: {e['hash']} by hash, {e['embedding']} by embedding "
+                  f"({e['embedding_only']} by embedding only). Embedding-only pairs with the highest cosine "
+                  "(audit these to judge the threshold):"]
+        L += [f"- `{x['a']}` ~ `{x['b']}` (cosine {x['cosine']:.3f})" for x in stats["embedding_only_examples"]] or ["- none"]
     L += ["", "## Possible label noise (near-duplicate groups with different labels)", ""]
     L += [f"- group {g['group_id']}: " + ", ".join(f"`{m['rel_path']}` ({m['label']})" for m in g["members"])
           for g in stats["cross_label_groups"]] or ["- none"]
     L += ["", "## Leakage check", "",
           f"Passed: no group spans splits or folds. Minimum test vs train/val Hamming distance: "
           f"pHash {leak['min_phash_dist']}, dHash {leak['min_dhash_dist']} (must exceed {t['phash']}/{t['dhash']})."]
+    lic = ood_licences()
+    if lic:
+        L += ["", "## Out-of-distribution evaluation images (COCO)", "",
+              "The OOD guard is evaluated on 100 non-panel photos from COCO val2017 (ids and sha256 in "
+              "`ml/rgb/data/ood_manifest.csv`, fetched by `ml/rgb/fetch_ood.py`). Each image keeps its own Flickr "
+              "licence: " + ", ".join(f"{k}: {v}" for k, v in lic.items()) + ". Several are NonCommercial and/or "
+              "NoDerivs, so these images are used for evaluation only: they are never redistributed, never "
+              "committed to git and never used for training. The images are split 50/50 (seed 42) into OOD-dev "
+              "(method and threshold selection) and OOD-test (reporting)."]
     return "\n".join(L) + "\n"
 
 

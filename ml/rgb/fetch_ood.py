@@ -6,6 +6,7 @@ zip stay in the gitignored ml/rgb/data/ood/.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import random
 import re
@@ -17,6 +18,7 @@ DATA = Path(__file__).parent / "data"
 OOD = DATA / "ood"
 CACHE = OOD / "_cache"
 ANN_URL = "http://images.cocodataset.org/annotations/annotations_trainval2017.zip"
+# https://images.cocodataset.org was tried: its TLS certificate does not match the host, so stay on http
 IMG_URL = "http://images.cocodataset.org/val2017/{}"
 BAD = re.compile(r"solar|panel|photovoltaic", re.I)
 
@@ -54,6 +56,7 @@ def main() -> None:
     rows = pick(captions)
     for r in rows:
         download(r["url"], OOD / "coco" / r["file_name"])
+        r["sha256"] = hashlib.sha256((OOD / "coco" / r["file_name"]).read_bytes()).hexdigest()
     with open(DATA / "ood_manifest.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader(); w.writerows(rows)

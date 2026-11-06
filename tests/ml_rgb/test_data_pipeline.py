@@ -223,3 +223,11 @@ def test_dataset_eval_tensor_equals_serving_preprocess(tmp_path, cfg):
     rows = pd.DataFrame({"rel_path": ["Clean/a.png"], "label": ["clean"]})
     x, _ = RGBPanelDataset(rows, tmp_path, cfg, train=False)[0]
     assert np.array_equal(x.numpy(), preprocess(img, cfg))
+
+
+def test_data_card_documents_variants_embedding_and_coco_ood(tmp_path):
+    raw = _variant_raw(tmp_path)
+    prepare(raw, tmp_path / "o", embed_fn=lambda imgs: np.eye(len(imgs), 64))
+    md = make_data_card.render(json.loads((tmp_path / "o" / "stats.json").read_text()))
+    assert "rotations" in md and "cosine similarity >= 0.95" in md and "Links found" in md
+    assert "Out-of-distribution evaluation images (COCO)" in md and "NonCommercial" in md and "never redistributed" in md

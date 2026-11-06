@@ -30,12 +30,29 @@ Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/`
 | [transformers](https://github.com/huggingface/transformers) | Apache-2.0 | DINOv2 / CLIP out-of-distribution scorers |
 | [lime](https://github.com/marcotcr/lime) | BSD-2-Clause | LIME image explanations |
 | [pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam) | MIT | Grad-CAM heatmaps |
+| [albumentations](https://github.com/albumentations-team/albumentations) | MIT | Training-time augmentation (`ml/rgb`) |
+| [imagehash](https://github.com/JohannesBuchner/imagehash) | BSD-2-Clause | pHash/dHash near-duplicate grouping (`ml/rgb/data`) |
+| [kaggle](https://github.com/Kaggle/kaggle-api) | Apache-2.0 | Dataset download (`ml/rgb/data/prepare.py --kaggle`) |
+| [torchvision](https://github.com/pytorch/vision) | BSD-3-Clause | VGG16 architecture for the B0 baseline |
 
 ## Model weights
 
 | Asset | Licence | Note |
 |---|---|---|
 | Thermal YOLO11x `best.pt` (from AxalonSystems) | **AGPL-3.0** (Ultralytics-trained) | Not stored in this repo; served from Hugging Face `madhavzanwar/solar-doctor-thermal-yolo11x`. Network use of the weights has AGPL implications. mAP@0.5 0.792 is AxalonSystems' own figure on their split. |
+| DINOv2-small `facebook/dinov2-small` | Apache-2.0 | Fine-tuned / probed classifier backbone (B3) and Mahalanobis OOD features; downloaded from Hugging Face at a pinned revision. |
+| CLIP ViT-B/32 `openai/clip-vit-base-patch32` | MIT | Probed classifier backbone (B4) and zero-shot OOD scorer. (The Hugging Face card lists no licence; the OpenAI CLIP repository is MIT.) |
+| timm `efficientnet_b0.ra_in1k` | Apache-2.0 (per Hugging Face model card; trained on ImageNet-1k) | B1 backbone initialisation. |
+| timm `convnext_tiny.fb_in22k_ft_in1k` | Apache-2.0 (per Hugging Face model card; trained on ImageNet-22k, fine-tuned on ImageNet-1k) | B2 backbone initialisation. |
+| torchvision VGG16 `IMAGENET1K_V1` | Code BSD-3-Clause; the weights carry no separate licence from torchvision (ImageNet data terms apply) | B0 baseline initialisation. |
+
+The released SolarDoctor RGB classifier is a fine-tune of one of these backbones, so these notices apply to it too.
+Licences of the pinned Hugging Face revisions are recorded in `ml/rgb/reports/hf_ids.json`.
+
+## Evaluation-only data
+
+COCO val2017 photos (`ml/rgb/data/ood_manifest.csv`) are used only to evaluate the out-of-distribution guard. Each keeps
+its own Flickr licence (incl. NonCommercial / NoDerivs ones); they are never redistributed or committed.
 
 ## Study-only (no licence, nothing copied)
 
