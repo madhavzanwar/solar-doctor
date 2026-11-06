@@ -169,6 +169,7 @@ logs/
 
 # RGB dataset / bundles (licence Unknown: never commit images)
 ml/rgb/data/raw/
+ml/rgb/data/_download/
 ml/rgb/data/ood/
 ml/rgb/runs/
 venv_done.txt
