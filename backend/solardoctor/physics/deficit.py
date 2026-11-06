@@ -152,6 +152,23 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
         parent={s.id: s.inverter_id for s in strings}, plant_samples=plant_samples)
 
 
+def plant_hourly(perf: Performance) -> pd.DataFrame:
+    """Plant scope, every hour (not only clear ones): expected_kw, actual_kw, pi (usable samples only, else NaN),
+    clear, usable (at least half of the hour's samples), source (most frequent irradiance provider)."""
+    s = perf.plant_samples
+    if s is None or s.empty:
+        return pd.DataFrame(columns=["expected_kw", "actual_kw", "pi", "clear", "usable", "source"])
+    u = s["usable"].astype(bool)
+    h = pd.DataFrame({"e": s["expected_kw"].where(u), "a": s["actual_kw"].where(u), "u": u.astype(float),
+                      "c": s["clear"].astype(float)}).resample("1h").agg({"e": "sum", "a": "sum", "u": "mean", "c": "mean"})
+    n_usable = u.astype(int).resample("1h").sum()
+    out = pd.DataFrame({
+        "expected_kw": s["expected_kw"].resample("1h").mean(), "actual_kw": s["actual_kw"].resample("1h").mean(),
+        "pi": (h["a"] / h["e"]).where((n_usable > 0) & (h["e"] > 0)), "clear": h["c"] >= 0.5, "usable": h["u"] >= 0.5,
+        "source": s["source"].resample("1h").agg(lambda x: x.mode().iloc[0] if len(x) else "")})
+    return out.dropna(subset=["expected_kw"])
+
+
 def _low_span(pi: pd.Series, n: int, thr: float) -> Optional[tuple[int, int, float]]:
     """(first, last, lowest rolling median) over the positions of ``pi`` covered by rolling-median(n)
     windows below ``thr``."""
@@ -200,17 +217,24 @@ def _plant_series_excluding(perf: Performance, flagged: set[int]) -> Optional[pd
     return out[e > 0]
 
 
+def peer_z(perf: Performance, min_hours: int) -> tuple[pd.Series, dict[int, float]]:
+    """(median PI per string, robust z of each against its peers) over strings with >= ``min_hours`` clear hours;
+    z is empty with fewer than MIN_PEERS such strings."""
+    keys = [k for k in perf.hourly if k[0] == "string" and len(perf.hourly[k]) >= min_hours]
+    if len(keys) < MIN_PEERS:
+        return pd.Series(dtype=float), {}
+    med = pd.Series({k[1]: perf.hourly[k]["pi"].median() for k in keys})
+    centre = med.median()
+    sigma = max(1.4826 * (med - centre).abs().median(), PEER_SIGMA_FLOOR)
+    return med, {int(i): float((v - centre) / sigma) for i, v in med.items()}
+
+
 def detect(perf: Performance, plant) -> list[DeficitEvent]:
     n = max(1, int(plant.deficit_min_clear_hours))
     events: list[DeficitEvent] = []
     string_keys = [k for k in perf.hourly if k[0] == "string" and len(perf.hourly[k]) >= n]
 
-    z: dict[int, float] = {}  # robust z of each string's median PI against its peers
-    if len(string_keys) >= MIN_PEERS:
-        med = pd.Series({k[1]: perf.hourly[k]["pi"].median() for k in string_keys})
-        centre = med.median()
-        sigma = max(1.4826 * (med - centre).abs().median(), PEER_SIGMA_FLOOR)
-        z = {int(i): float((v - centre) / sigma) for i, v in med.items()}
+    z = peer_z(perf, n)[1]
     flagged = {i for i, v in z.items() if v <= PEER_Z}
 
     for sid in sorted(flagged):

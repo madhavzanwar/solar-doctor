@@ -9,10 +9,12 @@ Pydantic v2 schemas for anomaly alerts.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, BeforeValidator, ConfigDict, Field
+from typing_extensions import Annotated
 
 
 class AlertResponse(BaseModel):
@@ -30,6 +32,13 @@ class AlertResponse(BaseModel):
     is_resolved: bool
     resolved_at: Optional[datetime] = None
     created_at: datetime
+    # deficit detector (migration 0012); evidence is the parsed evidence_json column
+    scope: str = "plant"
+    inverter_id: Optional[int] = None
+    string_id: Optional[int] = None
+    baseline: Optional[str] = None
+    evidence: Annotated[Optional[dict[str, Any]], BeforeValidator(lambda v: json.loads(v) if isinstance(v, str) else v)] = Field(
+        default=None, validation_alias=AliasChoices("evidence", "evidence_json"))
 
 
 class AlertUpdate(BaseModel):

@@ -23,7 +23,7 @@ from solardoctor.api.routers import (
     map, missions, ortho, ortho_generate, park, park_layout, projects, results,
     settings, share_links, track, users, work_orders,
 )
-from solardoctor.api.routers import diagnosis, forecast, physics_alerts, plants, scada, weather
+from solardoctor.api.routers import diagnosis, forecast, performance, physics_alerts, plants, scada, weather
 from solardoctor.api.support.odm_jobs import resume_odm_jobs
 from drone.relay.server import create_app as create_relay_app
 from solardoctor.core.observability import init_sentry
@@ -247,7 +247,7 @@ _ROUTER_POLICIES = (   # original registration order preserved
     (park_layout, _INTERNAL),
     # Physics (ported SolarPulse endpoints). Read: viewer+, write: operator+.
     (plants, _INTERNAL), (forecast, _INTERNAL), (diagnosis, _INTERNAL),
-    (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL),
+    (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL), (performance, _INTERNAL),
 )
 for _module, _policy in _ROUTER_POLICIES:
     _deps = [Depends(_policy)] if _policy else []
