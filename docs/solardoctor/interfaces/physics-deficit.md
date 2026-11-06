@@ -16,8 +16,8 @@ All timestamps are UTC.
 | `deficit.peer_z` / `deficit.plant_hourly` | `(perf, min_hours)` / `(perf)` | per-string median PI + robust z / plant hourly frame (all hours) |
 | `baseline.expected_power` | `(plant, weather, baseline="pvwatts"\|"clearsky"\|"hybrid")` | DataFrame `p_dc_kw, p_ac_kw, poa_global, cell_temp, solar_zenith`. 422 for trackers; 422 `hybrid_model_unavailable` when no trained artifact |
 | `irradiance.resolve_weather` | `(plant, times, telemetry=None, db=None, now=None, nasa_fetch=..., openmeteo_fetch=...)` | DataFrame `ghi, poa, temp_air, wind_speed, precip_mm, ghi_clearsky, source` |
-| `soiling_analytics.soiling_analysis` | `(plant, daily, rain_mm_hourly=None, reps=300)` | dict (below) |
-| `soiling_analytics.degradation_analysis` | `(plant, daily)` | dict (below) |
+| `soiling_analytics.soiling_analysis` | `(plant, daily, rain_mm_hourly=None, reps=300)` | dict, see "Analytics result keys" |
+| `soiling_analytics.degradation_analysis` | `(plant, daily)` | dict, see "Analytics result keys" |
 | `soiling_analytics.latest` / `.save` | `(db, plant_id, kind)` / `(db, plant_id, kind, day, result)` | latest `plant_analytics` row as dict / idempotent upsert |
 | `jobs.run_hourly` / `jobs.run_daily` | `(db, now=None, nasa_fetch=..., openmeteo_fetch=...)` | `{plant_id: status \| "error"}`. Hourly: scan of the last 24 h. Daily: rescan of 7 days + soiling + degradation (lookback 800 days). Active non-tracker plants only; a failing plant is logged and skipped. |
 
@@ -28,9 +28,19 @@ Jobs: `python -m solardoctor.physics.jobs hourly|daily`, or in the API with `SOL
 at each full hour, daily at 02:00 UTC). The repo has no generic scheduler (Axalon's jobs are FastAPI BackgroundTasks for
 inspections), so this is a small asyncio loop in the API lifespan.
 
+## Analytics result keys
+
+Soiling (`soiling_analysis`; rates are fractions per day, positive = loss; ratios are 1 = clean; dates are ISO `YYYY-MM-DD`):
+- always: `plant_id`, `days_with_data`, `status` (`ok` | `insufficient_data` | `unavailable`), `method` (`rdtools_srr` | `pvlib_kimber` | `none` | `unavailable`), `label` (`measured` | `modelled` | `none`); `reason` when status is not `ok`.
+- `rdtools_srr` (>= 60 days): `soiling_ratio_p50`, `soiling_ratio_ci` [low, high], `soiling_loss_rate_per_day`, `soiling_loss_rate_ci_per_day` [low, high] (null with fewer than 2 valid intervals, then `note` says so), `soiling_loss_rate_pct_per_day` (percent per day), `cleaning_events` (dates of valid intervals after the first), `intervals` (valid soiling intervals), `ci_level_pct` (68.2), `note`.
+- `pvlib_kimber` (rain data, < 60 days, or SRR found no interval; `note` says which): `soiling_ratio_p50`, `soiling_ratio_latest`, `soiling_loss_rate_per_day` and `_pct_per_day` (the assumed default, not a fit), `cleaning_events` (rain resets), `parameters` (cleaning_threshold mm, soiling_loss_rate, grace_period days, max_soiling), `days`, `note`.
+
+Degradation (`degradation_analysis`): `plant_id`, `method` (`rdtools_yoy`), `label` (`measured`), `days_available`, `status` (`ok` | `insufficient_data`), `reason` (when insufficient, including sparse data with no year-over-year pairs); when `ok`: `rate_pct_per_year` (percent per year, negative = degrading) and `ci_pct_per_year` [low, high].
+`plant_analytics` rows add `day` and `computed_at` on read (`soiling_analytics.latest`).
+
 ## Endpoints (`/api/v1`, viewer+ for GET, operator+ for POST/PUT)
 
-All return 404 for an unknown plant/string and **422** `{"status": "baseline_unsupported_for_trackers", "message": ...}` for tracker
+All return 404 for an unknown plant/string and **422** `{"detail": {"status": "baseline_unsupported_for_trackers", "message": ...}}` for tracker
 plants. Windows: default last 7 days, max 92 days, `start < end` (else 422). `baseline`: `clearsky|pvwatts|hybrid`, default `pvwatts`.
 
 - `GET /performance/{plant_id}?start&end&baseline` -> `PerformanceResponse`: `status` (`ok` | `no_telemetry`), `data_source`,
@@ -66,7 +76,7 @@ Telemetry `source`: `SIMULATED`, `PVDAQ`, `USER`.
 - "Deficit >= threshold": open alert with `alert_type="deficit"` and `severity` in `WARNING|CRITICAL`; `INFO` is a peer hint only.
 - "Cloudy / no QC data" (inconclusive, not healthy): `status == "no_telemetry"`, or `qc.plant.usable == 0` (scan/performance), or
   no `usable` hour in `series`. Absence of an alert in that case means nothing.
-- Attributable deficit fraction: plant event `1 - pi_median` (= `deviation_percent / 100`) of plant energy; string event
+- Attributable deficit fraction: plant event `1 - pi_median` of plant energy (`deviation_percent / 100` is close but not identical: median of hourly ratios vs ratio of mean powers); string event
   `(1 - pi_median) x module_count / sum(module_count)` of plant energy.
 - Soiling rate for ROI: `soiling.soiling_loss_rate_per_day` (fraction/day, positive = loss) with `soiling_loss_rate_ci_per_day`
   when `method == "rdtools_srr"` (`label: measured`, >= 60 days). `pvlib_kimber` (`label: modelled`) reports the assumed
