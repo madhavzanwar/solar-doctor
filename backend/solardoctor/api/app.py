@@ -7,6 +7,7 @@ Run: uvicorn solardoctor.api.app:app --host 0.0.0.0 --port 8000
 from __future__ import annotations
 
 import os
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -21,7 +22,7 @@ from solardoctor.api.agents_router import router as agents_router
 from solardoctor.api.routers import (
     alerts, analytics, auth, corrections, diff, faults, health, inspection, inventory,
     map, missions, ortho, ortho_generate, park, park_layout, projects, results,
-    settings, share_links, track, users, work_orders,
+    settings, share_links, track, users, vision, work_orders,
 )
 from solardoctor.api.routers import diagnosis, forecast, performance, physics_alerts, plants, scada, weather
 from solardoctor.api.support.odm_jobs import resume_odm_jobs
@@ -51,6 +52,7 @@ async def lifespan(_app: FastAPI):
         # reason the API refuses to start.
         logger.exception("Startup: results cleanup failed")
     physics_task = _start_physics_jobs()
+    _preload_vision()
     yield
     if physics_task is not None:
         physics_task.cancel()
@@ -67,6 +69,21 @@ def _start_physics_jobs():
     except Exception:
         logger.exception("Startup: could not start physics jobs")
         return None
+
+
+def _preload_vision() -> None:
+    """Warm the RGB model in the background, only when a bundle/revision is configured. Failure keeps the 503."""
+    if not (os.environ.get("SOLARDOCTOR_RGB_MODEL_DIR") or os.environ.get("SOLARDOCTOR_RGB_MODEL_REVISION")):
+        return
+
+    def _load():
+        from solardoctor.vision import get_classifier
+        try:
+            get_classifier()
+        except Exception:
+            logger.exception("Startup: RGB model not loaded; /vision endpoints return 503")
+
+    threading.Thread(target=_load, name="rgb-preload", daemon=True).start()
 
 
 def _bootstrap_admin() -> None:
@@ -248,6 +265,7 @@ _ROUTER_POLICIES = (   # original registration order preserved
     # Physics (ported SolarPulse endpoints). Read: viewer+, write: operator+.
     (plants, _INTERNAL), (forecast, _INTERNAL), (diagnosis, _INTERNAL),
     (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL), (performance, _INTERNAL),
+    (vision, _INTERNAL),              # RGB defect classifier + XAI
 )
 for _module, _policy in _ROUTER_POLICIES:
     _deps = [Depends(_policy)] if _policy else []
