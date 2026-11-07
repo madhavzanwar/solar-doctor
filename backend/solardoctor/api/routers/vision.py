@@ -18,7 +18,7 @@ MULTIPART_ALLOWANCE = 64 * 1024  # boundaries + headers around the file part
 
 
 class _EarlyLimitRoute(APIRoute):
-    """Reject an oversized Content-Length with 413 before FastAPI buffers the multipart form."""
+    """413 on an oversized Content-Length, and on any body stream that exceeds the cap (chunked, no Content-Length)."""
 
     def get_route_handler(self):
         handler = super().get_route_handler()
@@ -27,6 +27,17 @@ class _EarlyLimitRoute(APIRoute):
             declared = request.headers.get("content-length", "")
             if declared.isdigit() and int(declared) > MAX_UPLOAD_BYTES + MULTIPART_ALLOWANCE:
                 raise HTTPException(status_code=413, detail="image exceeds 15 MB limit")
+            orig, received = request._receive, 0
+
+            async def counting():
+                nonlocal received
+                msg = await orig()
+                if msg["type"] == "http.request":
+                    received += len(msg.get("body", b""))
+                    if received > MAX_UPLOAD_BYTES + MULTIPART_ALLOWANCE:  # stops the multipart parser spooling more
+                        raise HTTPException(status_code=413, detail="image exceeds 15 MB limit")
+                return msg
+            request._receive = counting
             return await handler(request)
         return guarded
 

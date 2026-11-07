@@ -116,6 +116,20 @@ def test_oversize_content_length_rejected_before_form_is_read(ready, monkeypatch
     assert r.status_code == 413
 
 
+def test_oversize_chunked_body_without_content_length_is_413(ready, monkeypatch):
+    monkeypatch.setattr(vision_router, "MAX_UPLOAD_BYTES", 1000)
+
+    def body():  # generator => chunked transfer encoding, no Content-Length
+        yield (b'--b\r\nContent-Disposition: form-data; name="file"; filename="p.png"\r\n'
+               b"Content-Type: image/png\r\n\r\n")
+        for _ in range(10):
+            yield b"\x00" * 20_000
+
+    r = ready.post("/api/v1/vision/predict", content=body(),
+                   headers={"content-type": "multipart/form-data; boundary=b"})
+    assert r.status_code == 413
+
+
 def test_explain_num_samples_upper_boundary(ready, png):
     q = "/api/v1/vision/explain?method=lime&top_k=1"
     assert ready.post(q + "&num_samples=2001", files=_up(png)).status_code == 422
