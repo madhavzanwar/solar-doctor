@@ -123,3 +123,9 @@ def test_fewer_than_four_strings_records_insufficient_peers():
 def test_full_string_set_records_peer_compared():
     res = _run("jitter")[0]
     assert {e.evidence["localisation"] for e in res["events"]} == {"peer_compared"}
+
+
+def test_plant_total_from_strings_needs_coverage():
+    """One of 8 strings silent (12.5 % of the modules): the string-sum total is NaN, not a 12 % plant deficit."""
+    res, sids = _drop_rows("control_hard", lambda T, s: T.string_id.in_(s[1:]) & T.string_id.isnot(None))  # NULL-safe: also drops plant and inverter rows
+    assert res["events"] == [] and res["qc"]["plant"]["usable"] == 0

@@ -30,6 +30,7 @@ logger = logging.getLogger("solardoctor.physics.deficit")
 ALERT_TYPE = "deficit"
 PEER_Z = -3.0
 MIN_PEERS = 4              # strings needed for a meaningful peer comparison
+STRING_COVERAGE = 0.9     # module-count share of strings that must report for a plant total from strings
 PEER_SIGMA_FLOOR = 0.01    # PI scatter floor: a MAD of ~0 would turn noise into huge z-scores
 ETA = solar.INVERTER_EFFICIENCY
 Key = tuple[str, Optional[int]]  # (scope, db id)
@@ -142,8 +143,11 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
     if len(plant_rows):
         act = plant_rows["p_ac_kw"].groupby(level=0).mean().reindex(idx)
     elif len(str_rows):  # no plant meter: sum of the strings, through the inverter
-        sums = pd.concat([a for (sc, _), (a, _, _) in series.items() if sc == "string"], axis=1)
-        act = (sums.sum(axis=1, min_count=1) * ETA).clip(upper=plant.ac_kw)
+        parts = {sid: a for (sc, sid), (a, _, _) in series.items() if sc == "string"}
+        sums = pd.concat(parts.values(), axis=1)
+        covered = pd.concat([a.notna() * s_share[sid] for sid, a in parts.items()], axis=1).sum(axis=1)
+        # a total with strings missing reads as a deficit: require STRING_COVERAGE of the module share present
+        act = (sums.sum(axis=1, min_count=1) * ETA).clip(upper=plant.ac_kw).where(covered >= STRING_COVERAGE)
     elif len(inv_rows):  # inverter-only telemetry: plant = sum of the inverters
         parts = [a for (sc, _), (a, _, _) in series.items() if sc == "inverter"]
         act = pd.concat(parts, axis=1).sum(axis=1, min_count=1).clip(upper=plant.ac_kw)

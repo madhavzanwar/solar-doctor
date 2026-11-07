@@ -73,8 +73,11 @@ def downgrade() -> None:
         names = [c.name for c in cols if c.name in have]
         if not names:
             continue
+        # create_all() builds these FKs unnamed, so find each by its column rather than by our name
+        fks = {fk['constrained_columns'][0]: fk['name']
+               for fk in sa.inspect(op.get_bind()).get_foreign_keys(table) if fk['constrained_columns']}
         with op.batch_alter_table(table) as batch:
             for n in names:
-                if table == 'plant_alerts' and n in _FK:
-                    batch.drop_constraint(_FK[n][1], type_='foreignkey')
+                if table == 'plant_alerts' and n in _FK and fks.get(n):
+                    batch.drop_constraint(fks[n], type_='foreignkey')
                 batch.drop_column(n)
