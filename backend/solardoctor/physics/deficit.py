@@ -89,6 +89,21 @@ def _hourly(actual: pd.Series, expected: pd.Series, usable: pd.Series, per_hour:
                          "n": h["n"]})
 
 
+def bin_to_step(telemetry: pd.DataFrame, step: pd.Timedelta) -> pd.DataFrame:
+    """Round SCADA timestamps (jitter of seconds) to the sampling grid; rows sharing a bin are averaged later
+    by the per-scope ``groupby(level=0).mean()``."""
+    out = telemetry.copy()
+    out.index = out.index.round(step)
+    return out
+
+
+def _grid_step(index: pd.DatetimeIndex) -> pd.Timedelta:
+    """Sampling step of one channel, to the minute (jitter-proof): median spacing of the most populated channel."""
+    gaps = pd.Series(index).diff().dropna()
+    gaps = gaps[gaps > pd.Timedelta(0)]
+    return pd.Timedelta(minutes=15) if gaps.empty else max(gaps.median().round("min"), pd.Timedelta(minutes=1))
+
+
 def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline: str = "pvwatts",
                 strings=(), inverters=()) -> Performance:
     """Hourly PI on usable samples for every scope present in ``telemetry``.
@@ -99,6 +114,7 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
     exp = baseline_mod.expected_power(plant, weather, baseline)
     idx = weather.index
     step = pd.Series(idx).diff().median() if len(idx) > 1 else pd.Timedelta(hours=1)
+    telemetry = bin_to_step(telemetry, step)
     per_hour = max(1, round(pd.Timedelta(hours=1) / step))
     s_share, i_share = _shares(strings, inverters)
     curtailed = (telemetry["curtailed"].fillna(False).astype(bool).groupby(level=0).any()
@@ -311,9 +327,10 @@ def load_inputs(db: Session, plant: Plant, start: datetime, end: datetime, now: 
         return None
     if plant_level_only and (plant_rows := tel[tel["inverter_id"].isna() & tel["string_id"].isna()]).size:
         tel = plant_rows
-    gaps = tel.index.to_series().diff()
-    step = gaps[gaps > pd.Timedelta(0)].median()
-    step = pd.Timedelta(minutes=15) if pd.isna(step) else step
+    ch = tel["inverter_id"].fillna(-1) * 1e6 + tel["string_id"].fillna(-1)  # one channel id per row
+    one = tel[ch == ch.mode().iloc[0]]
+    step = _grid_step(one.index)
+    tel = bin_to_step(tel, step)
     grid = pd.date_range(tel.index.min(), tel.index.max(), freq=step)
     weather = irradiance.resolve_weather(plant, grid, tel[["ghi_wm2", "poa_wm2", "t_amb", "wind_ms"]], db=db, now=now,
                                          nasa_fetch=nasa_fetch, openmeteo_fetch=openmeteo_fetch)
