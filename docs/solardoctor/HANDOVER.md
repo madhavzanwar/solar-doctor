@@ -124,3 +124,5 @@ kept out of the repo.
 3. Every agent must first run `git fetch origin && git checkout -B <branch> origin/main` (worktrees can start stale),
    commit after every step, and never push; the session lead merges only after the independent `sd-qa` review signs off.
 4. Run Prompt 3 only after Prompt 2 is merged and tagged.
+
+Physics jobs: run physics jobs with a single worker (alert idempotency relies on a single writer; no unique constraint).
