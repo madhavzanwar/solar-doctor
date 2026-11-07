@@ -34,6 +34,10 @@ Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/`
 | [imagehash](https://github.com/JohannesBuchner/imagehash) | BSD-2-Clause | pHash/dHash near-duplicate grouping (`ml/rgb/data`) |
 | [kaggle](https://github.com/Kaggle/kaggle-api) | Apache-2.0 | Dataset download (`ml/rgb/data/prepare.py --kaggle`) |
 | [torchvision](https://github.com/pytorch/vision) | BSD-3-Clause | VGG16 architecture for the B0 baseline |
+| [scikit-image](https://github.com/scikit-image/scikit-image) | BSD-3-Clause | SLIC superpixels for LIME |
+| [scikit-learn](https://github.com/scikit-learn/scikit-learn) | BSD-3-Clause | Stratified group splits, AUROC, logistic-regression probe |
+| [safetensors](https://github.com/huggingface/safetensors) | Apache-2.0 | Model bundle weights format |
+| [huggingface_hub](https://github.com/huggingface/huggingface_hub) | Apache-2.0 | Model download and private-repo upload |
 
 ## Model weights
 
@@ -48,6 +52,10 @@ Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/`
 
 The released SolarDoctor RGB classifier is a fine-tune of one of these backbones, so these notices apply to it too.
 Licences of the pinned Hugging Face revisions are recorded in `ml/rgb/reports/hf_ids.json`.
+
+## Training data (RGB classifier)
+
+Hugging Face dataset `metalmerge/solar-panel-inspection` (revision `1b62720238a3d5ccf7ca0298afb505fda3cfce7a`), a mirror/subset of the Kaggle dataset `pythonafroz/solar-panel-images` (Solar Panel Images Clean and Faulty). **Licence: unknown** (none declared on the mirror, listed as Unknown on Kaggle). The images are used for private training and evaluation only: they are not committed, not redistributed and not published. Because of this the trained model bundle is kept in a **private** Hugging Face repo (`solar-doctor/solar-doctor-rgb-defect`); only file names and hashes (`ml/rgb/data/manifest.csv`) are in git. Do not make the model or a demo public until the data licence is resolved.
 
 ## Evaluation-only data
 
