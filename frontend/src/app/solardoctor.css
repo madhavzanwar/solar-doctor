@@ -516,3 +516,30 @@ summary:focus-visible,
 .sd-range.sd-basemap {
   display: inline-flex;
 }
+
+/* ── Review fixes: pin hit areas, drawer heading, contrast ── */
+.sd-pin-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sd-pin-plant {
+  width: 22px;
+  height: 22px;
+}
+.sd-pin-panel {
+  width: 12px;
+  height: 12px;
+}
+.sd-pin-unknown {
+  background: #8a948a;
+}
+.sd-drawer-title {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.sd-cell[aria-disabled="true"] {
+  cursor: default;
+}

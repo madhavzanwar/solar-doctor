@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { alertsApi, plantsApi, type Alert, type GridPanel, type ParkGrid, type Plant } from "@/lib/api";
+import { alertsApi, OPEN_ALERT_LIMIT, plantsApi, type Alert, type GridPanel, type ParkGrid, type Plant } from "@/lib/api";
 import { BASEMAPS, panelsWithGps, plantPins, type BasemapId } from "@/lib/map";
 import { EmptyState, LoadingState } from "@/components/ui/states";
 import PlantDrawer from "./PlantDrawer";
@@ -19,11 +19,15 @@ const LEGEND: Array<[string, string]> = [
   ["MEDIUM", "var(--sev-medium)"],
   ["LOW / INFO", "var(--sev-low)"],
   ["No open issue", "var(--field)"],
+  ["Unknown", "#8a948a"],
 ];
 
 export default function MapView() {
   const [plants, setPlants] = useState<Plant[] | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [alertsOk, setAlertsOk] = useState(true);
+  const [truncated, setTruncated] = useState<string[]>([]);
+  const [focusPlant, setFocusPlant] = useState<{ id: number; n: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<BasemapId>("positron");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -35,11 +39,15 @@ export default function MapView() {
     let live = true;
     setError(null);
     setPlants(null);
-    Promise.all([plantsApi.list(), alertsApi.list(undefined, 200).catch(() => [] as Alert[])]).then(
-      ([p, a]) => {
+    plantsApi.list().then(
+      async (p) => {
+        // One request per plant for its *open* alerts, so a busy fleet is not silently cut off at a global cap.
+        const res = await Promise.allSettled(p.map((pl) => alertsApi.listOpen(pl.id)));
         if (!live) return;
         setPlants(p);
-        setAlerts(a);
+        setAlerts(res.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
+        setAlertsOk(res.every((r) => r.status === "fulfilled"));
+        setTruncated(p.filter((_, i) => { const r = res[i]; return r.status === "fulfilled" && r.value.length >= OPEN_ALERT_LIMIT; }).map((pl) => pl.name));
       },
       (err: unknown) => live && setError(err instanceof Error ? err.message : "Failed to load plants."),
     );
@@ -50,6 +58,22 @@ export default function MapView() {
 
   const pins = useMemo(() => plantPins(plants ?? [], alerts), [plants, alerts]);
   const selected = pins.find((p) => p.plant.id === selectedId) ?? null;
+  const close = () => {
+    if (selectedId != null) setFocusPlant({ id: selectedId, n: (focusPlant?.n ?? 0) + 1 });
+    setSelectedId(null);
+    setGrid(null);
+    setPanelId(null);
+  };
+
+  // Escape closes the drawer from anywhere on the page while it is open.
+  useEffect(() => {
+    if (selectedId == null) return;
+    const h = (e: KeyboardEvent) => e.key === "Escape" && close();
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   const panels = useMemo(() => (selected && grid ? panelsWithGps(grid.panels) : []), [selected, grid]);
 
   if (error) {
@@ -82,6 +106,18 @@ export default function MapView() {
         <span className="dash-page-sub" style={{ margin: 0 }}>{pins.length} plant{pins.length === 1 ? "" : "s"} · pins are coloured by the worst open alert</span>
       </div>
 
+      {!alertsOk && (
+        <div className="dash-advisory" role="status" style={{ marginBottom: "1rem" }}>
+          <div className="dash-advisory-title">Alert status unavailable</div>
+          <div className="dash-advisory-body">Open alerts could not be loaded for every plant, so pins are grey rather than coloured by severity.</div>
+        </div>
+      )}
+      {truncated.length > 0 && (
+        <div className="dash-advisory" role="status" style={{ marginBottom: "1rem" }}>
+          <div className="dash-advisory-title">Showing the {OPEN_ALERT_LIMIT} most recent open alerts</div>
+          <div className="dash-advisory-body">{truncated.join(", ")} may have more; the worst severity shown could be understated.</div>
+        </div>
+      )}
       <div className="sd-map-layout">
         <div className="sd-map-frame" data-testid="map-frame">
           <LeafletMap
@@ -92,6 +128,8 @@ export default function MapView() {
             basemap={basemap}
             onSelectPlant={setSelectedId}
             onSelectPanel={(p: GridPanel) => setPanelId(p.panel_id)}
+            focusPlant={focusPlant}
+            alertsKnown={alertsOk}
           />
           <div className="sd-legend dash-card" aria-label="Severity legend" role="group">
             {LEGEND.map(([label, color]) => (
@@ -110,11 +148,8 @@ export default function MapView() {
             selectedPanelId={panelId}
             onSelectPanel={(p) => setPanelId(p?.panel_id ?? null)}
             onGrid={setGrid}
-            onClose={() => {
-              setSelectedId(null);
-              setGrid(null);
-              setPanelId(null);
-            }}
+            alertsKnown={alertsOk}
+            onClose={close}
           />
         ) : (
           <aside className="dash-card sd-drawer" aria-label="Plant details">

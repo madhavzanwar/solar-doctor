@@ -64,6 +64,8 @@ export const forecastApi = {
     apiFetch<OnlineAdapterStatus>(`/api/v1/forecast/${plantId}/online-status`),
 };
 
+export const OPEN_ALERT_LIMIT = 500;
+
 // ── Alert endpoints ────────────────────────────────────────────────────────────
 
 export const alertsApi = {
@@ -72,6 +74,9 @@ export const alertsApi = {
     if (plantId) qs.set("plant_id", String(plantId));
     return apiFetch<Alert[]>(`/api/v1/alerts?${qs}`);
   },
+  /** Open (unresolved) alerts for one plant; the API caps a page at 500 and has no offset. */
+  listOpen: (plantId: number, limit = OPEN_ALERT_LIMIT) =>
+    apiFetch<Alert[]>(`/api/v1/alerts?plant_id=${plantId}&is_resolved=false&limit=${limit}`),
   resolve: (alertId: number) =>
     apiFetch<Alert>(`/api/v1/alerts/${alertId}/resolve`, {
       method: "PATCH",

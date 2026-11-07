@@ -10,8 +10,9 @@ import { BASEMAPS, severityKey, type BasemapId, type PlantPin } from "@/lib/map"
 
 // Square pins (DESIGN.md §8.5) as divIcons: no marker image assets to bundle.
 function icon(kind: "plant" | "panel", sev: string | null, selected: boolean) {
-  const key = severityKey(sev) ?? "none";
-  const size = kind === "plant" ? 22 : 12;
+  const key = sev === "UNKNOWN" ? "unknown" : (severityKey(sev) ?? "none");
+  // Hit area (the icon box) is >= 24 px (WCAG 2.5.8); the visible square is smaller, see .sd-pin-plant/.sd-pin-panel.
+  const size = kind === "plant" ? 28 : 24;
   return L.divIcon({
     className: "sd-pin-wrap",
     html: `<span class="sd-pin sd-pin-${kind} sd-pin-${key}${selected ? " sd-pin-selected" : ""}"></span>`,
@@ -28,13 +29,18 @@ export interface LeafletMapProps {
   basemap: BasemapId;
   onSelectPlant: (id: number) => void;
   onSelectPanel: (panel: GridPanel) => void;
+  /** Bump `n` to move keyboard focus to a plant marker (used when the drawer closes). */
+  focusPlant?: { id: number; n: number } | null;
+  /** False when the alert request failed: pins render neutral grey instead of looking "clean". */
+  alertsKnown?: boolean;
 }
 
-export default function LeafletMap({ pins, panels, selectedPlantId, selectedPanelId, basemap, onSelectPlant, onSelectPanel }: LeafletMapProps) {
+export default function LeafletMap({ pins, panels, selectedPlantId, selectedPanelId, basemap, onSelectPlant, onSelectPanel, focusPlant, alertsKnown = true }: LeafletMapProps) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const tiles = useRef<L.TileLayer | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
+  const byId = useRef(new Map<string, { marker: L.Marker; kind: "plant" | "panel" }>());
   const cb = useRef({ onSelectPlant, onSelectPanel });
   cb.current = { onSelectPlant, onSelectPanel };
 
@@ -54,26 +60,45 @@ export default function LeafletMap({ pins, panels, selectedPlantId, selectedPane
     tiles.current = L.tileLayer(b.url, { attribution: b.attribution, maxZoom: b.maxZoom, maxNativeZoom: b.maxZoom }).addTo(map.current!);
   }, [basemap]);
 
+  // Rebuild markers only when the data changes; selection just swaps icons (keeps focus on the marker).
   useEffect(() => {
     const g = markers.current!;
     g.clearLayers();
-    const mk = (pos: [number, number], ic: L.DivIcon, title: string, alt: string, pick: () => void) => {
-      const marker = L.marker(pos, { icon: ic, title, alt, keyboard: true }).addTo(g);
-      marker.on("click", pick);
-      // Leaflet makes markers focusable; Enter is the keyboard "click".
-      marker.on("keypress", (e) => (e as L.LeafletKeyboardEvent).originalEvent.key === "Enter" && pick());
+    byId.current.clear();
+    const mk = (id: string, kind: "plant" | "panel", pos: [number, number], sev: string | null, title: string, alt: string, pick: () => void) => {
+      const marker = L.marker(pos, { icon: icon(kind, sev, false), title, alt, keyboard: true }).addTo(g);
+      marker.on("click", pick); // Leaflet turns Enter on a focused marker into a click
+      byId.current.set(id, { marker, kind });
     };
     for (const { plant, severity, openAlerts } of pins) {
-      mk([plant.latitude, plant.longitude], icon("plant", severity, plant.id === selectedPlantId),
-        `${plant.name}: ${severity ? `${openAlerts.length} open, worst ${severity}` : "no open alerts"}`, `Plant ${plant.name}`,
+      mk(`plant:${plant.id}`, "plant", [plant.latitude, plant.longitude], alertsKnown ? severity : "UNKNOWN",
+        `${plant.name}: ${severity ? `${openAlerts.length} open, worst ${severity}` : alertsKnown ? "no open alerts" : "alert status unavailable"}`, `Plant ${plant.name}`,
         () => cb.current.onSelectPlant(plant.id));
     }
     for (const p of panels) {
-      mk([p.gps.lat, p.gps.lon], icon("panel", p.worst_severity, p.panel_id === selectedPanelId),
+      mk(`panel:${p.panel_id}`, "panel", [p.gps.lat, p.gps.lon], p.worst_severity,
         `Panel ${p.panel_id}: ${p.detection_count} detection${p.detection_count === 1 ? "" : "s"}, worst ${p.worst_severity ?? "none"}`,
         `Panel ${p.panel_id}`, () => cb.current.onSelectPanel(p));
     }
-  }, [pins, panels, selectedPlantId, selectedPanelId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pins, panels, alertsKnown]);
+
+  useEffect(() => {
+    const sevOf = (p: PlantPin) => (alertsKnown ? p.severity : "UNKNOWN");
+    const all = [
+      ...pins.map((p) => ({ id: `plant:${p.plant.id}`, sev: sevOf(p) })),
+      ...panels.map((p) => ({ id: `panel:${p.panel_id}`, sev: p.worst_severity })),
+    ];
+    for (const { id, sev } of all) {
+      const e = byId.current.get(id);
+      if (e) e.marker.setIcon(icon(e.kind, sev, id === `plant:${selectedPlantId}` || id === `panel:${selectedPanelId}`));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlantId, selectedPanelId, pins, panels, alertsKnown]);
+
+  useEffect(() => {
+    if (focusPlant) byId.current.get(`plant:${focusPlant.id}`)?.marker.getElement()?.focus();
+  }, [focusPlant]);
 
   // Re-fit only when the set of points changes, not on selection.
   const fit: Array<[number, number]> = panels.length ? panels.map((p) => [p.gps.lat, p.gps.lon]) : pins.map((p) => [p.plant.latitude, p.plant.longitude]);
