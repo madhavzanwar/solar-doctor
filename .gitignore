@@ -171,5 +171,9 @@ logs/
 ml/rgb/data/raw/
 ml/rgb/data/_download/
 ml/rgb/data/ood/
-ml/rgb/runs/
+ml/rgb/runs/**
+!ml/rgb/runs/**/
+!ml/rgb/runs/*/final.json
+!ml/rgb/runs/*/cv/*.json
+ml/rgb/reports/_ood_work/
 venv_done.txt
