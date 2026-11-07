@@ -10,6 +10,7 @@ has an unknown licence, so no public release until that is resolved.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -17,6 +18,7 @@ from pathlib import Path
 REPO = "solar-doctor/solar-doctor-rgb-defect"
 ALLOWED = {"config.json", "model.safetensors", "model.onnx", "ood_stats.npz", "autoencoder.safetensors"}
 HERE = Path(__file__).parent
+LIBRARY = {"timm": "timm", "hf_dinov2": "transformers", "hf_clip": "transformers", "torchvision": "pytorch"}
 
 HEADER = """---
 license: other
@@ -51,8 +53,9 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     files = files_to_upload(a.bundle)
+    arch = json.loads((a.bundle / "config.json").read_text())["arch"]
     report = HERE / "reports" / "BAKEOFF.md"
-    card = HEADER + (report.read_text(encoding="utf-8") if report.exists() else "Metrics report not generated.\n")
+    card = HEADER.replace("library_name: timm", f"library_name: {LIBRARY.get(arch, 'pytorch')}") + (report.read_text(encoding="utf-8") if report.exists() else "Metrics report not generated.\n")
     print(f"{'[dry-run] ' if a.dry_run else ''}private model repo {a.repo}: README.md + "
           + ", ".join(f"{p.name} ({p.stat().st_size} bytes)" for p in files))
     if a.dry_run:
@@ -63,6 +66,9 @@ def main(argv=None) -> int:
     from huggingface_hub import HfApi
 
     api = HfApi(token=os.environ["HF_TOKEN"])
+    if api.repo_exists(a.repo) and not api.repo_info(a.repo).private:
+        print(f"Refusing: {a.repo} exists and is PUBLIC; training-data licence is unknown.", file=sys.stderr)
+        return 3
     api.create_repo(a.repo, repo_type="model", private=True, exist_ok=True)
     api.upload_file(path_or_fileobj=card.encode(), path_in_repo="README.md", repo_id=a.repo)
     for p in files:
