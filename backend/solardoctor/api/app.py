@@ -23,7 +23,7 @@ from solardoctor.api.routers import (
     map, missions, ortho, ortho_generate, park, park_layout, projects, results,
     settings, share_links, track, users, work_orders,
 )
-from solardoctor.api.routers import diagnosis, forecast, physics_alerts, plants, scada, weather
+from solardoctor.api.routers import diagnosis, forecast, performance, physics_alerts, plants, scada, weather
 from solardoctor.api.support.odm_jobs import resume_odm_jobs
 from drone.relay.server import create_app as create_relay_app
 from solardoctor.core.observability import init_sentry
@@ -50,7 +50,23 @@ async def lifespan(_app: FastAPI):
         # Same reasoning as _requeue_stale_jobs: housekeeping must never be the
         # reason the API refuses to start.
         logger.exception("Startup: results cleanup failed")
+    physics_task = _start_physics_jobs()
     yield
+    if physics_task is not None:
+        physics_task.cancel()
+
+
+def _start_physics_jobs():
+    """Hourly/daily physics deficit jobs, opt-in (SOLARDOCTOR_PHYSICS_JOBS=1). Never raises."""
+    if os.getenv("SOLARDOCTOR_PHYSICS_JOBS", "0") != "1":
+        return None
+    try:
+        import asyncio
+        from solardoctor.physics.jobs import scheduler
+        return asyncio.create_task(scheduler())
+    except Exception:
+        logger.exception("Startup: could not start physics jobs")
+        return None
 
 
 def _bootstrap_admin() -> None:
@@ -231,7 +247,7 @@ _ROUTER_POLICIES = (   # original registration order preserved
     (park_layout, _INTERNAL),
     # Physics (ported SolarPulse endpoints). Read: viewer+, write: operator+.
     (plants, _INTERNAL), (forecast, _INTERNAL), (diagnosis, _INTERNAL),
-    (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL),
+    (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL), (performance, _INTERNAL),
 )
 for _module, _policy in _ROUTER_POLICIES:
     _deps = [Depends(_policy)] if _policy else []

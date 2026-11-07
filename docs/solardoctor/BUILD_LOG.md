@@ -43,3 +43,36 @@
 - Tracker plants: `errors.ts` reads object `detail.message` and exposes `detail.status` as `ApiError.code`; performance and plant detail show "Not supported for single-axis trackers (fixed-tilt baseline invalid)" and disable Generate/Run forecast (detected from the location marker or from the 422). Written against the contract given by the coordinator; the backend change was not on origin/main when this branch was cut, so it is untested against the real 422 here.
 - Images: no new photos could be verified (no search/fetch tool, bot checks on unsplash/pexels); unused photos removed, see docs/IMAGE_CREDITS.md.
 - Minors fixed: sandbox Run diagnosis uses aria-disabled/aria-busy; plants page no longer shows the empty state after an error; axe-core MPL-2.0 notice added.
+
+## Prompt 2 / WS1: physics deficit engine (branch feat/physics-deficit, sd-physics)
+
+- Built: migration 0012 (deficit columns on `plant_alerts`/`plants`/`telemetry`, table `plant_analytics`), weather provider chain,
+  baselines (`clearsky|pvwatts|hybrid`), pvanalytics QA, deficit detector with peer localisation and idempotent alerts, soiling
+  (rdtools SRR / pvlib Kimber) and degradation (YoY) analytics, hourly/daily jobs (CLI + opt-in scheduler), `/performance` API,
+  OEDI 9068 pvlib-gallery reference with golden test. Interface for WS3: `docs/solardoctor/interfaces/physics-deficit.md`;
+  decisions P2-1..P2-8.
+- Tests: full backend suite 868 passed, 9 failed, 2 skipped (environment baseline on untouched main in this venv: 804 passed,
+  10 failed). The 9 failures are the same weight/WeasyPrint-dependent tests as the baseline; the Windows-only
+  `test_seed_pvdaq::test_cli_offline_mode` now passes. Part B added 29 tests (soiling 6, jobs 5, API 13, 9068 golden 4, PVDAQ 1).
+- Real PVDAQ check (manual, not in tests): `scripts/import_pvdaq.py --system-id 9068 --start 2024-06-01 --end 2024-06-07` imported
+  2016 telemetry rows (2 inverters + plant, 15 min) for 2024-06-01 00:00 to 2024-06-07 23:45 UTC; the plant is flagged as a tracker and
+  `scan_and_persist` returns `baseline_unsupported_for_trackers`.
+- Detector precision/recall below is measured on SIMULATED data only (copied from `docs/solardoctor/physics/DEFICIT_METRICS.md`). The tables below are the easy suite; the harder suite (2.5 % noise, 12 scenarios, seeds 100..119) is in that file, pooled WARNING+ precision 0.900 / recall 0.990 over 13 scenarios (before the NASA-only irradiance cap it was 0.642 / 0.988 over 12), with misses reported there.
+
+## Pooled
+
+| Counting | TP | FP | FN | Precision | Recall |
+|---|---|---|---|---|---|
+| any severity | 40 | 0 | 0 | 1.000 | 1.000 |
+| WARNING+ only | 40 | 0 | 0 | 1.000 | 1.000 |
+
+## Severity and PI of the detected events
+
+| Scenario | Events | Severity counts | Median PI (min..max over runs) | Rolling-median PI min (min..max) |
+|---|---|---|---|---|
+| control | 0 | - | - | - |
+| string_5 | 10 | {'WARNING': 10} | 0.950 (0.947..0.952) | 0.941..0.947 |
+| string_10 | 10 | {'CRITICAL': 10} | 0.900 (0.898..0.902) | 0.892..0.897 |
+| string_20 | 10 | {'CRITICAL': 10} | 0.800 (0.798..0.801) | 0.792..0.797 |
+| soiling_7 | 10 | {'WARNING': 10} | 0.929 (0.928..0.929) | 0.925..0.927 |
+| cloudy | 0 | - | - | - |

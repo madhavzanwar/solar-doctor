@@ -35,7 +35,7 @@ rithvik123/solar-panel-defect-detection, VishnuBhaiya/solarvision-inspection, mc
 ## Runtime libraries (selection; full lists in `requirements_platform.txt`, `frontend/package.json`)
 
 FastAPI (MIT), SQLAlchemy (MIT), Alembic (MIT), Pydantic (MIT), Ultralytics (AGPL-3.0), PyTorch (BSD-3),
-OpenCV (Apache-2.0), pvlib (BSD-3), Next.js (MIT), React (MIT), Tailwind CSS (MIT).
+OpenCV (Apache-2.0), pvlib (BSD-3), pvanalytics (MIT), rdtools (MIT), openmeteo-requests (MIT), Next.js (MIT), React (MIT), Tailwind CSS (MIT).
 
 ## Fonts and images
 
@@ -67,6 +67,10 @@ Instrument Serif: SIL OFL 1.1).
   Prize" prefix as a resource of the same CC BY 4.0 submission and shows no additional terms; no separate Solar Data
   Prize licence page was reviewed, so absence of extra terms there is not independently confirmed. Display attribution
   wherever PVDAQ data is shown.
+- **pvlib python gallery, "4.7 MW CdTe single-axis tracking (OEDI System 9068)"** (BSD-3-Clause, Copyright (c) 2023 pvlib
+  python Developers): the system parameters and model chain in `backend/solardoctor/physics/reference_9068.py` follow
+  `docs/examples/system-models/plot_oedi_9068.py`; the NSRDB download is replaced by caller-supplied weather. Reference
+  and golden test only, not a production baseline.
 - **NASA POWER** (used by `scripts/seed.py` through `pvlib.iotools.get_nasa_power`): hourly irradiance, temperature and
   wind from the NASA Langley Research Center POWER Project, funded through the NASA Earth Science Applied Sciences
   Program (https://power.larc.nasa.gov). Open data; NASA asks users to acknowledge POWER. Seeded rows derived from it are

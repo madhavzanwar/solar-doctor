@@ -467,12 +467,14 @@ _NASA_FILL = -999.0
 def parse_nasa_power_hourly(payload: dict):
     """Parse a NASA POWER hourly JSON payload into a UTC-indexed DataFrame.
 
-    Columns: ghi (ALLSKY_SFC_SW_DWN, W/m2), temp_air (T2M, C), wind_speed (WS10M, m/s).
+    Columns: ghi (ALLSKY_SFC_SW_DWN, W/m2), temp_air (T2M, C), wind_speed (WS10M, m/s), and when the
+    payload has them ghi_clear (CLRSKY_SFC_SW_DWN, W/m2) and precip_mm (PRECTOTCORR, mm/h).
     Fill values (-999) become NaN.
     """
     import pandas as pd
     params = payload["properties"]["parameter"]
-    cols = {"ghi": "ALLSKY_SFC_SW_DWN", "temp_air": "T2M", "wind_speed": "WS10M"}
+    cols = {"ghi": "ALLSKY_SFC_SW_DWN", "temp_air": "T2M", "wind_speed": "WS10M",
+            "ghi_clear": "CLRSKY_SFC_SW_DWN", "precip_mm": "PRECTOTCORR"}
     data = {}
     for out, name in cols.items():
         if name in params:
@@ -486,11 +488,13 @@ def fetch_nasa_power_hourly(lat: float, lon: float, start: datetime, end: dateti
                             db=None, transport=None):
     """NASA POWER hourly irradiance (cached in weather_cache when ``db`` is given)."""
     params: Dict[str, Any] = {
-        "parameters": "ALLSKY_SFC_SW_DWN,T2M,WS10M", "community": "RE", "format": "JSON",
+        "parameters": "ALLSKY_SFC_SW_DWN,CLRSKY_SFC_SW_DWN,T2M,WS10M,PRECTOTCORR",
+        "community": "RE", "format": "JSON",
         "latitude": round(lat, 4), "longitude": round(lon, 4), "time-standard": "UTC",
         "start": start.strftime("%Y%m%d"), "end": end.strftime("%Y%m%d"),
     }
-    kind = f"nasa_power:{params['start']}-{params['end']}"
+    # v2: payloads cached before CLRSKY/PRECTOTCORR were requested lack those columns.
+    kind = f"nasa_power2:{params['start']}-{params['end']}"
     if db is not None:
         cached = _cache_get(db, lat, lon, kind)
         if cached:
