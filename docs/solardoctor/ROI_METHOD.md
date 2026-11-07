@@ -26,7 +26,7 @@ Evaluated in this order; the first match decides.
    (both inclusive; hour 73 and 59.9 % do not count). Rain may clean the panels for free.
 2. **WAIT, never pays back**: Rs/day is 0 or negative (tariff 0, no deficit).
 3. **CLEAN NOW** if payback `<= max_payback_days`, else **WAIT**.
-4. Missing or NaN expected energy / deficit gives **WAIT** with "Insufficient data" and no numbers.
+4. Missing or NaN expected energy / deficit gives **WAIT** with "ROI inputs missing: configure expected energy/costs", `incomplete = true`, and no numbers. A total cleaning cost of 0 gives WAIT "Cleaning cost not configured" (also `incomplete`).
 
 `max_payback_days` (default 30) is **our assumption**: the spec asks for a CLEAN NOW / WAIT choice from payback but gives
 no limit. It is editable and listed in `assumptions`.
@@ -55,6 +55,12 @@ Cleaning costs `C` once per cycle, i.e. `C / t` per day. Average cost per day:
 - Water saved compares the calendar schedule (default every 15 days) with cleaning every `T*` days. It is **negative**
   when `T*` is shorter than the calendar interval (the data say clean more often). It ignores rain skips.
 - The rain rule uses forecast probability, not rainfall amount; light showers may not clean panels.
-- Deficit fraction is passed in already attributed (plant events: `1 - PI`; string events scaled by the string's
-  share of modules). The ROI engine does not recompute it.
+- **Scope convention:** all ROI inputs describe the scope being cleaned. Plant scope: plant expected kWh/day, plant
+  `1 - PI`, plant module count. String scope: that string's expected kWh/day, `1 - pi_median` of the string, and that
+  string's module count. Never multiply the deficit by the string's module share (the share is already inside the
+  string's own expected kWh/day). The engine does not recompute the fraction.
+- **Incomplete inputs:** missing expected energy/deficit, or a total cleaning cost of 0 (no modules, or all unit costs
+  0), gives WAIT with `incomplete = true` and an explicit reason. A zero cost is "not configured", not a free clean.
+- The soiling rate carries a source label (`soiling_rate_source`, e.g. "pvlib_kimber assumed default"): T* is a
+  heuristic and only as good as that rate.
 - Rupee figures are rounded to 2 decimals, kWh to 3, in the output; internal arithmetic is float.

@@ -25,8 +25,10 @@ rain_outlook(forecast, threshold_pct, window_h) -> (wait: bool, peak_pct | None,
 `payback_label`, `never_pays_back`, `rain_wait`, `rain_peak_probability_pct`, `rain_peak_hours_ahead`,
 `optimal_interval_days`, `optimal_interval_note`, `water_saved_l_per_year` (signed), `assumptions` (dict with
 `label: "user assumption (editable)"` plus every input used). `None` marks a quantity that is undefined or whose input
-was missing. Invalid *inputs* to `evaluate` (None/NaN expected energy or deficit) never raise: WAIT with "Insufficient
-data". Invalid *settings* raise `ValueError`.
+was missing. Invalid *inputs* to `evaluate` (None/NaN expected energy or deficit) never raise: WAIT with "ROI inputs missing:
+configure expected energy/costs" and `incomplete = true`. A total cleaning cost of 0 (nothing configured) gives WAIT
+"Cleaning cost not configured", also `incomplete`. `RoiResult` also has `soiling_rate_per_day` and `soiling_rate_source`
+(e.g. "pvlib_kimber assumed default"; T* is a heuristic on that rate). Invalid *settings* raise `ValueError`.
 
 ## `solardoctor.fusion`
 
@@ -60,7 +62,8 @@ marked as fallbacks in the YAML (`healthy`, `snow_no_loss`, `latent_electrical`)
 ### Severity (our judgement)
 
 Hardware fault: always CRITICAL. Soiling with CLEAN NOW: HIGH, escalated to CRITICAL when the physics alert is CRITICAL;
-soiling with WAIT: LOW. Electrical suspected: HIGH (CRITICAL if physics CRITICAL). Latent damage: HIGH. Snow loss: MEDIUM.
+soiling with WAIT: LOW, never escalated (escalation applies only when action is not WAIT). Electrical suspected: HIGH
+(CRITICAL if physics CRITICAL). Latent damage: HIGH. Snow loss: MEDIUM.
 Unclear photo: MEDIUM. Early soiling, inconclusive, healthy: LOW. Rationale: a CRITICAL verdict auto-creates a work
 order, so a routine clean should only reach CRITICAL when the measured loss itself is critical.
 
@@ -69,7 +72,9 @@ order, so a routine clean should only reach CRITICAL when the measured loss itse
 - Soiling row: action comes from `roi.evaluate(...)`, using `telemetry.expected_kwh_day`,
   `telemetry.attributable_deficit_fraction`, `telemetry.soiling_loss_rate_per_day` and `forecast`.
 - Snow row: WAIT if any forecast hour within `melt_window_h` has `temperature_c >= melt_temp_c`; otherwise CLEAR IF SAFE.
-- `confidence` = calibrated photo confidence (0.0 for Inconclusive).
+- `confidence` = calibrated photo confidence; 0.0 for Inconclusive and Unclear photo.
+- `FusionVerdict.roi_incomplete` is true when the soiling row's ROI inputs or cleaning cost were missing (action WAIT,
+  no saving computed). `TelemetryEvidence.soiling_rate_source` is passed through to `RoiResult.soiling_rate_source`.
 
 ## Adapter mapping
 
@@ -82,8 +87,9 @@ Physics (`physics-deficit.md`) to `TelemetryEvidence`:
 | `deficit_severity` | open `plant_alerts` row (`alert_type="deficit"`) `severity` |
 | `pi_median` | event `pi_median` |
 | `deviation_percent` | alert/event `deviation_percent` |
-| `expected_kwh_day` | mean of `expected_kw` over clear usable hours x daylight hours, or the daily expected kWh of the scope |
-| `attributable_deficit_fraction` | plant event: `1 - pi_median`; string event: `(1 - pi_median) x module_count / sum(module_count)` |
+| `expected_kwh_day` | physics event `expected_kw_mean` x the plant's clear/daylight hours per day (from the physics event's `clear_hours` per day, else the plant setting); for the scope being cleaned |
+| `attributable_deficit_fraction` | `1 - pi_median` of the scope being cleaned (plant or string); never scaled by module share |
+| `soiling_rate_source` | `soiling.method` + `label`, e.g. "rdtools_srr measured", "pvlib_kimber modelled (assumed default)" |
 | `soiling_loss_rate_per_day` | `soiling.soiling_loss_rate_per_day` (fraction/day, positive = loss) |
 
 Vision (`vision-predict.md`) `PredictResult` to `PhotoEvidence`: `predicted_class`, `confidence`, `is_ood`,
