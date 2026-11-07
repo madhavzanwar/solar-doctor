@@ -71,7 +71,7 @@ METHOD = """## Method
 CONTEXT = """## Comparison context
 
 All numbers above are measured on the deduplicated mirror (metalmerge/solar-panel-inspection, 789 images, 724 after
-exact-duplicate removal) with leak-free grouped splits. They are NOT directly comparable to figures published on the
+exact-duplicate removal) with leak-free grouped splits. They are not comparable one-to-one with figures published on the
 original Kaggle set: our original slides 91.46 % accuracy and HybridSolarNet (arXiv 2601.02928) 92.37 %. Those are
 reported by their authors, were not reproduced here, and can include near-duplicate leakage across splits.
 """
