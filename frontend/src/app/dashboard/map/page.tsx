@@ -1,4 +1,5 @@
-import { EmptyState, PageHeader } from "@/components/ui/states";
+import { PageHeader } from "@/components/ui/states";
+import MapView from "@/components/map/MapView";
 
 export const metadata = { title: "Map — SolarDoctor" };
 
@@ -8,11 +9,9 @@ export default function MapPage() {
       <PageHeader
         eyebrow="Site view"
         title="Map"
-        sub="Plants, strings and panels coloured by their worst open issue."
+        sub="Plants coloured by their worst open alert; open a plant for its panels and tracked faults."
       />
-      <EmptyState icon="map" title="No mapped plants yet">
-        Register a plant with coordinates to see it here. Panel-level faults appear once an inspection has been localised.
-      </EmptyState>
+      <MapView />
     </>
   );
 }
