@@ -45,7 +45,7 @@ export default function MapView() {
         const res = await Promise.allSettled(p.map((pl) => alertsApi.listOpen(pl.id)));
         if (!live) return;
         setPlants(p);
-        setAlerts(res.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
+        setAlerts([...new Map(res.flatMap((r) => (r.status === "fulfilled" ? r.value : [])).map((al) => [al.id, al])).values()]);
         setAlertsOk(res.every((r) => r.status === "fulfilled"));
         setTruncated(p.filter((_, i) => { const r = res[i]; return r.status === "fulfilled" && r.value.length >= OPEN_ALERT_LIMIT; }).map((pl) => pl.name));
       },

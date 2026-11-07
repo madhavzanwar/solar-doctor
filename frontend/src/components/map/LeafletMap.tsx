@@ -105,7 +105,8 @@ export default function LeafletMap({ pins, panels, selectedPlantId, selectedPane
     const m = map.current;
     if (!m || fit.length === 0) return;
     if (fit.length === 1) m.setView(fit[0], 15);
-    else m.fitBounds(fit, { padding: [48, 48], maxZoom: 14 });
+    // Panel markers are metres apart: zoom in far enough that their 24 px hit areas do not overlap.
+    else m.fitBounds(fit, { padding: [48, 48], maxZoom: panels.length ? 19 : 14 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey]);
 

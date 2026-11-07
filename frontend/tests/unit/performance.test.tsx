@@ -155,7 +155,8 @@ describe("components", () => {
     document.body.appendChild(host);
     const root = createRoot(host);
     act(() => root.render(<PerformanceChart series={performance.series as never} rainDays={["2026-10-30", "2030-01-01"]} cleaningDays={["2026-10-31"]} />));
-    expect(host.querySelector('svg[role="img"]')?.getAttribute("aria-labelledby")).toBe("perf-chart-summary");
+    // not role=img: that would make the focusable slider inside it a nested-interactive violation
+    expect(host.querySelector('svg[role="group"]')?.getAttribute("aria-labelledby")).toBe("perf-chart-summary");
     expect(host.querySelectorAll('[data-testid="deficit-ribbon"]').length).toBeGreaterThan(0);
     expect(host.querySelectorAll('[data-testid="clear-strip"]').length).toBeGreaterThan(0);
     expect(host.querySelectorAll('[data-testid="rain-tick"]')).toHaveLength(1);

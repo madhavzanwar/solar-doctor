@@ -106,7 +106,7 @@ export default function PerformanceChart({ series, rainDays = [], cleaningDays =
       <div className="dash-table-wrap" tabIndex={0} role="region" aria-label="Performance chart (scrollable)">
         <svg
           viewBox={`0 0 ${W} ${height}`}
-          role="img"
+          role="group"
           aria-labelledby="perf-chart-summary"
           style={{ display: "block", width: "100%", minWidth: 600, height: "auto" }}
           onMouseMove={(e) => move(e.clientX, e.currentTarget)}
