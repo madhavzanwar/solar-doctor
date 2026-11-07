@@ -37,6 +37,7 @@ export const plants = [
     inverter_capacity_kw: 100,
     module_count: 220,
     is_active: true,
+    park_id: "pccoe-rooftop",
     ...base,
   },
   {
@@ -225,6 +226,113 @@ export const weather = {
 
 export const taxonomy = [];
 
+// ── Physics deficit API (GET /performance/{id}, /strings/{id}/peers) and park map (grid, faults) ──
+// Schematic demo series, not a measurement: 7 UTC days hourly, a sine daytime curve, 12 % shortfall on the last three
+// days, one overcast day (clear=false, usable=false). Same payload for every plant, scaled for the 120 kW rooftop.
+
+const PSTART = Date.parse("2026-10-28T00:00:00Z");
+
+export const performanceSeries = Array.from({ length: 7 * 24 }, (_, i) => {
+  const day = Math.floor(i / 24);
+  const h = i % 24;
+  const sun = h >= 6 && h <= 18 ? Math.sin((Math.PI * (h - 6)) / 12) : 0;
+  const expected = r1(110 * sun);
+  const cloudy = day === 2;
+  const deficit = day >= 4 ? 0.88 : 1;
+  const actual = r1(expected * (cloudy ? 0.55 : deficit));
+  const daylight = sun > 0.05;
+  return {
+    ts: new Date(PSTART + i * 3600_000).toISOString(),
+    expected_kw: expected,
+    actual_kw: actual,
+    pi: daylight ? Math.round((actual / expected) * 1000) / 1000 : null,
+    clear: daylight && !cloudy,
+    usable: daylight && !cloudy,
+    source: "site_sensor",
+  };
+});
+
+export const performance = {
+  plant_id: 2,
+  baseline: "pvwatts",
+  start: "2026-10-28T00:00:00Z",
+  end: "2026-11-04T00:00:00Z",
+  status: "ok",
+  data_source: "SIMULATED",
+  series: performanceSeries,
+  events: [
+    {
+      scope: "string",
+      scope_id: 4,
+      name: "S-04",
+      severity: "CRITICAL",
+      start: "2026-11-01T06:00:00Z",
+      end: "2026-11-03T18:00:00Z",
+      pi_median: 0.86,
+      expected_kw_mean: 62,
+      actual_kw_mean: 53.3,
+      deviation_percent: 14,
+      clear_hours: 30,
+      peer_z: -4.1,
+      evidence: { localisation: "peer_compared" },
+    },
+  ],
+  open_alerts: [],
+  soiling: {
+    status: "ok",
+    method: "pvlib_kimber",
+    label: "modelled",
+    days_with_data: 7,
+    days: 7,
+    day: "2026-11-03",
+    soiling_ratio_p50: 0.96,
+    soiling_ratio_latest: 0.96,
+    soiling_loss_rate_per_day: 0.0015,
+    soiling_loss_rate_pct_per_day: 0.15,
+    cleaning_events: ["2026-10-30"],
+    note: "Modelled with the pvlib Kimber defaults.",
+  },
+  degradation: null,
+  qc: {},
+  provenance: { site_sensor: 168 },
+};
+
+export const peers = {
+  string_id: 4,
+  plant_id: 2,
+  start: performance.start,
+  end: performance.end,
+  status: "ok",
+  normalised_yield: 0.86,
+  plant_median: 0.98,
+  peer_z: -4.1,
+  peers: [
+    { string_id: 1, name: "S-01", normalised_yield: 0.99, peer_z: 0.4, clear_hours: 30 },
+    { string_id: 2, name: "S-02", normalised_yield: 0.98, peer_z: 0, clear_hours: 30 },
+    { string_id: 3, name: "S-03", normalised_yield: 0.97, peer_z: -0.3, clear_hours: 30 },
+    { string_id: 4, name: "S-04", normalised_yield: 0.86, peer_z: -4.1, clear_hours: 30 },
+    { string_id: 5, name: "S-05", normalised_yield: 0.98, peer_z: 0.1, clear_hours: 30 },
+  ],
+};
+
+export const parkGrid = {
+  park_id: "pccoe-rooftop",
+  inspection_id: "insp-1",
+  rows: 3,
+  cols: 4,
+  panels: [
+    { panel_id: "R1-C2", row: 0, col: 1, worst_severity: "HIGH", detection_count: 1, detections: [{ class: "Hotspot", confidence: 0.91, severity: "HIGH", thermal_filename: null }], gps: { lat: 18.6522, lon: 73.7611 } },
+    { panel_id: "R2-C4", row: 1, col: 3, worst_severity: "CRITICAL", detection_count: 2, detections: [{ class: "Diode", confidence: 0.88, severity: "CRITICAL", thermal_filename: null }, { class: "Hotspot", confidence: 0.7, severity: "MEDIUM", thermal_filename: null }], gps: { lat: 18.6518, lon: 73.7608 } },
+    { panel_id: "R3-C1", row: 2, col: 0, worst_severity: "LOW", detection_count: 1, detections: [{ class: "Soiling", confidence: 0.6, severity: "LOW", thermal_filename: null }], gps: null },
+  ],
+};
+
+export const parkFaults = {
+  park_id: "pccoe-rooftop",
+  total: 1,
+  faults: [{ id: 7, park_id: "pccoe-rooftop", panel_id: "R2-C4", severity: "CRITICAL", status: "open", occurrences: 2, assignee: null, due_date: null, priority: "high" }],
+};
+
 /** Fake auth session used by the harness. */
 export const loginResponse = {
   token: "fixture-token",
@@ -242,6 +350,10 @@ export const routes = [
   ["GET", /^\/api\/v1\/forecast\/\d+\/summary$/, () => forecastSummary],
   ["GET", /^\/api\/v1\/forecast\/\d+\/probabilistic$/, () => probabilistic],
   ["GET", /^\/api\/v1\/forecast\/\d+\/online-status$/, () => onlineStatus],
+  ["GET", /^\/api\/v1\/performance\/\d+$/, () => performance],
+  ["GET", /^\/api\/v1\/strings\/\d+\/peers$/, () => peers],
+  ["GET", /^\/api\/v1\/park\/[^/]+\/grid$/, () => parkGrid],
+  ["GET", /^\/api\/v1\/parks\/[^/]+\/faults$/, () => parkFaults],
   ["GET", /^\/api\/v1\/alerts$/, () => alerts],
   ["GET", /^\/api\/v1\/weather\/\d+\/(current|forecast)$/, () => weather],
   ["GET", /^\/api\/v1\/diagnosis\/taxonomy$/, () => taxonomy],

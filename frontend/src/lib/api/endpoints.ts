@@ -9,6 +9,12 @@ import type {
   ForecastRecord,
   ForecastSummary,
   OnlineAdapterStatus,
+  ParkFaultsResponse,
+  ParkGrid,
+  PeersResponse,
+  PerformanceBaseline,
+  PerformanceResponse,
+  ScanResponse,
   Plant,
   PlantConfig,
   PlantCreate,
@@ -94,4 +100,39 @@ export const weatherApi = {
     apiFetch<WeatherData>(`/api/v1/weather/${plantId}/current`),
   forecast: (plantId: number, days = 3) =>
     apiFetch<WeatherData>(`/api/v1/weather/${plantId}/forecast?days=${days}`),
+};
+
+// ── Physics deficit / performance endpoints ────────────────────────────────────
+
+export interface PerformanceWindow {
+  /** ISO timestamps (UTC). Omitted = backend default (last 7 days). Max window 92 days. */
+  start?: string;
+  end?: string;
+  baseline?: PerformanceBaseline;
+}
+
+function windowQuery({ start, end, baseline }: PerformanceWindow): string {
+  const qs = new URLSearchParams();
+  if (start) qs.set("start", start);
+  if (end) qs.set("end", end);
+  if (baseline) qs.set("baseline", baseline);
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+}
+
+export const performanceApi = {
+  get: (plantId: number, w: PerformanceWindow = {}) =>
+    apiFetch<PerformanceResponse>(`/api/v1/performance/${plantId}${windowQuery(w)}`),
+  /** Persists alerts (operator+). Carries `qc_status`, which the GET response does not. */
+  scan: (plantId: number, w: PerformanceWindow = {}) =>
+    apiFetch<ScanResponse>(`/api/v1/performance/${plantId}/scan${windowQuery(w)}`, { method: "POST" }),
+  peers: (stringId: number, w: Pick<PerformanceWindow, "start" | "end"> = {}) =>
+    apiFetch<PeersResponse>(`/api/v1/strings/${stringId}/peers${windowQuery(w)}`),
+};
+
+// ── Park map endpoints (Axalon) ────────────────────────────────────────────────
+
+export const parksApi = {
+  grid: (parkId: string) => apiFetch<ParkGrid>(`/api/v1/park/${encodeURIComponent(parkId)}/grid`),
+  faults: (parkId: string) => apiFetch<ParkFaultsResponse>(`/api/v1/parks/${encodeURIComponent(parkId)}/faults`),
 };
