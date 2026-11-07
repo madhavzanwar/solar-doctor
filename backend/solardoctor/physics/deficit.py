@@ -61,6 +61,7 @@ class Performance:
     baseline: str
     data_source: str
     parent: dict[int, Optional[int]]  # string id -> inverter id
+    clock_offset_min: Optional[float] = None  # qa.clock_offset_minutes; None when not estimable
     plant_samples: Optional[pd.DataFrame] = None  # plant scope at full resolution: actual_kw, expected_kw, clear, usable, source
 
 
@@ -143,6 +144,9 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
     elif len(str_rows):  # no plant meter: sum of the strings, through the inverter
         sums = pd.concat([a for (sc, _), (a, _, _) in series.items() if sc == "string"], axis=1)
         act = (sums.sum(axis=1, min_count=1) * ETA).clip(upper=plant.ac_kw)
+    elif len(inv_rows):  # inverter-only telemetry: plant = sum of the inverters
+        parts = [a for (sc, _), (a, _, _) in series.items() if sc == "inverter"]
+        act = pd.concat(parts, axis=1).sum(axis=1, min_count=1).clip(upper=plant.ac_kw)
     if act is not None:
         series[("plant", None)] = (act, exp["p_ac_kw"], plant.name)
 
@@ -165,7 +169,8 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
     return Performance(
         hourly=hourly, names=names, qc=qc, provenance={k: int(v) for k, v in weather["source"].value_counts().items()},
         baseline=baseline, data_source=str(modes.iloc[0]) if len(modes) else "unknown",
-        parent={s.id: s.inverter_id for s in strings}, plant_samples=plant_samples)
+        parent={s.id: s.inverter_id for s in strings}, plant_samples=plant_samples,
+        clock_offset_min=qa.clock_offset_minutes(weather))
 
 
 def plant_hourly(perf: Performance) -> pd.DataFrame:
@@ -277,6 +282,10 @@ def detect(perf: Performance, plant) -> list[DeficitEvent]:
         if span:
             events.append(_event(perf, plant, (scope, iid), h, span, None, None,
                                  "inverter-level deficit not explained by one string: check inverter / MPPT"))
+    n_strings = sum(1 for k in perf.hourly if k[0] == "string")
+    loc = "no_string_data" if not n_strings else "peer_compared" if z else "insufficient_peers"
+    for ev in events:
+        ev.evidence["localisation"] = loc
     return events
 
 
@@ -354,8 +363,11 @@ def scan_and_persist(db: Session, plant_id: int, start: datetime, end: datetime,
         return {"status": "no_telemetry", **empty}
     tel, weather, strings, inverters = inputs
     perf = performance(plant, tel, weather, baseline, strings, inverters)
-    events = detect(perf, plant)
+    off = perf.clock_offset_min
+    suspect = off is not None and abs(off) >= qa.CLOCK_OFFSET_MIN
+    events = [] if suspect else detect(perf, plant)  # a mislabelled clock makes PI meaningless: no alerts
     alerts = [_upsert(db, plant, ev, baseline, perf.data_source) for ev in events]
     db.commit()
-    return {"status": "ok", "baseline": baseline, "data_source": perf.data_source, "events": events,
+    return {"status": "ok", "qc_status": "time_offset_suspected" if suspect else "ok", "clock_offset_min": off,
+            "baseline": baseline, "data_source": perf.data_source, "events": events,
             "alerts": [a.id for a in alerts], "qc": perf.qc, "provenance": perf.provenance}

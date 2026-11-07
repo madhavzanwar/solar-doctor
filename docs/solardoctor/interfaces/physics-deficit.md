@@ -46,7 +46,7 @@ plants. Windows: default last 7 days, max 92 days, `start < end` (else 422). `ba
 - `GET /performance/{plant_id}?start&end&baseline` -> `PerformanceResponse`: `status` (`ok` | `no_telemetry`), `data_source`,
   `series[]` (`ts, expected_kw, actual_kw, pi, clear, usable, source`), `events[]` (computed for the window, not persisted),
   `open_alerts[]` (persisted open deficit alerts), `soiling`, `degradation` (latest `plant_analytics` or null), `qc`, `provenance`.
-- `POST /performance/{plant_id}/scan?start&end&baseline` -> `ScanResponse` (`status, baseline, data_source, events, alert_ids, qc, provenance`); persists alerts.
+- `POST /performance/{plant_id}/scan?start&end&baseline` -> `ScanResponse` (`status, qc_status, clock_offset_min, baseline, data_source, events, alert_ids, qc, provenance`); persists alerts.
 - `PUT /performance/{plant_id}/thresholds` body `{"pi_warning": 0.95, "pi_critical": 0.90, "deficit_min_clear_hours": 3}`;
   needs `0 < pi_critical < pi_warning <= 1`, hours 1..24 -> same body plus `plant_id`.
 - `GET /strings/{string_id}/peers?start&end` -> `{string_id, plant_id, status, normalised_yield, plant_median, peer_z, peers: [{string_id, name, normalised_yield, peer_z, clear_hours}]}`;
@@ -90,3 +90,10 @@ Seeded plants and the test generator (`tests/backend/physics/deficit_synth.py`) 
 carry `source="SIMULATED"` and `evidence.data_source="SIMULATED"`. Precision/recall in `docs/solardoctor/physics/DEFICIT_METRICS.md`
 are measured on SIMULATED data only. Solar Data Tools is not installed, so with no irradiance-normalised energy the soiling
 method is `unavailable`.
+
+## Behaviour notes
+
+- **Clock check:** the scan estimates the telemetry clock offset from site GHI vs the clear-sky curve (resolution one sampling step). At |offset| >= 30 min the scan returns `qc_status = "time_offset_suspected"`, `clock_offset_min`, and raises no events and writes no alerts. Otherwise `qc_status = "ok"`. It needs site GHI (> 50 % of rows) at <= 30 min sampling; otherwise `clock_offset_min` is null and the check is skipped.
+- **Localisation:** every event carries `evidence.localisation`: `peer_compared`, `insufficient_peers` (strings present but fewer than 4 with enough clear hours: no string is singled out) or `no_string_data`.
+- **Inverter-only telemetry:** with no plant meter and no strings, the plant series is the sum of the inverters, so a uniform deficit gives one plant event instead of one per inverter.
+- **Alert lifecycle:** the detector never auto-resolves open deficit alerts (resolution and verify-fix belong to WS3). INFO rows (peer deficit below the alert threshold) are persisted with severity `INFO`. Idempotency (one open alert per scope and id) relies on a single writer (the jobs loop or the scan endpoint); there is no database unique constraint.

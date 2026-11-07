@@ -53,6 +53,8 @@ class PerformanceResponse(BaseModel):
 
 class ScanResponse(BaseModel):
     status: str = Field(description="ok | no_telemetry")
+    qc_status: Optional[str] = Field(default=None, description="ok | time_offset_suspected (alerts suppressed)")
+    clock_offset_min: Optional[float] = None
     baseline: Optional[str] = None
     data_source: Optional[str] = None
     events: list[DeficitEventOut] = []

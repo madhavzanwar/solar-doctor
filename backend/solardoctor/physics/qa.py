@@ -69,3 +69,21 @@ def qc_flags(power: pd.Series, weather: pd.DataFrame, expected: pd.DataFrame, pl
     if not verifiable.any():
         stats["no_irradiance_for_clearsky_check"] = True
     return f, stats
+
+
+CLOCK_OFFSET_MIN = 30.0   # |offset| at or above this marks the scan time_offset_suspected
+CLOCK_MAX_LAG = pd.Timedelta(hours=3)
+
+
+def clock_offset_minutes(weather: pd.DataFrame) -> float | None:
+    """Estimated clock offset (minutes, + = timestamps late) from the lag that best aligns site-measured GHI with the
+    clear-sky curve; None without enough site GHI at fine resolution. Resolution is one sampling step."""
+    idx = weather.index
+    step = _step(idx)
+    site = weather["source"] == SITE
+    if len(idx) < 2 or step > pd.Timedelta(minutes=30) or site.mean() <= 0.5:
+        return None
+    ghi, cs = weather["ghi"].where(site), weather["ghi_clearsky"]
+    kmax = int(CLOCK_MAX_LAG / step)
+    best = max(range(-kmax, kmax + 1), key=lambda k: np.nan_to_num(ghi.shift(k).corr(cs), nan=-1.0))
+    return float(-best * step.total_seconds() / 60)

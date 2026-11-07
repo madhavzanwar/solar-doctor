@@ -96,7 +96,8 @@ def scan_plant(plant_id: int, start: Optional[datetime] = Query(default=None),
     _plant(db, plant_id)
     start, end = _window(start, end)
     res = deficit.scan_and_persist(db, plant_id, start, end, baseline, **_providers())
-    return ScanResponse(status=res["status"], baseline=res.get("baseline"), data_source=res.get("data_source"),
+    return ScanResponse(status=res["status"], qc_status=res.get("qc_status"),
+                        clock_offset_min=res.get("clock_offset_min"), baseline=res.get("baseline"), data_source=res.get("data_source"),
                         events=_events(res["events"]), alert_ids=res["alerts"], qc=res["qc"],
                         provenance=res["provenance"])
 
