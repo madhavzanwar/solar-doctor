@@ -80,7 +80,6 @@ export default function LeafletMap({ pins, panels, selectedPlantId, selectedPane
         `Panel ${p.panel_id}: ${p.detection_count} detection${p.detection_count === 1 ? "" : "s"}, worst ${p.worst_severity ?? "none"}`,
         `Panel ${p.panel_id}`, () => cb.current.onSelectPanel(p));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pins, panels, alertsKnown]);
 
   useEffect(() => {
@@ -93,7 +92,6 @@ export default function LeafletMap({ pins, panels, selectedPlantId, selectedPane
       const e = byId.current.get(id);
       if (e) e.marker.setIcon(icon(e.kind, sev, id === `plant:${selectedPlantId}` || id === `panel:${selectedPanelId}`));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlantId, selectedPanelId, pins, panels, alertsKnown]);
 
   useEffect(() => {

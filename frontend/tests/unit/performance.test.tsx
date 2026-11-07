@@ -180,8 +180,8 @@ describe("components", () => {
     act(() => root.unmount());
   });
 
-  async function mountMap(list: unknown) {
-    vi.doMock("@/lib/api", () => ({ plantsApi: { list }, alertsApi: { list: vi.fn(async () => []) }, parksApi: {} }));
+  async function mountMap(list: unknown, listOpen: unknown = vi.fn(async () => [])) {
+    vi.doMock("@/lib/api", () => ({ plantsApi: { list }, alertsApi: { listOpen }, parksApi: {}, OPEN_ALERT_LIMIT: 500 }));
     vi.doMock("next/dynamic", () => ({ default: () => () => <div data-testid="leaflet-stub" /> }));
     vi.doMock("next/link", () => ({ default: ({ children, ...r }: { children: React.ReactNode }) => <a {...r}>{children}</a> }));
     const { default: MapView } = await import("@/components/map/MapView");
@@ -202,6 +202,39 @@ describe("components", () => {
     const { host, root } = await mountMap(vi.fn(async () => Promise.reject(new Error("API unreachable"))));
     expect(host.querySelector('[role="alert"]')?.textContent).toContain("API unreachable");
     expect(host.textContent).not.toContain("No mapped plants");
+    act(() => root.unmount());
+  });
+  it("map: a failed alert fetch shows 'Alert status unavailable' instead of implying all clear", async () => {
+    const { host, root } = await mountMap(vi.fn(async () => plants), vi.fn(async () => Promise.reject(new Error("boom"))));
+    expect(host.textContent).toContain("Alert status unavailable");
+    act(() => root.unmount());
+  });
+  it("map: warns when a plant hits the open-alert cap", async () => {
+    const many = Array.from({ length: 500 }, (_, i) => ({ id: i, plant_id: 1, severity: "INFO", is_resolved: false, message: "m" }));
+    const { host, root } = await mountMap(vi.fn(async () => plants), vi.fn(async () => many));
+    expect(host.textContent).toContain("most recent open alerts");
+    act(() => root.unmount());
+  });
+  it("map grid: labelled group, one tab stop, arrow keys move focus", async () => {
+    const { default: ParkMapGrid } = await import("@/components/map/ParkMapGrid");
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const onSelect = vi.fn();
+    act(() => root.render(<ParkMapGrid grid={parkGrid as never} selectedPanelId={null} onSelect={onSelect} />));
+    expect(host.querySelector('[role="grid"],[role="gridcell"]')).toBeNull();
+    expect(host.querySelector('[role="group"]')?.getAttribute("aria-label")).toContain("Panel grid");
+    const stops = host.querySelectorAll("button[tabindex='0']");
+    expect(stops).toHaveLength(1);
+    const first = stops[0] as HTMLButtonElement; // R1-C2 (row 0, col 1)
+    act(() => first.focus());
+    act(() => void first.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
+    expect(document.activeElement?.getAttribute("data-cell")).toBe("0-2");
+    expect(host.querySelectorAll("button[tabindex='0']")).toHaveLength(1);
+    const pressed = host.querySelector('[data-testid="panel-R2-C4"]') as HTMLButtonElement;
+    expect(pressed.getAttribute("aria-pressed")).toBe("false");
+    act(() => pressed.click());
+    expect(onSelect).toHaveBeenCalled();
     act(() => root.unmount());
   });
   it("map: renders the map, legend and plant list for mapped plants", async () => {
