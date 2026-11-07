@@ -39,6 +39,7 @@ def _normalised(daily: pd.DataFrame) -> pd.Series:
 
 def _kimber(rain: pd.Series) -> dict:
     from pvlib.soiling import kimber
+    rain = rain.loc[:rain.last_valid_index()]  # NASA POWER lags: trailing NaN is 'unknown', not 'no rain'
     loss = kimber(rain.fillna(0.0), **KIMBER)
     eod = loss.resample("1D").last()
     cleaned = (eod == 0) & (eod.shift() > 0)  # soiling reset to zero by rain

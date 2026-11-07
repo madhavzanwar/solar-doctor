@@ -89,3 +89,11 @@ def test_srr_single_valid_interval_has_no_false_ci():
     res = sa.soiling_analysis(PLANT, _daily(70, lambda n: n, 0.004), reps=20)  # never cleaned: at most one interval
     if res["status"] == "ok" and res["intervals"] < 2:
         assert res["soiling_loss_rate_ci_per_day"] is None and "fewer than 2" in res["note"]
+
+
+def test_kimber_stops_at_last_known_rain_value():
+    """The last 10 days of rain are missing (NASA latency): they must not count as dry days of soiling."""
+    rain = pd.Series(0.0, index=pd.date_range("2024-03-01", periods=45 * 24, freq="h", tz="UTC"))
+    rain.iloc[35 * 24:] = float("nan")
+    res = sa.soiling_analysis(PLANT, _daily(45, lambda n: 0 * n, 0.0), rain)
+    assert res["method"] == "pvlib_kimber" and res["days"] == 35
