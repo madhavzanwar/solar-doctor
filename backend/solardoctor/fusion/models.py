@@ -28,6 +28,7 @@ class TelemetryEvidence:
     expected_kwh_day: Optional[float] = None        # clear-sky expected energy of the scope
     attributable_deficit_fraction: Optional[float] = None  # fraction of that energy lost (see adapter note)
     soiling_loss_rate_per_day: Optional[float] = None      # fraction/day, positive = loss (soiling_analysis)
+    soiling_rate_source: Optional[str] = None       # e.g. "rdtools_srr measured" / "pvlib_kimber assumed default"
 
 
 @dataclass(frozen=True)
@@ -61,3 +62,4 @@ class FusionVerdict:
     telemetry_state: str               # deficit | no_deficit | inconclusive
     photo_state: str                   # unclear | one of CLASSES
     roi: Optional[RoiResult] = None    # set only by the soiling row
+    roi_incomplete: bool = False       # soiling row only: ROI inputs / cleaning cost missing, no saving computed

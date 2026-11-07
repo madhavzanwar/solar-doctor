@@ -15,7 +15,7 @@ rules:
     verdict: Unclear photo
     action: NEEDS FIELD CHECK
     severity: MEDIUM
-    confidence_basis: photo
+    confidence_basis: zero
     reason: "The photo cannot be trusted ({photo_issue}), so no diagnosis is made. Send someone to inspect the panels on site."
 
   - id: inconclusive

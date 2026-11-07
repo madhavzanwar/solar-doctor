@@ -47,6 +47,29 @@ def test_row_soiling_critical_telemetry_with_clean_now_is_critical():
     assert fuse(tel("CRITICAL"), ph("dusty"), S).severity is Severity.CRITICAL
 
 
+def test_critical_telemetry_with_rain_wait_is_not_critical():
+    v = fuse(tel("CRITICAL"), ph("dusty"), S, forecast=[ForecastHour(12, 70)])
+    assert v.action == "WAIT" and v.severity is Severity.LOW
+
+
+def test_soiling_rate_source_reaches_roi():
+    v = fuse(tel(soiling_loss_rate_per_day=0.001, soiling_rate_source="pvlib_kimber assumed default"), ph("dusty"), S)
+    assert v.roi.soiling_rate_source == "pvlib_kimber assumed default"
+
+
+def test_nan_usable_hours_is_unknown():
+    nan = float("nan")
+    assert fuse(TelemetryEvidence(usable_clear_hours=nan), ph("dusty"), S).rule_id == "inconclusive"
+    assert fuse(TelemetryEvidence(usable_clear_hours=nan, deficit_severity="WARNING"), ph("clean"), S).rule_id         == "electrical_suspected"
+
+
+def test_rules_are_immutable():
+    row = load_rules()[0]
+    with pytest.raises(TypeError):
+        row["verdict"] = "x"
+    assert isinstance(load_rules()[2]["photo"], tuple)
+
+
 def test_soiling_uses_telemetry_rate_for_tstar():
     v = fuse(tel(soiling_loss_rate_per_day=0.001), ph("dusty"), S)
     assert v.roi.optimal_interval_days == pytest.approx(28.18, abs=0.01)
@@ -112,6 +135,7 @@ def test_row_inconclusive(t):
 
 def test_row_unclear_photo_ood():
     v = fuse(tel(), ph("dusty", 0.99, is_ood=True), S)
+    assert v.confidence == 0.0
     assert (v.rule_id, v.verdict, v.action) == ("unclear_photo", "Unclear photo", "NEEDS FIELD CHECK")
 
 
@@ -166,11 +190,13 @@ def test_info_alert_is_not_a_deficit():
 
 def test_soiling_with_missing_roi_inputs_waits_with_reason():
     v = fuse(tel(expected_kwh_day=None), ph("dusty"), S)
-    assert v.rule_id == "soiling_confirmed" and v.action == "WAIT" and "Insufficient data" in v.reason
+    assert v.rule_id == "soiling_confirmed" and v.action == "WAIT" and "ROI inputs missing" in v.reason
+    assert v.roi_incomplete and v.roi.incomplete
+    assert not fuse(tel(), ph("dusty"), S).roi_incomplete
 
 
 def test_soiling_zero_tariff_waits():
-    s = FusionSettings(roi=RoiSettings(tariff_inr_per_kwh=0.0, tariff_preset=None))
+    s = FusionSettings(roi=RoiSettings(tariff_inr_per_kwh=0.0, tariff_preset=None, labour_cost_inr=500))
     v = fuse(tel(), ph("dusty"), s)
     assert v.action == "WAIT" and "never pays back" in v.reason
 
