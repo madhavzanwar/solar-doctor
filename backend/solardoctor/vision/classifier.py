@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import threading
 import time
 from collections import OrderedDict
@@ -27,6 +28,8 @@ DIR_ENV = "SOLARDOCTOR_RGB_MODEL_DIR"
 REPO_ENV = "SOLARDOCTOR_RGB_MODEL_REPO"
 REVISION_ENV = "SOLARDOCTOR_RGB_MODEL_REVISION"
 DEFAULT_REPO = "solar-doctor/solar-doctor-rgb-defect"
+FAILURE_TTL_S = 30.0  # after a failed load, answer from the cached error instead of retrying on every request
+_SHA40 = re.compile(r"[0-9a-f]{40}")
 METHODS = ("gradcam", "lime")
 _LIME_CACHE_SIZE = 16
 
@@ -42,6 +45,8 @@ def _resolve_bundle() -> tuple[Path, str]:
     revision = os.environ.get(REVISION_ENV, "").strip()
     if not revision:
         raise VisionModelUnavailable(f"set {DIR_ENV}, or {REVISION_ENV} to pin a Hugging Face revision")
+    if not _SHA40.fullmatch(revision):
+        raise VisionModelUnavailable(f"{REVISION_ENV} must be a 40-character lowercase hex commit sha, got {revision!r}")
     repo = os.environ.get(REPO_ENV, "").strip() or DEFAULT_REPO
     try:
         from huggingface_hub import snapshot_download
@@ -169,20 +174,29 @@ class Classifier:
 
 _classifier: Classifier | None = None
 _singleton_lock = threading.Lock()
+_failure: tuple[float, str] | None = None  # (monotonic time, message) of the last failed load
 
 
 def get_classifier() -> Classifier:
-    """Lazy process-wide singleton. Raises VisionModelUnavailable (failures are not cached, so a fix is picked up)."""
-    global _classifier
+    """Lazy process-wide singleton. Raises VisionModelUnavailable; a failed load is remembered for FAILURE_TTL_S
+    seconds (so requests do not queue on the lock re-downloading), then retried."""
+    global _classifier, _failure
     with _singleton_lock:
         if _classifier is None:
-            bundle, source = _resolve_bundle()
-            _classifier = Classifier(bundle, source)
+            if _failure and time.monotonic() - _failure[0] < FAILURE_TTL_S:
+                raise VisionModelUnavailable(_failure[1])
+            try:
+                bundle, source = _resolve_bundle()
+                _classifier = Classifier(bundle, source)
+            except VisionModelUnavailable as exc:
+                _failure = (time.monotonic(), str(exc))
+                raise
+            _failure = None
             log.info("RGB model loaded: %s (%s)", _classifier.version, source)
         return _classifier
 
 
 def reset_classifier() -> None:
-    global _classifier
+    global _classifier, _failure
     with _singleton_lock:
-        _classifier = None
+        _classifier, _failure = None, None

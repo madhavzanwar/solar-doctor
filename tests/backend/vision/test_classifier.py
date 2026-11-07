@@ -81,6 +81,9 @@ def test_info_sha256_matches_file(clf):
     assert info["source"].startswith("local:") and info["conf_threshold"] == 0.6
 
 
+SHA = "0123456789abcdef0123456789abcdef01234567"
+
+
 def test_unavailable_without_dir_or_revision(monkeypatch):
     from solardoctor.vision.classifier import reset_classifier
     for k in ("SOLARDOCTOR_RGB_MODEL_DIR", "SOLARDOCTOR_RGB_MODEL_REVISION"):
@@ -107,14 +110,14 @@ def test_hf_revision_is_pinned(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(huggingface_hub, "snapshot_download", lambda **kw: calls.append(kw) or str(bundle))
     monkeypatch.delenv("SOLARDOCTOR_RGB_MODEL_DIR", raising=False)
-    monkeypatch.setenv("SOLARDOCTOR_RGB_MODEL_REVISION", "abc123")
+    monkeypatch.setenv("SOLARDOCTOR_RGB_MODEL_REVISION", SHA)
     reset_classifier()
     try:
         clf = get_classifier()
     finally:
         reset_classifier()
-    assert calls == [{"repo_id": "solar-doctor/solar-doctor-rgb-defect", "revision": "abc123"}]
-    assert clf.info()["source"] == "hf:solar-doctor/solar-doctor-rgb-defect@abc123"
+    assert calls == [{"repo_id": "solar-doctor/solar-doctor-rgb-defect", "revision": SHA}]
+    assert clf.info()["source"] == f"hf:solar-doctor/solar-doctor-rgb-defect@{SHA}"
 
 
 def test_hf_download_failure_is_unavailable(monkeypatch):
@@ -125,10 +128,49 @@ def test_hf_download_failure_is_unavailable(monkeypatch):
         raise OSError("offline")
     monkeypatch.setattr(huggingface_hub, "snapshot_download", boom)
     monkeypatch.delenv("SOLARDOCTOR_RGB_MODEL_DIR", raising=False)
-    monkeypatch.setenv("SOLARDOCTOR_RGB_MODEL_REVISION", "abc123")
+    monkeypatch.setenv("SOLARDOCTOR_RGB_MODEL_REVISION", SHA)
     reset_classifier()
     with pytest.raises(VisionModelUnavailable, match="offline"):
         get_classifier()
+
+
+def test_revision_must_be_40_hex(monkeypatch):
+    import huggingface_hub
+    from solardoctor.vision.classifier import reset_classifier
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", lambda **kw: pytest.fail("must not download"))
+    monkeypatch.delenv("SOLARDOCTOR_RGB_MODEL_DIR", raising=False)
+    for bad in ("abc123", "main", SHA.upper(), SHA[:-1]):
+        monkeypatch.setenv("SOLARDOCTOR_RGB_MODEL_REVISION", bad)
+        reset_classifier()
+        with pytest.raises(VisionModelUnavailable, match="40-character"):
+            get_classifier()
+
+
+def test_failed_load_is_cached_for_30s_then_retried(monkeypatch):
+    import huggingface_hub
+    from solardoctor.vision import classifier as C
+
+    calls = []
+
+    def boom(**kw):
+        calls.append(1)
+        raise OSError("offline")
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", boom)
+    monkeypatch.delenv("SOLARDOCTOR_RGB_MODEL_DIR", raising=False)
+    monkeypatch.setenv("SOLARDOCTOR_RGB_MODEL_REVISION", SHA)
+    C.reset_classifier()
+    clock = [1000.0]
+    monkeypatch.setattr(C.time, "monotonic", lambda: clock[0])
+    for _ in range(3):
+        with pytest.raises(VisionModelUnavailable, match="offline"):
+            get_classifier()
+    assert len(calls) == 1
+    clock[0] += C.FAILURE_TTL_S + 1
+    with pytest.raises(VisionModelUnavailable):
+        get_classifier()
+    assert len(calls) == 2
+    C.reset_classifier()
 
 
 def test_cpu_latency_informational(clf, png, capsys):
