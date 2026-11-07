@@ -23,11 +23,13 @@ packages = [
     "solardoctor.api",
     "solardoctor.core",
     "solardoctor.db",
+    "solardoctor.fusion",
     "solardoctor.park",
     "solardoctor.physics",
     "solardoctor.physics.schemas",
     "solardoctor.pipeline",
     "solardoctor.reporting",
+    "solardoctor.roi",
     "ml",
     "ml.thermal.src",
     "ml.forecast",
@@ -41,6 +43,9 @@ packages = [
     "drone.common",
     "drone.agent",
 ]
+
+[tool.setuptools.package-data]
+"solardoctor.fusion" = ["rules.yaml"]
 
 [tool.pytest.ini_options]
 # importlib mode prevents platform/ dir from shadowing stdlib 'platform' module
