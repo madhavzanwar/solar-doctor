@@ -53,9 +53,9 @@ A true positive is an event on exactly the injected scope (the right string, or 
 
 ## Hard suite
 
-Report seeds 100..119 (20 seeds x 12 scenarios = 240 scans). SIMULATED; 2.5% multiplicative noise on every string, 1.5% on the GHI sensor. Detection thresholds are unchanged. The only new QC parameter is the clock-offset limit (30 min, fixed by design, not fitted), so no tuning seeds were used; seeds 100..119 were never used to choose a parameter.
+Report seeds 100..119 (20 seeds x 13 scenarios = 260 scans). SIMULATED; 2.5% multiplicative noise on every string, 1.5% on the GHI sensor. Detection thresholds are unchanged. The only new QC parameter is the clock-offset limit (30 min, fixed by design, not fitted), so no tuning seeds were used; seeds 100..119 were never used to choose a parameter.
 
-Scenarios: control_hard (healthy), slow_soiling (plant loss 0 to 8 % over 14 days; an event starting before the true loss reaches 4 % is a premature false positive), just_under (one string -3 %, no WARNING+ expected; an INFO peer notice on it is not a false positive), partly_cloudy (4 days of broken clouds, GHI sensor 7 min behind the array), clipping_day (DC/AC 1.56, healthy), clipping_string (same plant, one string -10 %), gaps_and_stuck (NaN runs, GHI sensor and one string power channel flatlined, healthy), time_offset (healthy, timestamps +1 h), one_of_many (24 strings, one at -8 %), jitter (0-59 s timestamp jitter, one string -20 %), control_nasa / cloudy_nasa (no site GHI; hourly NASA-style GHI with 3 % to 33 % error, healthy; cloudy_nasa has a cloudy day).
+Scenarios: control_hard (healthy), slow_soiling (plant loss 0 to 8 % over 14 days; an event starting before the true loss reaches 4 % is a premature false positive), just_under (one string -3 %, no WARNING+ expected; an INFO peer notice on it is not a false positive), partly_cloudy (4 days of broken clouds, GHI sensor 7 min behind the array), clipping_day (DC/AC 1.56, healthy), clipping_string (same plant, one string -10 %), gaps_and_stuck (NaN runs, GHI sensor and one string power channel flatlined, healthy), time_offset (healthy, timestamps +1 h), one_of_many (24 strings, one at -8 %), jitter (0-59 s timestamp jitter, one string -20 %), control_nasa / cloudy_nasa (no site GHI; hourly NASA-style GHI with 3 % to 33 % error, healthy; cloudy_nasa has a cloudy day), string_nasa (the same NASA-only irradiance, one string -10 %).
 
 | Scenario | Counting | TP | FP | FN | Precision | Recall |
 |---|---|---|---|---|---|---|
@@ -80,21 +80,35 @@ Scenarios: control_hard (healthy), slow_soiling (plant loss 0 to 8 % over 14 day
 | jitter | any severity | 20 | 0 | 0 | 1.000 | 1.000 |
 | jitter | WARNING+ | 20 | 0 | 0 | 1.000 | 1.000 |
 | control_nasa | any severity | 0 | 17 | 0 | 0.000 | n/a (no positives) |
-| control_nasa | WARNING+ | 0 | 17 | 0 | 0.000 | n/a (no positives) |
+| control_nasa | WARNING+ | 0 | 0 | 0 | n/a (no positives) | n/a (no positives) |
 | cloudy_nasa | any severity | 0 | 16 | 0 | 0.000 | n/a (no positives) |
-| cloudy_nasa | WARNING+ | 0 | 16 | 0 | 0.000 | n/a (no positives) |
+| cloudy_nasa | WARNING+ | 0 | 0 | 0 | n/a (no positives) | n/a (no positives) |
+| string_nasa | any severity | 20 | 15 | 0 | 0.571 | 1.000 |
+| string_nasa | WARNING+ | 20 | 0 | 0 | 1.000 | 1.000 |
 
 ### Pooled over the hard suite
 
 | Counting | TP | FP | FN | Precision | Recall |
 |---|---|---|---|---|---|
-| any severity | 79 | 44 | 1 | 0.642 | 0.988 |
-| WARNING+ | 79 | 44 | 1 | 0.642 | 0.988 |
+| any severity | 99 | 59 | 1 | 0.627 | 0.990 |
+| WARNING+ | 99 | 11 | 1 | 0.900 | 0.990 |
 
-Pooled WARNING+ without the two NASA-only scenarios: TP 79, FP 11, FN 1, precision 0.878, recall 0.988.
+### Before and after the irradiance-verification cap (WARNING+)
+
+Before = the earlier run of this script (same 12 scenarios and seeds, no cap). After = this run. `string_nasa` (10 % string fault, NASA-only irradiance) was added with the cap and has no before value.
+
+| Row | Before TP/FP/FN | Before precision | Before recall | After TP/FP/FN | After precision | After recall |
+|---|---|---|---|---|---|---|
+| control_nasa | 0/17/0 | 0.000 | n/a (no positives) | 0/0/0 | n/a (no positives) | n/a (no positives) |
+| cloudy_nasa | 0/16/0 | 0.000 | n/a (no positives) | 0/0/0 | n/a (no positives) | n/a (no positives) |
+| pooled (12 scenarios) | 79/44/1 | 0.642 | 0.988 | 79/11/1 | 0.878 | 0.988 |
+| pooled without NASA-only scenarios | 79/11/1 | 0.878 | 0.988 | 79/11/1 | 0.878 | 0.988 |
+| string_nasa (new) | n/a | n/a | n/a | 20/0/0 | 1.000 | 1.000 |
+
+Pooled WARNING+ without the two NASA-only scenarios: TP 99, FP 11, FN 1, precision 0.900, recall 0.990.
 
 ### Other measurements
 
 - just_under: INFO peer notice on the -3 % string in 6 of 20 runs (6 events).
 - slow_soiling: plant event found in 20 of 20 runs; premature starts in 1; delay after the true 5 % crossing median -0.67 days (min -2.42, max 0.33; negative = before the crossing).
-- time-offset QC flag rate (`qc_status = time_offset_suspected`): control_hard 0/20; slow_soiling 0/20; just_under 0/20; partly_cloudy 4/20; clipping_day 0/20; clipping_string 0/20; gaps_and_stuck 0/20; time_offset 20/20; one_of_many 0/20; jitter 0/20; control_nasa 0/20; cloudy_nasa 0/20.
+- time-offset QC flag rate (`qc_status = time_offset_suspected`): control_hard 0/20; slow_soiling 0/20; just_under 0/20; partly_cloudy 4/20; clipping_day 0/20; clipping_string 0/20; gaps_and_stuck 0/20; time_offset 20/20; one_of_many 0/20; jitter 0/20; control_nasa 0/20; cloudy_nasa 0/20; string_nasa 0/20.

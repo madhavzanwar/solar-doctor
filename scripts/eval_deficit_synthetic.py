@@ -35,6 +35,12 @@ def _pr(tp: int, fp: int, fn: int) -> dict:
             "recall": tp / (tp + fn) if tp + fn else float("nan")}
 
 
+# Measured earlier by this script (commit d4844bc, 12 scenarios, seeds 100..119) before plant/inverter events were capped
+# at INFO under unverified irradiance. (TP, FP, FN), identical for "any severity" and "WARNING+".
+BEFORE = {"control_nasa": (0, 17, 0), "cloudy_nasa": (0, 16, 0), "pooled (12 scenarios)": (79, 44, 1),
+          "pooled without NASA-only scenarios": (79, 11, 1)}
+
+
 def hard_block(seeds: list[int]) -> list[str]:
     """Hard suite (tests/backend/physics/deficit_synth_hard.py) on the report seeds; every number is measured here."""
     per = {sc: [] for sc in hs.SCENARIOS}
@@ -55,7 +61,8 @@ def hard_block(seeds: list[int]) -> list[str]:
            "partly_cloudy (4 days of broken clouds, GHI sensor 7 min behind the array), clipping_day (DC/AC 1.56, healthy), "
            "clipping_string (same plant, one string -10 %), gaps_and_stuck (NaN runs, GHI sensor and one string power channel flatlined, healthy), "
            "time_offset (healthy, timestamps +1 h), one_of_many (24 strings, one at -8 %), jitter (0-59 s timestamp jitter, one string -20 %), "
-           "control_nasa / cloudy_nasa (no site GHI; hourly NASA-style GHI with 3 % to 33 % error, healthy; cloudy_nasa has a cloudy day).", "",
+           "control_nasa / cloudy_nasa (no site GHI; hourly NASA-style GHI with 3 % to 33 % error, healthy; cloudy_nasa has a cloudy day), "
+           "string_nasa (the same NASA-only irradiance, one string -10 %).", "",
            "| Scenario | Counting | TP | FP | FN | Precision | Recall |", "|---|---|---|---|---|---|---|"]
     for sc in hs.SCENARIOS:
         for label, mode in (("any severity", "any"), ("WARNING+", "warn")):
@@ -67,6 +74,21 @@ def hard_block(seeds: list[int]) -> list[str]:
         out.append(f"| {label} | {t[0]} | {t[1]} | {t[2]} | {_fmt(_pr(*t)['precision'])} | {_fmt(_pr(*t)['recall'])} |")
     nasa = ("control_nasa", "cloudy_nasa")
     t = tuple(sum(sums(per[sc], "warn")[i] for sc in hs.SCENARIOS if sc not in nasa) for i in range(3))
+    old12 = [sc for sc in hs.SCENARIOS if sc != "string_nasa"]
+    p12 = tuple(sum(sums(per[sc], "warn")[i] for sc in old12) for i in range(3))
+    pn = tuple(sum(sums(per[sc], "warn")[i] for sc in old12 if sc not in ("control_nasa", "cloudy_nasa")) for i in range(3))
+    after = {"control_nasa": sums(per["control_nasa"], "warn"), "cloudy_nasa": sums(per["cloudy_nasa"], "warn"),
+             "pooled (12 scenarios)": p12, "pooled without NASA-only scenarios": pn}
+    out += ["", "### Before and after the irradiance-verification cap (WARNING+)", "",
+            "Before = the earlier run of this script (same 12 scenarios and seeds, no cap). After = this run. "
+            "`string_nasa` (10 % string fault, NASA-only irradiance) was added with the cap and has no before value.", "",
+            "| Row | Before TP/FP/FN | Before precision | Before recall | After TP/FP/FN | After precision | After recall |", "|---|---|---|---|---|---|---|"]
+    for k, b in BEFORE.items():
+        a = after[k]
+        out.append(f"| {k} | {b[0]}/{b[1]}/{b[2]} | {_fmt(_pr(*b)['precision'])} | {_fmt(_pr(*b)['recall'])} | "
+                   f"{a[0]}/{a[1]}/{a[2]} | {_fmt(_pr(*a)['precision'])} | {_fmt(_pr(*a)['recall'])} |")
+    sn = sums(per["string_nasa"], "warn")
+    out.append(f"| string_nasa (new) | n/a | n/a | n/a | {sn[0]}/{sn[1]}/{sn[2]} | {_fmt(_pr(*sn)['precision'])} | {_fmt(_pr(*sn)['recall'])} |")
     out += ["", f"Pooled WARNING+ without the two NASA-only scenarios: TP {t[0]}, FP {t[1]}, FN {t[2]}, precision {_fmt(_pr(*t)['precision'])}, recall {_fmt(_pr(*t)['recall'])}.", "",
             "### Other measurements", ""]
     notice = sum(r["notice"] for r in per["just_under"])
