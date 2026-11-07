@@ -12,6 +12,10 @@ are study-only references: no code, text, images or CSS from them is used.
 | [VisionExpo/solar-panel-fault-detection](https://github.com/VisionExpo/solar-panel-fault-detection) | Apache-2.0 | Reference for 6-class inference + explainer API (add NOTICE entries per file when code is reused). |
 | [dunglt69/solar-anomaly-detection](https://github.com/dunglt69/solar-anomaly-detection) | Apache-2.0 | Reference for incident lifecycle / RBAC / WebSocket patterns (add NOTICE entries per file when code is reused). |
 
+### Map screen (Prompt 2 WS4a)
+
+`frontend/src/components/map/ParkMapGrid.tsx` is a restyled port of `legacy/axalon-nextjs/components/Platform/ParkMapGrid.tsx` (AxalonSystems, MIT, covered by the first row above). `PlantDrawer.tsx` follows the layout of `ParkPanelDetail`/`ParkFaultsPanel` without their mutation workflow. Runtime library added: `leaflet` (BSD-2-Clause) plus `@types/leaflet` (MIT). `react-leaflet` was deliberately not used: it is Hippocratic-2.1, outside our MIT/Apache/BSD rule, so Leaflet is driven imperatively. Basemap tiles: CARTO Positron (OpenStreetMap data, attribution shown) and Esri World Imagery (attribution shown).
+
 ### SolarPulseAI backend modules (Phase E, MIT, (c) 2026 anugrahpatil-creator)
 
 Each ported file carries an attribution header. Mapping (SolarPulseAI `backend/` -> SolarDoctor):

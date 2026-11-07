@@ -16,6 +16,7 @@
     "test:smoke": "node tests/smoke/run.mjs"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "next": "15.5.27",
     "react": "19.1.0",
     "react-dom": "19.1.0"
@@ -24,6 +25,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/pngjs": "^6.0.5",
     "@types/react": "^19",

@@ -19,4 +19,23 @@ export type DiagnosisResponse = S["DiagnosisResponse"];
 export type DiagnosisRequest = Pick<S["DiagnosisRequest"], "plant_id"> & Partial<S["DiagnosisRequest"]>;
 export type RootCauseTaxonomyItem = S["RootCauseTaxonomyItem"];
 
-export type { WeatherData, WeatherPoint } from "./api.types.pending";
+export type {
+  DeficitEvent,
+  DeficitSeverity,
+  GridPanel,
+  GridPanelDetection,
+  HourlyPoint,
+  ParkFault,
+  ParkFaultsResponse,
+  ParkGrid,
+  PeersResponse,
+  PeerValue,
+  PerformanceAlert,
+  PerformanceBaseline,
+  PerformanceResponse,
+  QcStatus,
+  ScanResponse,
+  SoilingAnalytics,
+  WeatherData,
+  WeatherPoint,
+} from "./api.types.pending";
