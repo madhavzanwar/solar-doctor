@@ -3,10 +3,11 @@ import { formatPercent, formatSignedPp, type DayTotal } from "@/lib/performance"
 import Sparkline from "./Sparkline";
 
 const SEV: Record<string, string> = { CRITICAL: "var(--sev-critical)", WARNING: "var(--sev-high)", INFO: "var(--sev-low)" };
+const INK: Record<string, string> = { CRITICAL: "var(--sev-critical-ink)", WARNING: "var(--sev-high-ink)", INFO: "var(--sev-low-ink)" };
 
-function Badge({ label, color }: { label: string; color?: string }) {
+function Badge({ label, color, ink = color }: { label: string; color?: string; ink?: string }) {
   return (
-    <span className="dash-badge" style={color ? { background: `color-mix(in srgb, ${color} 12%, transparent)`, color } : undefined}>
+    <span className="dash-badge" style={color ? { background: `color-mix(in srgb, ${color} 12%, transparent)`, color: ink } : undefined}>
       {label}
     </span>
   );
@@ -26,19 +27,19 @@ export default function PeerTable({ peers, events, days }: { peers: PeersRespons
             <th scope="col">String</th>
             <th scope="col">Normalised yield</th>
             <th scope="col">vs plant median</th>
-            <th scope="col">Peer z</th>
-            <th scope="col">Clear hours</th>
+            <th scope="col" className="sd-hide-sm">Peer z</th>
+            <th scope="col" className="sd-hide-sm">Clear hours</th>
             <th scope="col">Trend</th>
             <th scope="col">Status</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <th scope="row" style={{ textAlign: "left" }}>Plant (all hours)</th>
+            <th scope="row" style={{ textAlign: "left" }}>Plant median</th>
             <td className="nowrap">{formatPercent(median != null ? median * 100 : null)}</td>
             <td>{"—"}</td>
-            <td>{"—"}</td>
-            <td>{"—"}</td>
+            <td className="sd-hide-sm">{"—"}</td>
+            <td className="sd-hide-sm">{"—"}</td>
             <td><Sparkline values={days.map((d) => d.pr)} /></td>
             <td><span className="dash-badge dash-badge-muted">DAILY PR</span></td>
           </tr>
@@ -58,10 +59,10 @@ export default function PeerTable({ peers, events, days }: { peers: PeersRespons
                     {median != null && <line x1={median * 64} x2={median * 64} y1="0" y2="8" stroke="var(--ink)" />}
                   </svg>
                 </td>
-                <td className="nowrap">{p.peer_z != null ? p.peer_z.toFixed(2) : "—"}</td>
-                <td className="nowrap">{p.clear_hours}</td>
+                <td className="nowrap sd-hide-sm">{p.peer_z != null ? p.peer_z.toFixed(2) : "—"}</td>
+                <td className="nowrap sd-hide-sm">{p.clear_hours}</td>
                 <td>{"—"}</td>
-                <td>{sev ? <Badge label={sev} color={SEV[sev]} /> : outlier ? <Badge label="PEER OUTLIER" color="var(--sev-low)" /> : <Badge label="OK" color="var(--sev-resolved)" />}</td>
+                <td>{sev ? <Badge label={sev} color={SEV[sev]} ink={INK[sev]} /> : outlier ? <Badge label="PEER OUTLIER" color="var(--sev-low)" ink="var(--sev-low-ink)" /> : <Badge label="OK" color="var(--sev-resolved)" />}</td>
               </tr>
             );
           })}

@@ -7,9 +7,11 @@ import {
   dailyTotals,
   formatKwh,
   formatPercent,
+  formatPlantTime,
   indexOfDay,
   linePath,
   ribbonPaths,
+  zoneLabel,
 } from "@/lib/performance";
 
 export interface PerformanceChartProps {
@@ -19,6 +21,8 @@ export interface PerformanceChartProps {
   /** UTC dates (YYYY-MM-DD) drawn as field-green cleaning flags. */
   cleaningDays?: string[];
   height?: number;
+  /** IANA zone of the plant (plant.timezone); labels, hover text and day totals use it. */
+  timeZone?: string;
 }
 
 const W = 860;
@@ -29,7 +33,12 @@ const RAIN = "#4f7f9e";
  * Expected vs actual power with the deficit ribbon (--sev-critical 14%), a thin sun strip for clear-sky hours,
  * rain ticks and cleaning flags (DESIGN.md §8.2). Hand-written SVG, same frame as ForecastActualChart.
  */
-export default function PerformanceChart({ series, rainDays = [], cleaningDays = [], height = 300 }: PerformanceChartProps) {
+function sliderText(p: HourlyPoint | undefined, tz: string): string {
+  if (!p) return "No data";
+  return `${formatPlantTime(p.ts, tz)}, expected ${formatKwh(p.expected_kw)} kilowatts, actual ${formatKwh(p.actual_kw)} kilowatts${p.usable ? "" : ", not used (failed QC)"}`;
+}
+
+export default function PerformanceChart({ series, rainDays = [], cleaningDays = [], height = 300, timeZone = "UTC" }: PerformanceChartProps) {
   const [show, setShow] = useState({ expected: true, actual: true, ribbon: true, clear: true });
   const [hover, setHover] = useState<number | null>(null);
   const [table, setTable] = useState(false);
@@ -47,11 +56,11 @@ export default function PerformanceChart({ series, rainDays = [], cleaningDays =
       actual: linePath(series, (p) => p.actual_kw, x, y),
       ribbons: ribbonPaths(series, x, y),
       strips: clearStrips(series, x),
-      days: dailyTotals(series),
+      days: dailyTotals(series, timeZone),
     }),
     // x and y are pure functions of n and maxKw
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [series, n, maxKw, height],
+    [series, n, maxKw, height, timeZone],
   );
 
   const mark = (days: string[]) => days.map((d) => indexOfDay(series, d)).filter((i) => i >= 0);
@@ -111,7 +120,7 @@ export default function PerformanceChart({ series, rainDays = [], cleaningDays =
           ))}
           {xTicks.map(({ p, i }) => (
             <text key={p.ts} x={x(i)} y={height - 12} textAnchor="middle" fontSize="10" fill="var(--muted)">
-              {new Date(p.ts).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}
+              {new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone }).format(new Date(p.ts))}
             </text>
           ))}
           <line x1={PAD.left} x2={PAD.left} y1={PAD.top} y2={height - PAD.bottom} stroke="var(--line)" />
@@ -138,7 +147,13 @@ export default function PerformanceChart({ series, rainDays = [], cleaningDays =
           )}
           <rect
             x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="transparent" tabIndex={0}
-            aria-label="Chart cursor: use left and right arrow keys to read each hour"
+            role="slider"
+            aria-label="Hour cursor"
+            aria-orientation="horizontal"
+            aria-valuemin={0}
+            aria-valuemax={Math.max(n - 1, 0)}
+            aria-valuenow={hover ?? 0}
+            aria-valuetext={sliderText(series[hover ?? 0], timeZone)}
             onFocus={() => setHover((h) => h ?? 0)}
             onBlur={() => setHover(null)}
             onKeyDown={(e) => {
@@ -153,7 +168,7 @@ export default function PerformanceChart({ series, rainDays = [], cleaningDays =
 
       <p aria-live="polite" style={{ minHeight: "1.3rem", margin: "0.5rem 0 0", fontSize: "0.82rem", color: "var(--muted)" }}>
         {hp
-          ? `${new Date(hp.ts).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC · expected ${formatKwh(hp.expected_kw)} kW · actual ${formatKwh(hp.actual_kw)} kW${hp.usable ? "" : " · not used (failed QC)"}`
+          ? `${formatPlantTime(hp.ts, timeZone)} · expected ${formatKwh(hp.expected_kw)} kW · actual ${formatKwh(hp.actual_kw)} kW${hp.usable ? "" : " · not used (failed QC)"}`
           : "Hover or focus the chart to read an hour."}
       </p>
 
@@ -163,9 +178,9 @@ export default function PerformanceChart({ series, rainDays = [], cleaningDays =
       {table && (
         <div className="dash-table-wrap" tabIndex={0} role="region" aria-label="Daily totals (scrollable)" style={{ marginTop: "0.75rem" }}>
           <table className="dash-table">
-            <caption className="sd-visually-hidden">Daily energy totals on usable clear-sky hours</caption>
+            <caption className="sd-visually-hidden">Daily energy totals on usable clear-sky hours, days in {zoneLabel(timeZone)}</caption>
             <thead>
-              <tr><th>Day (UTC)</th><th>Expected kWh</th><th>Actual kWh</th><th>Deficit kWh</th><th>PR</th></tr>
+              <tr><th>Day ({zoneLabel(timeZone)})</th><th>Expected kWh</th><th>Actual kWh</th><th>Deficit kWh</th><th>PR</th></tr>
             </thead>
             <tbody>
               {g.days.map((d) => (

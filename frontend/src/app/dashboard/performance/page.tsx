@@ -17,10 +17,18 @@ import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
 import { EmptyState } from "@/components/ui/states";
 import DeficitView from "@/components/performance/DeficitView";
 
+type Tab = "deficit" | "probabilistic" | "adaptive" | "history";
+const TABS: Array<[Tab, string]> = [
+  ["deficit", "Expected vs actual"],
+  ["probabilistic", "Probabilistic & ramp"],
+  ["adaptive", "Online learning"],
+  ["history", "Point history"],
+];
+
 export default function ForecastsPage() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"deficit" | "probabilistic" | "adaptive" | "history">("deficit");
+  const [activeTab, setActiveTab] = useState<Tab>("deficit");
 
   const [horizonMinutes, setHorizonMinutes] = useState<number>(240);
   const [intervalMinutes, setIntervalMinutes] = useState<number>(15);
@@ -123,6 +131,17 @@ export default function ForecastsPage() {
   };
 
   const selectedPlant = plants.find((p) => p.id === selectedPlantId);
+
+  // Arrow keys move between tabs (roving tabindex), per the ARIA tabs pattern.
+  const onTabKey = (e: React.KeyboardEvent) => {
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const i = TABS.findIndex(([id]) => id === activeTab);
+    const next = TABS[(i + step + TABS.length) % TABS.length][0];
+    setActiveTab(next);
+    document.getElementById(`perf-tab-${next}`)?.focus();
+  };
   const unsupported: { message?: string } | null = isTrackerPlant(selectedPlant)
     ? {}
     : unsupportedState && unsupportedState.plantId === selectedPlantId
@@ -172,35 +191,22 @@ export default function ForecastsPage() {
 
       {error && <div className="dash-error">{error}</div>}
 
-      <div className="dash-tabs">
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "deficit" ? " active" : ""}`}
-          onClick={() => setActiveTab("deficit")}
-        >
-          Expected vs actual
-        </button>
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "probabilistic" ? " active" : ""}`}
-          onClick={() => setActiveTab("probabilistic")}
-        >
-          Probabilistic & ramp
-        </button>
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "adaptive" ? " active" : ""}`}
-          onClick={() => setActiveTab("adaptive")}
-        >
-          Online learning
-        </button>
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "history" ? " active" : ""}`}
-          onClick={() => setActiveTab("history")}
-        >
-          Point history
-        </button>
+      <div className="dash-tabs" role="tablist" aria-label="Performance views" onKeyDown={onTabKey}>
+        {TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`perf-tab-${id}`}
+            aria-selected={activeTab === id}
+            aria-controls="perf-panel"
+            tabIndex={activeTab === id ? 0 : -1}
+            className={`dash-tab${activeTab === id ? " active" : ""}`}
+            onClick={() => setActiveTab(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="dash-toolbar">
@@ -294,10 +300,11 @@ export default function ForecastsPage() {
         </div>
       </div>
 
+      <div role="tabpanel" id="perf-panel" aria-labelledby={`perf-tab-${activeTab}`}>
       {activeTab !== "adaptive" && unsupported && <TrackerUnsupported detail={unsupported.message} />}
 
       {activeTab === "deficit" && !unsupported && selectedPlantId != null && (
-        <DeficitView plantId={selectedPlantId} refreshKey={deficitRefresh} />
+        <DeficitView key={selectedPlantId} plantId={selectedPlantId} refreshKey={deficitRefresh} timeZone={selectedPlant?.timezone} />
       )}
       {activeTab === "deficit" && !loadingPlants && !error && plants.length === 0 && (
         <EmptyState icon="panel" title="No plants yet">
@@ -798,6 +805,7 @@ export default function ForecastsPage() {
           )}
         </>
       )}
+      </div>
     </>
   );
 }

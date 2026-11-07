@@ -540,6 +540,18 @@ summary:focus-visible,
   letter-spacing: inherit;
   text-transform: inherit;
 }
+/* Severity text colours (>= 4.5:1 on the tinted badge backgrounds); the base tokens stay for fills */
+:root {
+  --sev-critical-ink: #9b2c2c;
+  --sev-high-ink: #9a4507;
+  --sev-medium-ink: #8a5a14;
+  --sev-low-ink: #5b6b7a;
+}
+@media (max-width: 480px) {
+  .sd-hide-sm {
+    display: none;
+  }
+}
 .sd-cell[aria-disabled="true"] {
   cursor: default;
 }

@@ -130,6 +130,25 @@ export function qcAdvisories(
   return out;
 }
 
+// ── Plant-local time (DESIGN.md §10) ───────────────────────────────────────────
+
+/** Calendar day (YYYY-MM-DD) of an instant in an IANA zone. */
+export function dayKey(ts: string, timeZone = "UTC"): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ts));
+}
+
+/** Short zone name for labels, e.g. "IST" for Asia/Kolkata. */
+export function zoneLabel(timeZone = "UTC"): string {
+  const p = new Intl.DateTimeFormat("en-IN", { timeZone, timeZoneName: "short" }).formatToParts(new Date(0)).find((x) => x.type === "timeZoneName");
+  return p?.value ?? timeZone;
+}
+
+/** "4 Nov, 11:30 IST" in the plant's zone. */
+export function formatPlantTime(ts: string, timeZone = "UTC"): string {
+  const t = new Intl.DateTimeFormat("en-IN", { timeZone, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(ts));
+  return `${t} ${zoneLabel(timeZone)}`;
+}
+
 // ── Chart geometry ─────────────────────────────────────────────────────────────
 
 type X = (i: number) => number;
@@ -157,9 +176,14 @@ function runs(n: number, ok: (i: number) => boolean): Array<[number, number]> {
  * Forward along expected, back along actual. Surplus hours and gaps break the ribbon.
  */
 export function ribbonPaths(series: HourlyPoint[], x: X, y: Y): string[] {
-  return runs(series.length, (i) => usableBoth(series[i]) && series[i].expected_kw! > series[i].actual_kw!)
-    .filter(([a, b]) => b > a)
-    .map(([a, b]) => {
+  const half = series.length > 1 ? (x(1) - x(0)) / 2 : 2;
+  return runs(series.length, (i) => usableBoth(series[i]) && series[i].expected_kw! > series[i].actual_kw!).map(([a, b]) => {
+      if (a === b) {
+        // A one-hour deficit has no area between two points, so it gets a one-step-wide bar.
+        const e = y(series[a].expected_kw!);
+        const ac = y(series[a].actual_kw!);
+        return `M${pt(x(a) - half, e)} L${pt(x(a) + half, e)} L${pt(x(a) + half, ac)} L${pt(x(a) - half, ac)} Z`;
+      }
       const idx = Array.from({ length: b - a + 1 }, (_, k) => a + k);
       const top = idx.map((i, k) => `${k ? "L" : "M"}${pt(x(i), y(series[i].expected_kw!))}`);
       const bottom = [...idx].reverse().map((i) => `L${pt(x(i), y(series[i].actual_kw!))}`);
@@ -191,9 +215,12 @@ export function clearStrips(series: HourlyPoint[], x: X): Array<{ x1: number; x2
   return runs(series.length, (i) => series[i].clear).map(([a, b]) => ({ x1: x(a) - half, x2: x(b) + half }));
 }
 
-/** Index of the first series row on a UTC calendar day (`YYYY-MM-DD`), or -1 outside the window. */
-export function indexOfDay(series: HourlyPoint[], day: string): number {
-  return series.findIndex((p) => p.ts.slice(0, 10) === day);
+/**
+ * Index of the first series row on a calendar day (`YYYY-MM-DD`) in `timeZone`, or -1 outside the window.
+ * Soiling event dates come from the backend as UTC days, so the chart passes "UTC" for those.
+ */
+export function indexOfDay(series: HourlyPoint[], day: string, timeZone = "UTC"): number {
+  return series.findIndex((p) => dayKey(p.ts, timeZone) === day);
 }
 
 export interface DayTotal {
@@ -204,12 +231,12 @@ export interface DayTotal {
   pr: number | null;
 }
 
-/** Per-UTC-day totals on usable hours: feeds the accessible data table and the plant sparkline. */
-export function dailyTotals(series: HourlyPoint[]): DayTotal[] {
+/** Per-day totals (in the given zone) on usable hours: feeds the accessible data table and the plant sparkline. */
+export function dailyTotals(series: HourlyPoint[], timeZone = "UTC"): DayTotal[] {
   const h = stepHours(series);
   const by = new Map<string, { e: number; a: number }>();
   for (const p of series.filter(usableBoth)) {
-    const d = p.ts.slice(0, 10);
+    const d = dayKey(p.ts, timeZone);
     const cur = by.get(d) ?? { e: 0, a: 0 };
     cur.e += p.expected_kw!;
     cur.a += p.actual_kw!;

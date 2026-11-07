@@ -46,7 +46,7 @@ function Advisories({ items }: { items: ReturnType<typeof qcAdvisories> }) {
   );
 }
 
-export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: number; refreshKey?: number }) {
+export default function DeficitView({ plantId, refreshKey = 0, timeZone = "UTC" }: { plantId: number; refreshKey?: number; timeZone?: string }) {
   const [baseline, setBaseline] = useState<PerformanceBaseline>("pvwatts");
   const [days, setDays] = useState(7);
   const [data, setData] = useState<PerformanceResponse | null>(null);
@@ -55,6 +55,7 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [peersFailed, setPeersFailed] = useState(false);
   const [unsupported, setUnsupported] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const recoverable = useRecoverableInr(plantId);
@@ -65,6 +66,7 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
     setError(null);
     setUnsupported(null);
     setPeers(null);
+    setPeersFailed(false);
     const start = new Date(Date.now() - days * 86_400_000).toISOString();
     (async () => {
       try {
@@ -76,7 +78,7 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
           res.open_alerts.find((a) => a.string_id != null)?.string_id;
         if (sid != null) {
           // Peers are a secondary card: a failure there must not blank the main chart.
-          performanceApi.peers(sid, { start }).then((p) => live && setPeers(p), () => undefined);
+          performanceApi.peers(sid, { start }).then((p) => live && setPeers(p), () => live && setPeersFailed(true));
         }
       } catch (err: unknown) {
         if (!live) return;
@@ -106,7 +108,7 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
   };
 
   const kpis = useMemo(() => computeKpis(data?.series ?? []), [data]);
-  const totals = useMemo(() => dailyTotals(data?.series ?? []), [data]);
+  const totals = useMemo(() => dailyTotals(data?.series ?? [], timeZone), [data, timeZone]);
   const soil = soilingKpi(data?.soiling ?? null);
   const roi = formatRecoverable(recoverable);
   const rain = data?.soiling?.method === "pvlib_kimber" ? data.soiling.cleaning_events ?? [] : [];
@@ -116,7 +118,7 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
     <div className="dash-toolbar" style={{ marginBottom: "1.15rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <label htmlFor="perf-baseline">Baseline</label>
-        <select id="perf-baseline" className="dash-input" style={{ width: "auto", padding: "0.45rem 0.65rem" }} value={baseline} onChange={(e) => setBaseline(e.target.value as PerformanceBaseline)}>
+        <select id="perf-baseline" className="dash-input" style={{ width: "auto", padding: "0.45rem 0.65rem" }} value={baseline} onChange={(e) => { setBaseline(e.target.value as PerformanceBaseline); setScan(null); }}>
           {BASELINES.map((b) => (
             <option key={b.id} value={b.id}>{b.label}</option>
           ))}
@@ -124,7 +126,7 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <label htmlFor="perf-range">Range</label>
-        <select id="perf-range" className="dash-input" style={{ width: "auto", padding: "0.45rem 0.65rem" }} value={days} onChange={(e) => setDays(parseInt(e.target.value, 10))}>
+        <select id="perf-range" className="dash-input" style={{ width: "auto", padding: "0.45rem 0.65rem" }} value={days} onChange={(e) => { setDays(parseInt(e.target.value, 10)); setScan(null); }}>
           {RANGES.map((d) => (
             <option key={d} value={d}>Last {d} days</option>
           ))}
@@ -187,13 +189,15 @@ export default function DeficitView({ plantId, refreshKey = 0 }: { plantId: numb
                 <SourceBadge source={data.data_source} />
               </span>
             </div>
-            <PerformanceChart series={data.series} rainDays={rain} cleaningDays={clean} />
+            <PerformanceChart series={data.series} rainDays={rain} cleaningDays={clean} timeZone={timeZone} />
           </div>
 
           <div className="dash-card" style={{ marginBottom: "1.5rem" }}>
             <div className="dash-card-title"><span>String peers</span></div>
             {peers && peers.peers.length > 0 ? (
               <PeerTable peers={peers} events={data.events} days={totals} />
+            ) : peersFailed ? (
+              <div className="dash-error" role="alert">Peers unavailable: the string comparison could not be loaded.</div>
             ) : (
               <EmptyState icon="panel" title="No string comparison yet">
                 Peers are compared once a string is flagged or has an open alert and at least four strings report clear-sky hours.

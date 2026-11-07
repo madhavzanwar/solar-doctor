@@ -6,6 +6,10 @@ import {
   clearStrips,
   computeKpis,
   dailyTotals,
+  dayKey,
+  formatPlantTime,
+  indexOfDay,
+  zoneLabel,
   formatRecoverable,
   qcAdvisories,
   ribbonPaths,
@@ -44,10 +48,12 @@ describe("deficit ribbon geometry", () => {
     expect(rest).toHaveLength(0);
     expect(d).toBe("M0.0,90.0 L10.0,80.0 L20.0,70.0 L20.0,79.0 L10.0,85.0 L0.0,92.0 Z");
   });
-  it("splits at surplus hours and QC gaps, and skips single-point runs", () => {
+  it("splits at surplus hours and QC gaps; a one-hour deficit still gets a visible bar", () => {
     const s = [pt(0, 10, 5), pt(1, 10, 5), pt(2, 10, 12), pt(3, 10, 5), pt(4, 10, 5, { usable: false }), pt(5, 10, 5), pt(6, 10, 5)];
-    expect(ribbonPaths(s, X, Y)).toHaveLength(2);
-    expect(ribbonPaths([pt(0, 10, 5)], X, Y)).toEqual([]);
+    expect(ribbonPaths(s, X, Y)).toHaveLength(3);
+    // one hour at i=3: a rectangle one step (10 px) wide, from expected (y 90) down to actual (y 95)
+    expect(ribbonPaths(s, X, Y)[1]).toBe("M25.0,90.0 L35.0,90.0 L35.0,95.0 L25.0,95.0 Z");
+    expect(ribbonPaths([pt(0, 10, 5)], X, Y)).toHaveLength(1);
   });
   it("builds clear-sky strips widened by half a step", () => {
     const s = [pt(0, 1, 1, { clear: false }), pt(1, 1, 1), pt(2, 1, 1), pt(3, 1, 1, { clear: false })];
@@ -81,6 +87,29 @@ describe("KPI maths and formatting", () => {
   it("makes a sawtooth that resets on event days", () => {
     const s = soilingSawtooth({ status: "ok", method: "pvlib_kimber", label: "modelled", days: 5, soiling_loss_rate_per_day: 0.1, cleaning_events: ["2026-11-03"] }, "2026-11-05");
     expect(s.map((p) => p.ratio)).toEqual([1, 0.9, 1, 0.9, 0.8]);
+  });
+});
+
+describe("plant-local time (IST)", () => {
+  // 18:30Z on 31 Oct is exactly midnight IST on 1 Nov.
+  const at = (iso: string): HourlyPoint => ({ ...pt(0, 10, 9), ts: iso });
+  // 16 half-hour rows from 17:00Z; IST midnight falls at row 3. Median step 0.5 h, 10 kW expected per row.
+  const s = Array.from({ length: 16 }, (_, i) => at(new Date(Date.UTC(2026, 9, 31, 17, 30 * i)).toISOString()));
+  it("buckets days across the IST midnight boundary", () => {
+    expect(dayKey("2026-10-31T18:29:59Z", "Asia/Kolkata")).toBe("2026-10-31");
+    expect(dayKey("2026-10-31T18:30:00Z", "Asia/Kolkata")).toBe("2026-11-01");
+    expect(dayKey("2026-10-31T18:30:00Z", "UTC")).toBe("2026-10-31");
+    expect(dailyTotals(s, "Asia/Kolkata").map((d) => [d.day, d.expectedKwh])).toEqual([["2026-10-31", 15], ["2026-11-01", 65]]);
+    expect(dailyTotals(s, "UTC").map((d) => [d.day, d.expectedKwh])).toEqual([["2026-10-31", 70], ["2026-11-01", 10]]);
+  });
+  it("finds the first row of a local day", () => {
+    expect(indexOfDay(s, "2026-11-01", "Asia/Kolkata")).toBe(3);
+    expect(indexOfDay(s, "2026-11-01", "UTC")).toBe(14);
+    expect(indexOfDay(s, "2027-01-01", "Asia/Kolkata")).toBe(-1);
+  });
+  it("labels times with the zone suffix", () => {
+    expect(zoneLabel("Asia/Kolkata")).toBe("IST");
+    expect(formatPlantTime("2026-11-04T11:30:00Z", "Asia/Kolkata")).toMatch(/^4 Nov,? 17:00 IST$/);
   });
 });
 
@@ -131,6 +160,12 @@ describe("components", () => {
     expect(host.querySelectorAll('[data-testid="clear-strip"]').length).toBeGreaterThan(0);
     expect(host.querySelectorAll('[data-testid="rain-tick"]')).toHaveLength(1);
     expect(host.querySelectorAll('[data-testid="cleaning-flag"]')).toHaveLength(1);
+    const slider = host.querySelector('[role="slider"]')!;
+    expect(slider.getAttribute("aria-valuemax")).toBe(String(performance.series.length - 1));
+    expect(slider.getAttribute("aria-valuetext")).toContain("expected");
+    act(() => (slider as unknown as SVGElement).focus());
+    act(() => void slider.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
+    expect(slider.getAttribute("aria-valuenow")).toBe("1");
     const btn = host.querySelector("button[aria-expanded]") as HTMLButtonElement;
     act(() => btn.click());
     expect(host.querySelector("table caption")?.textContent).toContain("Daily energy");
@@ -155,6 +190,19 @@ describe("components", () => {
     expect(host.textContent).toContain("S-04");
     expect(host.textContent).toContain("CRITICAL");
     act(() => root.unmount());
+  });
+
+  it("labels the plant row 'Plant median'", async () => {
+    const ok = await mountDeficit({ get: vi.fn(async () => performance), peers: vi.fn(async () => peers), scan: vi.fn() });
+    expect(ok.host.textContent).toContain("Plant median");
+    act(() => ok.root.unmount());
+  });
+
+  it("shows 'Peers unavailable' (not the empty state) when the peers call fails", async () => {
+    const bad = await mountDeficit({ get: vi.fn(async () => performance), peers: vi.fn(async () => Promise.reject(new Error("x"))), scan: vi.fn() });
+    expect(bad.host.textContent).toContain("Peers unavailable");
+    expect(bad.host.textContent).not.toContain("No string comparison yet");
+    act(() => bad.root.unmount());
   });
 
   it("shows the empty state for no telemetry", async () => {

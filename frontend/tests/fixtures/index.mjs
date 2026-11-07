@@ -227,93 +227,135 @@ export const weather = {
 export const taxonomy = [];
 
 // ── Physics deficit API (GET /performance/{id}, /strings/{id}/peers) and park map (grid, faults) ──
-// Schematic demo series, not a measurement: 7 UTC days hourly, a sine daytime curve, 12 % shortfall on the last three
-// days, one overcast day (clear=false, usable=false). Same payload for every plant, scaled for the 120 kW rooftop.
+// Schematic demo data, not a measurement. 7 UTC days hourly (28 Oct to 3 Nov), peak = 92 % of the plant's capacity,
+// day 2 overcast (not clear, not usable), plant 2 only: string S-04 runs at PI 0.86 on days 4-6 (1-3 Nov). Every number
+// below is computed from the series so the KPI strip, the event, the peers and the series agree with each other.
 
 const PSTART = Date.parse("2026-10-28T00:00:00Z");
+const STRING_PI = { 1: 0.99, 2: 0.98, 3: 0.97, 5: 0.98 }; // constant, clear hours
+const S04_PI_BAD = 0.86;
+const median = (a) => {
+  const s = [...a].sort((x, y) => x - y);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+const r3 = (v) => Math.round(v * 1000) / 1000;
 
-export const performanceSeries = Array.from({ length: 7 * 24 }, (_, i) => {
-  const day = Math.floor(i / 24);
-  const h = i % 24;
-  const sun = h >= 6 && h <= 18 ? Math.sin((Math.PI * (h - 6)) / 12) : 0;
-  const expected = r1(110 * sun);
-  const cloudy = day === 2;
-  const deficit = day >= 4 ? 0.88 : 1;
-  const actual = r1(expected * (cloudy ? 0.55 : deficit));
-  const daylight = sun > 0.05;
+export function makePerformance(plant) {
+  const peak = plant.capacity_kw * 0.92;
+  const bad = plant.id === 2; // the seeded rooftop is the one with a flagged string
+  const plantPiBad = (STRING_PI[1] + STRING_PI[2] + STRING_PI[3] + S04_PI_BAD + STRING_PI[5]) / 5;
+  const series = Array.from({ length: 7 * 24 }, (_, i) => {
+    const day = Math.floor(i / 24);
+    const h = i % 24;
+    const sun = h >= 6 && h <= 18 ? Math.sin((Math.PI * (h - 6)) / 12) : 0;
+    const daylight = sun > 0.05;
+    const cloudy = day === 2;
+    const usable = daylight && !cloudy;
+    const expected = r1(peak * sun);
+    const ratio = cloudy ? 0.55 : bad && day >= 4 ? plantPiBad : 0.99;
+    const actual = r1(expected * ratio);
+    return {
+      ts: new Date(PSTART + i * 3600_000).toISOString(),
+      expected_kw: expected,
+      actual_kw: actual,
+      pi: usable ? r3(actual / expected) : null,
+      clear: usable,
+      usable,
+      source: "site_sensor",
+    };
+  });
+  const usableHours = series.filter((p) => p.usable).length;
+  const evHours = series.filter((p) => p.usable && p.ts >= "2026-11-01T00:00:00Z" && p.ts < "2026-11-04T00:00:00Z");
+  const expMean = evHours.reduce((s, p) => s + p.expected_kw, 0) / evHours.length / 5; // one of five equal strings
   return {
-    ts: new Date(PSTART + i * 3600_000).toISOString(),
-    expected_kw: expected,
-    actual_kw: actual,
-    pi: daylight ? Math.round((actual / expected) * 1000) / 1000 : null,
-    clear: daylight && !cloudy,
-    usable: daylight && !cloudy,
-    source: "site_sensor",
-  };
-});
-
-export const performance = {
-  plant_id: 2,
-  baseline: "pvwatts",
-  start: "2026-10-28T00:00:00Z",
-  end: "2026-11-04T00:00:00Z",
-  status: "ok",
-  data_source: "SIMULATED",
-  series: performanceSeries,
-  events: [
-    {
-      scope: "string",
-      scope_id: 4,
-      name: "S-04",
-      severity: "CRITICAL",
-      start: "2026-11-01T06:00:00Z",
-      end: "2026-11-03T18:00:00Z",
-      pi_median: 0.86,
-      expected_kw_mean: 62,
-      actual_kw_mean: 53.3,
-      deviation_percent: 14,
-      clear_hours: 30,
-      peer_z: -4.1,
-      evidence: { localisation: "peer_compared" },
-    },
-  ],
-  open_alerts: [],
-  soiling: {
+    plant_id: plant.id,
+    baseline: "pvwatts",
+    start: "2026-10-28T00:00:00Z",
+    end: "2026-11-04T00:00:00Z",
     status: "ok",
-    method: "pvlib_kimber",
-    label: "modelled",
-    days_with_data: 7,
-    days: 7,
-    day: "2026-11-03",
-    soiling_ratio_p50: 0.96,
-    soiling_ratio_latest: 0.96,
-    soiling_loss_rate_per_day: 0.0015,
-    soiling_loss_rate_pct_per_day: 0.15,
-    cleaning_events: ["2026-10-30"],
-    note: "Modelled with the pvlib Kimber defaults.",
-  },
-  degradation: null,
-  qc: {},
-  provenance: { site_sensor: 168 },
-};
+    data_source: "SIMULATED",
+    series,
+    events: bad
+      ? [
+          {
+            scope: "string",
+            scope_id: 4,
+            name: "S-04",
+            severity: "CRITICAL",
+            start: "2026-11-01T06:00:00Z",
+            end: "2026-11-03T18:00:00Z",
+            pi_median: S04_PI_BAD,
+            expected_kw_mean: r1(expMean),
+            actual_kw_mean: r1(expMean * S04_PI_BAD),
+            deviation_percent: r1((1 - S04_PI_BAD) * 100),
+            clear_hours: evHours.length,
+            peer_z: peerStats().z[4],
+            evidence: { localisation: "peer_compared" },
+          },
+        ]
+      : [],
+    open_alerts: [],
+    soiling: {
+      status: "ok",
+      method: "pvlib_kimber",
+      label: "modelled",
+      days_with_data: 7,
+      days: 7,
+      day: "2026-11-03",
+      soiling_ratio_p50: 0.96,
+      soiling_ratio_latest: 0.96,
+      soiling_loss_rate_per_day: 0.0015,
+      soiling_loss_rate_pct_per_day: 0.15,
+      cleaning_events: ["2026-10-30"],
+      note: "Modelled with the pvlib Kimber defaults.",
+    },
+    degradation: null,
+    qc: { plant: { usable: usableHours } },
+    provenance: { site_sensor: series.length },
+  };
+}
 
-export const peers = {
-  string_id: 4,
-  plant_id: 2,
-  start: performance.start,
-  end: performance.end,
-  status: "ok",
-  normalised_yield: 0.86,
-  plant_median: 0.98,
-  peer_z: -4.1,
-  peers: [
-    { string_id: 1, name: "S-01", normalised_yield: 0.99, peer_z: 0.4, clear_hours: 30 },
-    { string_id: 2, name: "S-02", normalised_yield: 0.98, peer_z: 0, clear_hours: 30 },
-    { string_id: 3, name: "S-03", normalised_yield: 0.97, peer_z: -0.3, clear_hours: 30 },
-    { string_id: 4, name: "S-04", normalised_yield: 0.86, peer_z: -4.1, clear_hours: 30 },
-    { string_id: 5, name: "S-05", normalised_yield: 0.98, peer_z: 0.1, clear_hours: 30 },
-  ],
-};
+/** Per-string median PI over the window's usable hours (S-04 is clean on days 0-3 and 0.86 on days 4-6). */
+function peerStats() {
+  const base = makePerformanceHours();
+  const yields = { ...STRING_PI, 4: median([...Array(base.beforeHours).fill(1.0), ...Array(base.badHours).fill(S04_PI_BAD)]) };
+  const vals = Object.values(yields);
+  const med = median(vals);
+  const mad = median(vals.map((v) => Math.abs(v - med)));
+  const z = Object.fromEntries(Object.entries(yields).map(([k, v]) => [k, mad ? r1((0.6745 * (v - med)) / mad) : 0]));
+  return { yields, med, z, clearHours: base.beforeHours + base.badHours };
+}
+
+function makePerformanceHours() {
+  let beforeHours = 0;
+  let badHours = 0;
+  for (let i = 0; i < 7 * 24; i++) {
+    const day = Math.floor(i / 24);
+    const h = i % 24;
+    const sun = h >= 6 && h <= 18 ? Math.sin((Math.PI * (h - 6)) / 12) : 0;
+    if (sun > 0.05 && day !== 2) { if (day >= 4) badHours++; else beforeHours++; }
+  }
+  return { beforeHours, badHours };
+}
+
+export const performance = makePerformance(plants[1]);
+export const performanceSeries = performance.series;
+
+export const peers = (() => {
+  const { yields, med, z, clearHours } = peerStats();
+  return {
+    string_id: 4,
+    plant_id: 2,
+    start: performance.start,
+    end: performance.end,
+    status: "ok",
+    normalised_yield: r3(yields[4]),
+    plant_median: r3(med),
+    peer_z: z[4],
+    peers: [1, 2, 3, 4, 5].map((id) => ({ string_id: id, name: `S-0${id}`, normalised_yield: r3(yields[id]), peer_z: z[id], clear_hours: clearHours })),
+  };
+})();
 
 export const parkGrid = {
   park_id: "pccoe-rooftop",
@@ -350,7 +392,7 @@ export const routes = [
   ["GET", /^\/api\/v1\/forecast\/\d+\/summary$/, () => forecastSummary],
   ["GET", /^\/api\/v1\/forecast\/\d+\/probabilistic$/, () => probabilistic],
   ["GET", /^\/api\/v1\/forecast\/\d+\/online-status$/, () => onlineStatus],
-  ["GET", /^\/api\/v1\/performance\/\d+$/, () => performance],
+  ["GET", /^\/api\/v1\/performance\/(\d+)$/, (m) => makePerformance(plants.find((p) => p.id === Number(m[1])) ?? plants[1])],
   ["GET", /^\/api\/v1\/strings\/\d+\/peers$/, () => peers],
   ["GET", /^\/api\/v1\/park\/[^/]+\/grid$/, () => parkGrid],
   ["GET", /^\/api\/v1\/parks\/[^/]+\/faults$/, () => parkFaults],

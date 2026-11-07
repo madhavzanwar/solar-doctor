@@ -52,7 +52,7 @@ export const BASEMAPS = {
   imagery: {
     label: "Imagery",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution: "Imagery &copy; Esri",
+    attribution: "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
     // Esri serves a "not available" tile above 18; let Leaflet upsample instead.
     maxZoom: 18,
   },

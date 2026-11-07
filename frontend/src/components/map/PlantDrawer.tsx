@@ -11,7 +11,7 @@ export function SevBadge({ severity }: { severity: string | null | undefined }) 
   const key = severityKey(severity);
   if (!key || !severity) return <span className="dash-badge dash-badge-muted">CLEAN</span>;
   return (
-    <span className="dash-badge" style={{ background: `var(--sev-${key}-dim)`, color: `var(--sev-${key})` }}>
+    <span className="dash-badge" style={{ background: `var(--sev-${key}-dim)`, color: `var(--sev-${key}-ink)` }}>
       {severity.toUpperCase()}
     </span>
   );
