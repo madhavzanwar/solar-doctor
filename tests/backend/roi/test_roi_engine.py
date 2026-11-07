@@ -79,12 +79,39 @@ def test_negative_deficit_clamped_to_zero_and_over_one_to_one():
                                       (float("inf"), 0.1), (-5, 0.1)])
 def test_bad_inputs_degrade_to_wait(kwh, frac):
     r = evaluate(kwh, frac, settings())
-    assert r.decision == WAIT and "Insufficient data" in r.reason and r.payback_days is None
+    assert r.decision == WAIT and "ROI inputs missing" in r.reason and r.payback_days is None and r.incomplete
 
 
-def test_free_cleaning_pays_back_in_zero_days():
-    r = evaluate(1000, 0.08, RoiSettings(tariff_inr_per_kwh=6.5))
-    assert r.cleaning_cost_inr == 0 and r.payback_days == 0 and r.decision == CLEAN_NOW
+def test_unconfigured_cleaning_cost_waits_and_is_flagged():
+    # Spec decision: a total cost of 0 means "nothing configured", not "free clean, pays back in 0 days".
+    for s in (RoiSettings(tariff_inr_per_kwh=6.5), settings(module_count=0, labour_cost_inr=0),
+              settings(cleaning_cost_per_module_inr=0, water_cost_inr_per_l=0, labour_cost_inr=0)):
+        r = evaluate(1000, 0.08, s, soiling_rate_per_day=0.001)
+        assert r.decision == WAIT and r.incomplete and "cleaning cost not configured" in r.reason.lower()
+        assert r.payback_days is None and not r.never_pays_back and r.optimal_interval_days is None
+    assert not evaluate(1000, 0.08, settings()).incomplete
+
+
+def test_string_scope_saving_is_not_divided_by_module_share():
+    # String: 100 kWh/day expected, PI 0.90 -> fraction 0.10 -> 10 kWh x 6.5 = Rs 65/day.
+    # If the string's 10 % module share were applied again it would be Rs 6.5/day.
+    r = evaluate(100, 1 - 0.90, settings(module_count=40))
+    assert r.recoverable_kwh_day == pytest.approx(10) and r.inr_per_day == pytest.approx(65)
+
+
+def test_nan_rate_override_falls_back_to_settings():
+    r = evaluate(1000, 0.08, settings(soiling_rate_per_day=0.001), soiling_rate_per_day=float("nan"))
+    assert r.soiling_rate_per_day == 0.001 and r.optimal_interval_days == pytest.approx(28.175, abs=0.005)
+
+
+def test_payback_nan():
+    assert payback_days(100, float("nan")) is None and payback_days(float("nan"), 5) is None
+
+
+def test_soiling_rate_source_label_carried():
+    r = evaluate(1000, 0.08, settings(), soiling_rate_per_day=0.002, soiling_rate_source="pvlib_kimber assumed default")
+    assert r.soiling_rate_source == "pvlib_kimber assumed default"
+    assert evaluate(1000, 0.08, settings(soiling_rate_per_day=0.002)).soiling_rate_source == "plant settings"
 
 
 def test_payback_helper():

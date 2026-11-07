@@ -94,4 +94,7 @@ class RoiResult:
     optimal_interval_days: Optional[float] = None
     optimal_interval_note: str = ""
     water_saved_l_per_year: Optional[float] = None  # signed; negative = uses more than calendar schedule
+    incomplete: bool = False  # True when inputs or cost config were missing: no saving/payback was computed
+    soiling_rate_per_day: Optional[float] = None
+    soiling_rate_source: str = ""  # e.g. "pvlib_kimber assumed default"; T* is a heuristic on this rate
     assumptions: dict = field(default_factory=dict)

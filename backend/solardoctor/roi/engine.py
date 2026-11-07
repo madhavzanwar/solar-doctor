@@ -22,9 +22,10 @@ def water_per_clean(s: RoiSettings) -> float:
 
 def payback_days(cost: float, inr_per_day: Optional[float]) -> Optional[float]:
     """cost / INR-per-day; None when INR/day is missing, zero or negative (never pays back)."""
-    if inr_per_day is None or inr_per_day <= 0:
+    c, v = finite(cost), finite(inr_per_day)
+    if c is None or v is None or v <= 0:
         return None
-    return cost / inr_per_day
+    return c / v
 
 
 def optimal_interval_days(cost: float, rate_per_day: Optional[float], clean_value_inr_per_day: Optional[float]) -> Optional[float]:
@@ -51,7 +52,8 @@ def rain_outlook(forecast: Iterable[ForecastHour], threshold_pct: float, window_
 
 
 def evaluate(expected_kwh_day, deficit_fraction, settings: RoiSettings,
-             forecast: Iterable[ForecastHour] = (), soiling_rate_per_day: Optional[float] = None) -> RoiResult:
+             forecast: Iterable[ForecastHour] = (), soiling_rate_per_day: Optional[float] = None,
+             soiling_rate_source: Optional[str] = None) -> RoiResult:
     """Clean-now-or-wait decision with every intermediate number.
 
     expected_kwh_day: clear-sky expected energy of the scope being cleaned.
@@ -61,7 +63,10 @@ def evaluate(expected_kwh_day, deficit_fraction, settings: RoiSettings,
     s = settings
     cost = round(cleaning_cost(s), 2)
     water = water_per_clean(s)
-    rate = finite(soiling_rate_per_day) if soiling_rate_per_day is not None else finite(s.soiling_rate_per_day)
+    rate = finite(soiling_rate_per_day)  # an explicit NaN override falls back to settings
+    if rate is None:
+        rate, soiling_rate_source = finite(s.soiling_rate_per_day), None
+    source = soiling_rate_source or ("plant settings" if rate is not None else "")
     assumptions = {
         "label": ASSUMPTION_LABEL,
         "tariff_inr_per_kwh": s.tariff_inr_per_kwh,
@@ -79,17 +84,19 @@ def evaluate(expected_kwh_day, deficit_fraction, settings: RoiSettings,
     }
     kwh, frac = finite(expected_kwh_day), finite(deficit_fraction)
     if kwh is None or frac is None or kwh < 0:
-        return RoiResult(WAIT, "Insufficient data: expected energy or attributable deficit is missing or invalid, "
-                         "so no saving can be computed.", cleaning_cost_inr=cost, water_l_per_clean=water,
-                         payback_label="unknown (missing inputs)", assumptions=assumptions)
+        return RoiResult(WAIT, "ROI inputs missing: configure expected energy/costs. Expected energy or attributable "
+                         "deficit is missing or invalid, so no saving was computed.", cleaning_cost_inr=cost,
+                         water_l_per_clean=water, payback_label="unknown (missing inputs)", incomplete=True,
+                         soiling_rate_per_day=rate, soiling_rate_source=source, assumptions=assumptions)
     frac = min(max(frac, 0.0), 1.0)
 
     recoverable = kwh * frac
     inr_day = recoverable * s.tariff_inr_per_kwh
     v = kwh * s.tariff_inr_per_kwh
-    pay = payback_days(cost, inr_day)
-    never = pay is None
-    t_star = optimal_interval_days(cost, rate, v)
+    unconfigured = cost <= 0  # nothing configured (no modules or all unit costs 0): a free clean is not a real result
+    pay = None if unconfigured else payback_days(cost, inr_day)
+    never = pay is None and not unconfigured
+    t_star = None if unconfigured else optimal_interval_days(cost, rate, v)
     if t_star is not None:
         note = "heuristic: linear soiling loss, constant cost per clean"
     else:
@@ -99,7 +106,10 @@ def evaluate(expected_kwh_day, deficit_fraction, settings: RoiSettings,
         saved = water * (DAYS_PER_YEAR / s.calendar_interval_days - DAYS_PER_YEAR / t_star)
 
     rain, peak, at = rain_outlook(forecast, s.rain_prob_threshold_pct, s.rain_window_h)
-    if rain:
+    if unconfigured:
+        decision = WAIT
+        reason = "Cleaning cost not configured: set modules and per-module, water and labour costs to compute payback."
+    elif rain:
         decision = WAIT
         reason = (f"Rain likely: {peak:g}% precipitation probability at +{at:g} h "
                   f"(threshold {s.rain_prob_threshold_pct:g}% within {s.rain_window_h:g} h); rain may clean the panels for free.")
@@ -119,8 +129,10 @@ def evaluate(expected_kwh_day, deficit_fraction, settings: RoiSettings,
         expected_kwh_day=round(kwh, 3), deficit_fraction=round(frac, 6),
         recoverable_kwh_day=round(recoverable, 3), inr_per_day=round(inr_day, 2),
         clean_value_inr_per_day=round(v, 2), cleaning_cost_inr=cost, water_l_per_clean=water,
-        payback_days=None if never else round(pay, 2),
-        payback_label="never pays back" if never else f"{pay:.1f} days",
+        payback_days=None if pay is None else round(pay, 2),
+        payback_label=("unknown (cleaning cost not configured)" if unconfigured
+                       else "never pays back" if never else f"{pay:.1f} days"),
+        incomplete=unconfigured, soiling_rate_per_day=rate, soiling_rate_source=source,
         never_pays_back=never, rain_wait=rain, rain_peak_probability_pct=peak, rain_peak_hours_ahead=at,
         optimal_interval_days=None if t_star is None else round(t_star, 2), optimal_interval_note=note,
         water_saved_l_per_year=None if saved is None else round(saved, 1), assumptions=assumptions)
