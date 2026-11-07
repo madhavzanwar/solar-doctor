@@ -57,7 +57,7 @@
 - Real PVDAQ check (manual, not in tests): `scripts/import_pvdaq.py --system-id 9068 --start 2024-06-01 --end 2024-06-07` imported
   2016 telemetry rows (2 inverters + plant, 15 min) for 2024-06-01 00:00 to 2024-06-07 23:45 UTC; the plant is flagged as a tracker and
   `scan_and_persist` returns `baseline_unsupported_for_trackers`.
-- Detector precision/recall below is measured on SIMULATED data only (copied from `docs/solardoctor/physics/DEFICIT_METRICS.md`).
+- Detector precision/recall below is measured on SIMULATED data only (copied from `docs/solardoctor/physics/DEFICIT_METRICS.md`). The tables below are the easy suite; the harder suite (2.5 % noise, 12 scenarios, seeds 100..119) is in that file, pooled WARNING+ precision 0.642 / recall 0.988 (0.878 / 0.988 without the two NASA-only scenarios), with misses reported there.
 
 ## Pooled
 

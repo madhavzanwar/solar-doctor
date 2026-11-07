@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from tests.backend.physics import deficit_synth as ds  # noqa: E402
+from tests.backend.physics import deficit_synth_hard as hs  # noqa: E402
 
 OUT = ROOT / "docs" / "solardoctor" / "physics" / "DEFICIT_METRICS.md"
 
@@ -29,11 +30,61 @@ def _row(name: str, s: dict) -> str:
     return f"| {name} | {s['tp']} | {s['fp']} | {s['fn']} | {_fmt(s['precision'])} | {_fmt(s['recall'])} |"
 
 
+def _pr(tp: int, fp: int, fn: int) -> dict:
+    return {"tp": tp, "fp": fp, "fn": fn, "precision": tp / (tp + fp) if tp + fp else float("nan"),
+            "recall": tp / (tp + fn) if tp + fn else float("nan")}
+
+
+def hard_block(seeds: list[int]) -> list[str]:
+    """Hard suite (tests/backend/physics/deficit_synth_hard.py) on the report seeds; every number is measured here."""
+    per = {sc: [] for sc in hs.SCENARIOS}
+    flags = {sc: 0 for sc in hs.SCENARIOS}
+    for sc in hs.SCENARIOS:
+        for seed in seeds:
+            res, truth, sids, _ = hs.run(sc, seed)
+            per[sc].append(hs.judge(sc, res, truth, sids))
+            flags[sc] += res.get("qc_status") == "time_offset_suspected"
+    sums = lambda rows, mode: tuple(sum(r[mode][k] for r in rows) for k in ("tp", "fp", "fn"))
+    out = ["", "## Hard suite", "",
+           f"Report seeds {seeds[0]}..{seeds[-1]} ({len(seeds)} seeds x {len(hs.SCENARIOS)} scenarios = {len(seeds) * len(hs.SCENARIOS)} scans). "
+           f"SIMULATED; {hs.NOISE_P:.1%} multiplicative noise on every string, {hs.NOISE_G:.1%} on the GHI sensor. "
+           "Detection thresholds are unchanged. The only new QC parameter is the clock-offset limit (30 min, fixed by design, not fitted), "
+           "so no tuning seeds were used; seeds 100..119 were never used to choose a parameter.", "",
+           "Scenarios: control_hard (healthy), slow_soiling (plant loss 0 to 8 % over 14 days; an event starting before the true loss "
+           "reaches 4 % is a premature false positive), just_under (one string -3 %, no WARNING+ expected; an INFO peer notice on it is not a false positive), "
+           "partly_cloudy (4 days of broken clouds, GHI sensor 7 min behind the array), clipping_day (DC/AC 1.56, healthy), "
+           "clipping_string (same plant, one string -10 %), gaps_and_stuck (NaN runs, GHI sensor and one string power channel flatlined, healthy), "
+           "time_offset (healthy, timestamps +1 h), one_of_many (24 strings, one at -8 %), jitter (0-59 s timestamp jitter, one string -20 %), "
+           "control_nasa / cloudy_nasa (no site GHI; hourly NASA-style GHI with 3 % to 33 % error, healthy; cloudy_nasa has a cloudy day).", "",
+           "| Scenario | Counting | TP | FP | FN | Precision | Recall |", "|---|---|---|---|---|---|---|"]
+    for sc in hs.SCENARIOS:
+        for label, mode in (("any severity", "any"), ("WARNING+", "warn")):
+            out.append(f"| {sc} | {label} | " + " | ".join(str(v) for v in sums(per[sc], mode)) +
+                       f" | {_fmt(_pr(*sums(per[sc], mode))['precision'])} | {_fmt(_pr(*sums(per[sc], mode))['recall'])} |")
+    out += ["", "### Pooled over the hard suite", "", "| Counting | TP | FP | FN | Precision | Recall |", "|---|---|---|---|---|---|"]
+    for label, mode in (("any severity", "any"), ("WARNING+", "warn")):
+        t = tuple(sum(sums(per[sc], mode)[i] for sc in hs.SCENARIOS) for i in range(3))
+        out.append(f"| {label} | {t[0]} | {t[1]} | {t[2]} | {_fmt(_pr(*t)['precision'])} | {_fmt(_pr(*t)['recall'])} |")
+    nasa = ("control_nasa", "cloudy_nasa")
+    t = tuple(sum(sums(per[sc], "warn")[i] for sc in hs.SCENARIOS if sc not in nasa) for i in range(3))
+    out += ["", f"Pooled WARNING+ without the two NASA-only scenarios: TP {t[0]}, FP {t[1]}, FN {t[2]}, precision {_fmt(_pr(*t)['precision'])}, recall {_fmt(_pr(*t)['recall'])}.", "",
+            "### Other measurements", ""]
+    notice = sum(r["notice"] for r in per["just_under"])
+    out.append(f"- just_under: INFO peer notice on the -3 % string in {sum(1 for r in per['just_under'] if r['notice'])} of {len(seeds)} runs ({notice} events).")
+    delays = [r["delay_days"] for r in per["slow_soiling"] if r["delay_days"] is not None]
+    prem = sum(r["premature"] for r in per["slow_soiling"])
+    out.append(f"- slow_soiling: plant event found in {len(delays)} of {len(seeds)} runs; premature starts in {prem}; delay after the true 5 % crossing "
+               + (f"median {statistics.median(delays):.2f} days (min {min(delays):.2f}, max {max(delays):.2f}; negative = before the crossing)." if delays else "n/a."))
+    out.append("- time-offset QC flag rate (`qc_status = time_offset_suspected`): " +
+               "; ".join(f"{sc} {flags[sc]}/{len(seeds)}" for sc in hs.SCENARIOS) + ".")
+    return out
+
+
 def main(n_seeds: int = 10) -> None:
     seeds = list(range(n_seeds))
     runs, pooled, per = ds.evaluate(seeds)
     lines = [
-        "# Deficit detector: precision / recall on SIMULATED data", "",
+        "# Deficit detector: precision / recall on SIMULATED data", "", "## Easy suite", "",
         "All numbers below come from `scripts/eval_deficit_synthetic.py` on **SIMULATED** telemetry "
         "(`tests/backend/physics/deficit_synth.py`); they are not measurements of a real plant.", "",
         f"Setup: fixed-tilt 400 kWp / 360 kWac plant, 2 inverters, 8 equal strings, 15-minute data, 3 days, measured-style GHI and "
@@ -79,6 +130,7 @@ def main(n_seeds: int = 10) -> None:
     lines += [
               "- Healthy PI is ~1.0 here because the generator and the baseline share the same underlying pvlib physics apart from small implementation differences; real plants add model error, sensor calibration drift and soiling baselines that this test does not exercise.",
               "- Cloudy-day immunity relies on the clear-sky QC (pvanalytics `reno` on measured GHI); one cloudy day among three clear days is tested, not a fully overcast week.", ""]
+    lines += hard_block(list(range(100, 120)))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
