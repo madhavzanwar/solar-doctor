@@ -124,8 +124,8 @@ def render(d: dict) -> str:
         L.append("not run")
     L += ["", "## XAI faithfulness (deletion: lower is better; insertion: higher is better)", ""]
     if d["xai"]:
-        L += ["| method | deletion AUC | insertion AUC |", "|---|---|---|"]
-        L += [f"| {m} | {_pm(d['xai'][m]['deletion'])} | {_pm(d['xai'][m]['insertion'])} |"
+        L += ["| method | deletion AUC | insertion AUC | test images |", "|---|---|---|---|"]
+        L += [f"| {m} | {_pm(d['xai'][m]['deletion'])} | {_pm(d['xai'][m]['insertion'])} | {d['xai'][m]['n']} |"
               for m in ("gradcam", "lime")]
     else:
         L.append("not run")
