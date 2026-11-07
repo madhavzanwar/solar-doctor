@@ -64,6 +64,9 @@ the client MIME: must be JPEG (incl. MPO phone/camera JPEGs)/PNG/WebP and ≤ 50
 - `needs_field_check = is_ood or confidence < conf_threshold` (0.6); `field_check_reason` ∈
   `null | "out_of_distribution" | "low_confidence"` (OOD wins when both).
 - `ood_score`: higher = more out-of-distribution (`is_ood = ood_score > threshold`); with `ood_method` `"none"` it is `null` and `is_ood` is false.
+- OOD caveat: the guard's AUROC 1.0 was measured on far-OOD COCO val2017 images (n=50 on test) with FPR 6.8 % at the
+  chosen threshold. It is likely optimistic for near-OOD inputs (roofs, other equipment, rooftop clutter, drone views of
+  buildings) and is not evidence of near-OOD robustness; do not rely on `is_ood` alone for those.
 - `probs` keys follow `CLASSES` order; floats are unrounded.
 
 ## `ExplainResult`

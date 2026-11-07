@@ -33,6 +33,8 @@ def main() -> None:
     ap.add_argument("--raw-dir", default="ml/rgb/data/raw")
     ap.add_argument("--lime-samples", type=int, default=600)
     ap.add_argument("--max-images", type=int, default=0, help="0 = whole test split")
+    ap.add_argument("--random-only", action="store_true",
+                    help="only compute the random-saliency baseline and merge it into an existing --out file")
     ap.add_argument("--out", default="ml/rgb/reports/xai_faithfulness.json")
     a = ap.parse_args()
 
@@ -51,19 +53,27 @@ def main() -> None:
         x = torch.as_tensor(np.stack([preprocess(Image.fromarray(i), cfg) for i in arr]))
         return probs_t(x).numpy()
 
-    res = {"gradcam": [], "lime": []}
+    res = {"gradcam": [], "lime": [], "random": []}
+    rng = np.random.default_rng(42)  # random pixel ordering = chance-level saliency baseline
     for rel in rows.rel_path:
         img = shrink(load_image((Path(a.raw_dir) / rel).read_bytes()), size).resize((size, size), Image.BILINEAR)
         u8 = np.asarray(img)
         x = torch.as_tensor(preprocess(img, cfg))[None]
         target = int(probs_t(x).argmax())
+        res["random"].append(deletion_insertion_auc(probs_t, x, rng.random((size, size)), target))
+        if a.random_only:
+            continue
         cam = xai.gradcam_mask(model, cfg, x, target)
         _, segments, weights = xai.lime_mask(probs_u8, u8, target, a.lime_samples, 5, 0)
         lime_sal = np.vectorize(lambda s: weights.get(s, 0.0))(segments)
         res["gradcam"].append(deletion_insertion_auc(probs_t, x, cam, target))
         res["lime"].append(deletion_insertion_auc(probs_t, x, lime_sal, target))
-    out = {"bundle": cfg["model_version"], "lime_samples": a.lime_samples, "steps": 20,
-           **{k: summarize(v) for k, v in res.items()}}
+    if a.random_only:
+        out = json.loads(Path(a.out).read_text())
+        out["random"] = summarize(res["random"])
+    else:
+        out = {"bundle": cfg["model_version"], "lime_samples": a.lime_samples, "steps": 20,
+               **{k: summarize(v) for k, v in res.items()}}
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(out, indent=2))
     print(json.dumps(out, indent=2))

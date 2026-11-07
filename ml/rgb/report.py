@@ -120,13 +120,20 @@ def render(d: dict) -> str:
               "| method | AUROC | threshold | TPR | FPR |", "|---|---|---|---|---|"]
         L += [f"| {m}{' (chosen)' if m == d['ood']['best'] else ''} | {_f(v['auroc'])} | {_f(v['threshold'])} | "
               f"{_f(v['tpr'])} | {_f(v['fpr'])} |" for m, v in d["ood"]["test"]["methods"].items()]
+        fpr = d["ood"]["test"]["methods"][d["ood"]["best"]]["fpr"]
+        L += ["", "Caveat: AUROC 1.0 is on far-OOD COCO val2017 images (n=50 in OOD-test), and the chosen threshold "
+              f"still flags {fpr * 100:.1f} % of in-distribution test images (FPR). It is likely optimistic for "
+              "near-OOD inputs (roofs, other equipment, rooftop clutter, drone views of buildings) and is not "
+              "evidence of near-OOD robustness."]
     else:
         L.append("not run")
     L += ["", "## XAI faithfulness (deletion: lower is better; insertion: higher is better)", ""]
     if d["xai"]:
         L += ["| method | deletion AUC | insertion AUC | test images |", "|---|---|---|---|"]
         L += [f"| {m} | {_pm(d['xai'][m]['deletion'])} | {_pm(d['xai'][m]['insertion'])} | {d['xai'][m]['n']} |"
-              for m in ("gradcam", "lime")]
+              for m in ("gradcam", "lime", "random") if m in d["xai"]]
+        L += ["", "Random is a random pixel ordering (seed 42, one draw per image): the chance-level reference. "
+              "n = 30 test images only (seeded subset of 103), so variance is high; do not over-read small differences."]
     else:
         L.append("not run")
     L += ["", "## ONNX parity", ""]

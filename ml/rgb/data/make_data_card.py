@@ -93,7 +93,10 @@ def render(stats: dict) -> str:
               "licence: " + ", ".join(f"{k}: {v}" for k, v in lic.items()) + ". Several are NonCommercial and/or "
               "NoDerivs, so these images are used for evaluation only: they are never redistributed, never "
               "committed to git and never used for training. The images are split 50/50 (seed 42) into OOD-dev "
-              "(method and threshold selection) and OOD-test (reporting)."]
+              "(method and threshold selection) and OOD-test (reporting). Caveat: the resulting AUROC of 1.0 is on far-OOD "
+              "images (n=50 on test; FPR 6.8 % at the chosen threshold) and is likely optimistic for near-OOD inputs "
+              "(roofs, other equipment, rooftop clutter, drone views of buildings); it is not evidence of near-OOD "
+              "robustness."]
     return "\n".join(L) + "\n"
 
 

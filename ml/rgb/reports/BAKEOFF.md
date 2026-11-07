@@ -69,12 +69,17 @@ Selection protocol: the 100 COCO images are split 50/50 (seed 42) into OOD-dev a
 | clip_zeroshot | 0.9988 | 0.2005 | 1.0000 | 0.0583 |
 | autoencoder | 0.3194 | 0.0021 | 0.0000 | 0.0388 |
 
+Caveat: AUROC 1.0 is on far-OOD COCO val2017 images (n=50 in OOD-test), and the chosen threshold still flags 6.8 % of in-distribution test images (FPR). It is likely optimistic for near-OOD inputs (roofs, other equipment, rooftop clutter, drone views of buildings) and is not evidence of near-OOD robustness.
+
 ## XAI faithfulness (deletion: lower is better; insertion: higher is better)
 
 | method | deletion AUC | insertion AUC | test images |
 |---|---|---|---|
 | gradcam | 0.6019 ± 0.2847 | 0.7996 ± 0.1853 | 30 |
 | lime | 0.6554 ± 0.2789 | 0.8476 ± 0.1529 | 30 |
+| random | 0.5998 ± 0.3109 | 0.5967 ± 0.3214 | 30 |
+
+Random is a random pixel ordering (seed 42, one draw per image): the chance-level reference. n = 30 test images only (seeded subset of 103), so variance is high; do not over-read small differences.
 
 ## ONNX parity
 
