@@ -18,7 +18,7 @@ If no model bundle is available (no dir, no pinned revision, download or load fa
 `{"detail": "rgb_model_unavailable"}` (reason is logged). Callers must not fabricate a diagnosis in that case.
 
 Configuration (env): `SOLARDOCTOR_RGB_MODEL_DIR` (local bundle dir, wins), else Hugging Face
-`SOLARDOCTOR_RGB_MODEL_REPO` (default `solar-doctor/solar-doctor-rgb`) at `SOLARDOCTOR_RGB_MODEL_REVISION`
+`SOLARDOCTOR_RGB_MODEL_REPO` (default `solar-doctor/solar-doctor-rgb-defect`) at `SOLARDOCTOR_RGB_MODEL_REVISION`
 (**required**, pinned). The model loads lazily on first use (never at import); at API startup it is warmed in a
 background thread only if the dir or revision is set, and a failure there just keeps the 503. The classifier itself
 never touches the hub when the bundle's `config.json` carries `hf_config` (hf_* archs); OOD methods
@@ -83,6 +83,6 @@ the client MIME: must be JPEG (incl. MPO phone/camera JPEGs)/PNG/WebP and ≤ 50
 
 ```json
 {"name": "convnext_tiny.fb_in22k_ft_in1k", "model_version": "…", "classes": [...], "sha256": "<model.safetensors>",
- "source": "hf:solar-doctor/solar-doctor-rgb@<revision>" | "local:<bundle dir name>", "metrics": {...}, "temperature": 1.3,
+ "source": "hf:solar-doctor/solar-doctor-rgb-defect@<revision>" | "local:<bundle dir name>", "metrics": {...}, "temperature": 1.3,
  "conf_threshold": 0.6, "ood": {"method": "...", "threshold": ...}}
 ```

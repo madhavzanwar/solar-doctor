@@ -113,8 +113,8 @@ def test_hf_revision_is_pinned(tmp_path, monkeypatch):
         clf = get_classifier()
     finally:
         reset_classifier()
-    assert calls == [{"repo_id": "solar-doctor/solar-doctor-rgb", "revision": "abc123"}]
-    assert clf.info()["source"] == "hf:solar-doctor/solar-doctor-rgb@abc123"
+    assert calls == [{"repo_id": "solar-doctor/solar-doctor-rgb-defect", "revision": "abc123"}]
+    assert clf.info()["source"] == "hf:solar-doctor/solar-doctor-rgb-defect@abc123"
 
 
 def test_hf_download_failure_is_unavailable(monkeypatch):

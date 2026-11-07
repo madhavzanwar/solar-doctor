@@ -26,7 +26,7 @@ log = logging.getLogger("solardoctor.vision")
 DIR_ENV = "SOLARDOCTOR_RGB_MODEL_DIR"
 REPO_ENV = "SOLARDOCTOR_RGB_MODEL_REPO"
 REVISION_ENV = "SOLARDOCTOR_RGB_MODEL_REVISION"
-DEFAULT_REPO = "solar-doctor/solar-doctor-rgb"
+DEFAULT_REPO = "solar-doctor/solar-doctor-rgb-defect"
 METHODS = ("gradcam", "lime")
 _LIME_CACHE_SIZE = 16
 
