@@ -19,8 +19,7 @@
     "leaflet": "^1.9.4",
     "next": "15.5.27",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-leaflet": "^5.0.0"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

@@ -252,11 +252,11 @@ export function soilingSawtooth(s: SoilingAnalytics, endDay: string): Array<{ da
   const end = Date.parse(`${endDay}T00:00:00Z`);
   const events = new Set(s.cleaning_events ?? []);
   const out: Array<{ day: string; ratio: number }> = [];
-  let since = 0;
+  let since = -1;
   for (let k = days - 1; k >= 0; k--) {
     const day = new Date(end - k * 86_400_000).toISOString().slice(0, 10);
     since = events.has(day) ? 0 : since + 1;
-    out.push({ day, ratio: Math.min(1, Math.max(0, 1 - rate * (since - 1))) });
+    out.push({ day, ratio: Math.min(1, Math.max(0, 1 - rate * since)) });
   }
   return out;
 }
