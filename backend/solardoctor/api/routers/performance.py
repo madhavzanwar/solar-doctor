@@ -13,6 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from solardoctor.api.support.principal import Principal, current_principal
+from solardoctor.api.support.scope import visible_park_ids
 from solardoctor.physics import deficit, irradiance, soiling_analytics
 from solardoctor.physics import weather_service as ws
 from solardoctor.physics.baseline import Baseline
@@ -35,11 +37,14 @@ def _providers() -> dict:  # looked up per call so tests can patch the network f
     return {"nasa_fetch": ws.fetch_nasa_power_hourly, "openmeteo_fetch": irradiance.fetch_openmeteo_hourly}
 
 
-def _plant(db: Session, plant_id: int) -> Plant:
+def _plant(db: Session, plant_id: int, principal: Principal, fixed_tilt: bool = True) -> Plant:
+    """404 for a missing plant and for one outside the caller's parks (a plant with no park is admin-only)."""
     plant = db.get(Plant, plant_id)
-    if plant is None:
+    visible = visible_park_ids(db, principal)
+    if plant is None or (visible is not None and plant.park_id not in visible):
         raise HTTPException(404, f"Plant {plant_id} not found")
-    require_fixed_tilt_baseline(plant)
+    if fixed_tilt:
+        require_fixed_tilt_baseline(plant)
     return plant
 
 
@@ -67,8 +72,9 @@ def _events(events) -> list[DeficitEventOut]:
             summary="Expected vs actual power, deficit events, open deficit alerts and latest soiling/degradation")
 def get_performance(plant_id: int, start: Optional[datetime] = Query(default=None),
                     end: Optional[datetime] = Query(default=None), baseline: Baseline = Query(default="pvwatts"),
-                    db: Session = Depends(get_db)):
-    plant = _plant(db, plant_id)
+                    db: Session = Depends(get_db),
+                    principal: Principal = Depends(current_principal)):
+    plant = _plant(db, plant_id, principal)
     start, end = _window(start, end)
     open_alerts = [AlertResponse.model_validate(a) for a in db.execute(select(PlantAlert).where(
         PlantAlert.plant_id == plant_id, PlantAlert.alert_type == deficit.ALERT_TYPE,
@@ -92,8 +98,8 @@ def get_performance(plant_id: int, start: Optional[datetime] = Query(default=Non
              summary="Run the deficit detector now and persist/update its alerts")
 def scan_plant(plant_id: int, start: Optional[datetime] = Query(default=None),
                end: Optional[datetime] = Query(default=None), baseline: Baseline = Query(default="pvwatts"),
-               db: Session = Depends(get_db)):
-    _plant(db, plant_id)
+               db: Session = Depends(get_db), principal: Principal = Depends(current_principal)):
+    _plant(db, plant_id, principal)
     start, end = _window(start, end)
     res = deficit.scan_and_persist(db, plant_id, start, end, baseline, **_providers())
     return ScanResponse(status=res["status"], qc_status=res.get("qc_status"),
@@ -104,8 +110,9 @@ def scan_plant(plant_id: int, start: Optional[datetime] = Query(default=None),
 
 @router.put("/performance/{plant_id}/thresholds", response_model=ThresholdsResponse,
             summary="Set the plant's PI warning/critical thresholds and clear hours needed to alert")
-def set_thresholds(plant_id: int, body: ThresholdsRequest, db: Session = Depends(get_db)):
-    plant = _plant(db, plant_id)
+def set_thresholds(plant_id: int, body: ThresholdsRequest, db: Session = Depends(get_db),
+                   principal: Principal = Depends(current_principal)):
+    plant = _plant(db, plant_id, principal, fixed_tilt=False)  # thresholds are plain settings: trackers may set them
     plant.pi_warning, plant.pi_critical = body.pi_warning, body.pi_critical
     plant.deficit_min_clear_hours = body.deficit_min_clear_hours
     db.commit()
@@ -115,11 +122,12 @@ def set_thresholds(plant_id: int, body: ThresholdsRequest, db: Session = Depends
 @router.get("/strings/{string_id}/peers", response_model=PeersResponse,
             summary="A string's normalised yield against its peer strings")
 def string_peers(string_id: int, start: Optional[datetime] = Query(default=None),
-                 end: Optional[datetime] = Query(default=None), db: Session = Depends(get_db)):
+                 end: Optional[datetime] = Query(default=None), db: Session = Depends(get_db),
+                 principal: Principal = Depends(current_principal)):
     string = db.get(PvString, string_id)
     if string is None:
         raise HTTPException(404, f"String {string_id} not found")
-    plant = _plant(db, string.plant_id)
+    plant = _plant(db, string.plant_id, principal)
     start, end = _window(start, end)
     base = dict(string_id=string_id, plant_id=plant.id, start=start, end=end)
     inputs = deficit.load_inputs(db, plant, start, end, **_providers())

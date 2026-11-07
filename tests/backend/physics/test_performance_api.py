@@ -91,7 +91,7 @@ def test_peers(client, seeded):
     assert client.get("/api/v1/strings/99999/peers").status_code == 404
 
 
-def test_tracker_plant_is_422_everywhere(client, db_session, seeded):
+def test_tracker_plant_is_422_except_thresholds(client, db_session, seeded):
     plant, strs = seeded
     plant.location = f"Pune {TRACKER_MARKER}"
     db_session.commit()
@@ -100,13 +100,18 @@ def test_tracker_plant_is_422_everywhere(client, db_session, seeded):
                              {"json": {"pi_warning": 0.95, "pi_critical": 0.9, "deficit_min_clear_hours": 3}}),
                             ("get", f"/api/v1/strings/{strs[0].id}/peers", {})]:
         r = getattr(client, method)(url, **kw)
+        if method == "put":  # thresholds are plain settings, allowed for trackers
+            assert r.status_code == 200, url
+            continue
         assert r.status_code == 422 and r.json()["detail"]["status"] == "baseline_unsupported_for_trackers", url
 
 
-def test_rbac(client, users_mode, make_user, login, seeded):
+def test_rbac(client, users_mode, make_user, login, seeded, two_projects, db_session):
     plant, strs = seeded
-    make_user("v@x.test", "viewer")
-    make_user("o@x.test", "operator")
+    plant.park_id = "PARK_A"  # a plant with no park is admin-only (test_performance_scoping)
+    db_session.commit()
+    make_user("v@x.test", "viewer", project_ids=[two_projects["p1"]])
+    make_user("o@x.test", "operator", project_ids=[two_projects["p1"]])
     v, o = login("v@x.test"), login("o@x.test")
     body = {"pi_warning": 0.95, "pi_critical": 0.9, "deficit_min_clear_hours": 3}
     p = f"/api/v1/performance/{plant.id}"
