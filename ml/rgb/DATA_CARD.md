@@ -2,11 +2,11 @@
 
 ## Source and licence
 
-Kaggle `pythonafroz/solar-panel-images` (Solar Panel Images Clean and Faulty). The licence is listed as **Unknown** on Kaggle, so the images are used for private training only: they are not in git, not redistributed and not on Hugging Face. Only file names and hashes (`manifest.csv`) are committed.
+Hugging Face dataset `metalmerge/solar-panel-inspection`, revision `1b62720238a3d5ccf7ca0298afb505fda3cfce7a` (all three folders pooled: `Faulty_solar_panel_Train`, `Faulty_solar_panel_Validation`, `solar-Panel-Dataset_Test`). It is a mirror/subset of Kaggle `pythonafroz/solar-panel-images` (Solar Panel Images Clean and Faulty; Kaggle credentials were not available). No licence is declared on the mirror and Kaggle lists it as **Unknown**, so the images are used for private training only: not in git, not redistributed, not on Hugging Face, not for public marketing pages. Only file names and hashes (`manifest.csv`) are committed.
 
 ## Comparability with published figures
 
-The data here is the Hugging Face mirror `metalmerge/solar-panel-inspection` (pinned revision `1b62720`, 789 images, 724 after deduplication). All model metrics in `reports/BAKEOFF.md` are measured on this deduplicated, group-split data and are NOT directly comparable to figures published on the original Kaggle set (the team's original 91.46 %, HybridSolarNet 92.37 %), which were not reproduced here and may include near-duplicate leakage.
+The data here is the Hugging Face mirror `metalmerge/solar-panel-inspection` (pinned revision `1b62720`, 789 images, 724 after exact-duplicate removal, near-duplicates grouped). All model metrics in `reports/BAKEOFF.md` are measured on this deduplicated, group-split data and are NOT directly comparable to figures published on the original Kaggle set (the team's original 91.46 %, HybridSolarNet 92.37 %), which were not reproduced here and may include near-duplicate leakage.
 
 ## Cleaning
 
