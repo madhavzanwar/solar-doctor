@@ -40,11 +40,9 @@ def test_clock_offset_minutes_recovers_shift(shift_h):
 
 # -- truth rules per scenario (seed 100, the first report seed) ---------------
 
-NASA_FP = ("measured at seed 100: plant WARNING on a healthy plant. With only hourly NASA-style GHI (3 % clear to 33 % "
-           "overcast error) the satellite error becomes a plant PI error that the clear-sky index gate cannot remove")
 PCLOUD_FP = ("measured at seed 100: plant WARNING (PI 0.96) on a healthy broken-cloud plant, from only ~25 usable "
              "samples; sensor lag of 7 min behind the array leaves residual PI error in the few samples that pass the gate")
-XFAIL = {"partly_cloudy": PCLOUD_FP, "control_nasa": NASA_FP, "cloudy_nasa": NASA_FP}
+XFAIL = {"partly_cloudy": PCLOUD_FP}
 
 
 @pytest.mark.parametrize("scenario", [
@@ -129,3 +127,24 @@ def test_plant_total_from_strings_needs_coverage():
     """One of 8 strings silent (12.5 % of the modules): the string-sum total is NaN, not a 12 % plant deficit."""
     res, sids = _drop_rows("control_hard", lambda T, s: T.string_id.in_(s[1:]) & T.string_id.isnot(None))  # NULL-safe: also drops plant and inverter rows
     assert res["events"] == [] and res["qc"]["plant"]["usable"] == 0
+
+
+# -- irradiance not from the site sensor: plant-wide events are capped at INFO --
+
+@pytest.mark.parametrize("scenario", ["control_nasa", "cloudy_nasa", "string_nasa"])
+def test_unverified_irradiance_caps_plant_events_at_info(scenario):
+    res = _run(scenario)[0]
+    assert res["qc_status"] == "irradiance_unverified"
+    assert all(e.severity == "INFO" for e in res["events"] if e.scope != "string")
+
+
+def test_string_fault_survives_unverified_irradiance():
+    res, truth, sids, _ = _run("string_nasa")
+    (idx,) = truth.strings
+    assert [(e.scope, e.scope_id, e.severity) for e in res["events"] if e.severity != "INFO"] == [
+        ("string", sids[idx], "CRITICAL")]
+
+
+def test_site_irradiance_is_not_capped():
+    assert _run("slow_soiling")[0]["qc_status"] == "ok"
+    assert any(e.severity != "INFO" for e in _run("slow_soiling")[0]["events"])

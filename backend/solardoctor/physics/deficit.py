@@ -30,6 +30,7 @@ logger = logging.getLogger("solardoctor.physics.deficit")
 ALERT_TYPE = "deficit"
 PEER_Z = -3.0
 MIN_PEERS = 4              # strings needed for a meaningful peer comparison
+SITE_SHARE_MIN = 0.5       # below this share of site-sensor irradiance, plant-wide deficits are unverified (INFO)
 STRING_COVERAGE = 0.9     # module-count share of strings that must report for a plant total from strings
 PEER_SIGMA_FLOOR = 0.01    # PI scatter floor: a MAD of ~0 would turn noise into huge z-scores
 ETA = solar.INVERTER_EFFICIENCY
@@ -63,6 +64,7 @@ class Performance:
     data_source: str
     parent: dict[int, Optional[int]]  # string id -> inverter id
     clock_offset_min: Optional[float] = None  # qa.clock_offset_minutes; None when not estimable
+    site_share: Optional[float] = None        # share of QC-usable plant samples with site-sensor irradiance
     plant_samples: Optional[pd.DataFrame] = None  # plant scope at full resolution: actual_kw, expected_kw, clear, usable, source
 
 
@@ -169,12 +171,17 @@ def performance(plant, telemetry: pd.DataFrame, weather: pd.DataFrame, baseline:
             plant_samples = pd.DataFrame({"actual_kw": act, "expected_kw": ex, "clear": flags["clearsky"],
                                           "usable": usable, "source": weather["source"]})
         hourly[key], names[key], qc[_qc_name(key)] = _hourly(act, ex, usable, per_hour), name, stats
+    ps = plant_samples
+    if ps is not None and ps["usable"].any():
+        site_share = float((ps.loc[ps["usable"], "source"] == irradiance.SITE).mean())
+    else:
+        site_share = float((weather["source"] == irradiance.SITE).mean()) if len(weather) else None
     modes = telemetry["source"].mode() if "source" in telemetry and len(telemetry) else []
     return Performance(
         hourly=hourly, names=names, qc=qc, provenance={k: int(v) for k, v in weather["source"].value_counts().items()},
         baseline=baseline, data_source=str(modes.iloc[0]) if len(modes) else "unknown",
         parent={s.id: s.inverter_id for s in strings}, plant_samples=plant_samples,
-        clock_offset_min=qa.clock_offset_minutes(weather))
+        clock_offset_min=qa.clock_offset_minutes(weather), site_share=site_share)
 
 
 def plant_hourly(perf: Performance) -> pd.DataFrame:
@@ -288,8 +295,14 @@ def detect(perf: Performance, plant) -> list[DeficitEvent]:
                                  "inverter-level deficit not explained by one string: check inverter / MPPT"))
     n_strings = sum(1 for k in perf.hourly if k[0] == "string")
     loc = "no_string_data" if not n_strings else "peer_compared" if z else "insufficient_peers"
+    unverified = perf.site_share is not None and perf.site_share < SITE_SHARE_MIN
     for ev in events:
         ev.evidence["localisation"] = loc
+        # Satellite/model irradiance error is shared by the whole plant, so it can fake a plant-wide deficit; a string
+        # singled out against its peers cancels it. Everything else is capped at INFO.
+        if unverified and not (ev.scope == "string" and loc == "peer_compared") and ev.severity != "INFO":
+            ev.evidence["capped_from"], ev.severity = ev.severity, "INFO"
+            ev.evidence["irradiance_site_share"] = round(perf.site_share, 3)
     return events
 
 
@@ -372,6 +385,7 @@ def scan_and_persist(db: Session, plant_id: int, start: datetime, end: datetime,
     events = [] if suspect else detect(perf, plant)  # a mislabelled clock makes PI meaningless: no alerts
     alerts = [_upsert(db, plant, ev, baseline, perf.data_source) for ev in events]
     db.commit()
-    return {"status": "ok", "qc_status": "time_offset_suspected" if suspect else "ok", "clock_offset_min": off,
+    return {"status": "ok", "qc_status": ("time_offset_suspected" if suspect else
+                          "irradiance_unverified" if perf.site_share is not None and perf.site_share < SITE_SHARE_MIN else "ok"), "clock_offset_min": off,
             "baseline": baseline, "data_source": perf.data_source, "events": events,
             "alerts": [a.id for a in alerts], "qc": perf.qc, "provenance": perf.provenance}

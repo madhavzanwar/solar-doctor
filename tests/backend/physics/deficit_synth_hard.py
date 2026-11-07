@@ -19,9 +19,9 @@ from . import deficit_synth as ds
 
 NOISE_P, NOISE_G = 0.025, 0.015
 SCENARIOS = ("control_hard", "slow_soiling", "just_under", "partly_cloudy", "clipping_day", "clipping_string",
-             "gaps_and_stuck", "time_offset", "one_of_many", "jitter", "control_nasa", "cloudy_nasa")
+             "gaps_and_stuck", "time_offset", "one_of_many", "jitter", "control_nasa", "cloudy_nasa", "string_nasa")
 SOILING_DAYS, SOILING_FINAL = 14, 0.08
-FAULT = {"just_under": 0.03, "one_of_many": 0.08, "jitter": 0.20, "clipping_string": 0.10}
+FAULT = {"just_under": 0.03, "one_of_many": 0.08, "jitter": 0.20, "clipping_string": 0.10, "string_nasa": 0.10}
 ONE_OF_MANY_STRINGS = 24
 SENSOR_LAG_MIN = 7  # partly_cloudy: the GHI sensor sits away from the array, clouds reach it later
 
