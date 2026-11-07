@@ -69,8 +69,10 @@ METHOD = """## Method
 
 CONTEXT = """## Comparison context
 
-Their reported numbers, not leak-free and not comparable to ours: our original slides 91.46 % accuracy;
-HybridSolarNet (arXiv 2601.02928) 92.37 %. Public repos often exceed these because near-duplicates leak across splits.
+All numbers above are measured on the deduplicated mirror (metalmerge/solar-panel-inspection, 789 images, 724 after
+exact-duplicate removal) with leak-free grouped splits. They are NOT directly comparable to figures published on the
+original Kaggle set: our original slides 91.46 % accuracy and HybridSolarNet (arXiv 2601.02928) 92.37 %. Those are
+reported by their authors, were not reproduced here, and can include near-duplicate leakage across splits.
 """
 
 
@@ -86,6 +88,9 @@ def render(d: dict) -> str:
                  f"{_f(c['cpu_p95_ms'], 1)} |")
     if not d["configs"]:
         L.append("| not run | | | | | | |")
+    missing = [n for n, c in d["configs"].items() if not c["final"] or not c["val_macro_f1"]]
+    if missing:
+        L += ["", "Not finished / not run (no complete result): " + ", ".join(missing)]
     L += ["", "The CV val column is optimistic: each fold's epoch is selected on that same fold. The held-out test "
           "column is the unbiased estimate.", "",
           f"Winner (val macro-F1 mean; ties: latency, then size): **{d['winner'] or 'not run'}**", ""]

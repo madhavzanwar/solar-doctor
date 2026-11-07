@@ -39,6 +39,12 @@ def render(stats: dict) -> str:
         "Kaggle `pythonafroz/solar-panel-images` (Solar Panel Images Clean and Faulty). The licence is listed as "
         "**Unknown** on Kaggle, so the images are used for private training only: they are not in git, not "
         "redistributed and not on Hugging Face. Only file names and hashes (`manifest.csv`) are committed.", "",
+        "## Comparability with published figures", "",
+        "The data here is the Hugging Face mirror `metalmerge/solar-panel-inspection` (pinned revision `1b62720`, "
+        "789 images, 724 after deduplication). All model metrics in `reports/BAKEOFF.md` are measured on this "
+        "deduplicated, group-split data and are NOT directly comparable to figures published on the original Kaggle "
+        "set (the team's original 91.46 %, HybridSolarNet 92.37 %), which were not reproduced here and may include "
+        "near-duplicate leakage.", "",
         "## Cleaning", "",
         f"Near-duplicate rule: two images are linked when pHash Hamming <= {t['phash']} or dHash Hamming <= "
         f"{t['dhash']} (hash size 8), taking the minimum distance over the other image's horizontal flip, vertical "
