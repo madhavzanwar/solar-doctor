@@ -57,3 +57,4 @@ numpy>=1.26.0,<3
 scipy>=1.11.0
 httpx>=0.27.0                    # weather / NASA POWER clients
 boto3>=1.34   # anonymous S3 access for PVDAQ import (scripts/import_pvdaq.py)
+pyyaml>=6.0.1
