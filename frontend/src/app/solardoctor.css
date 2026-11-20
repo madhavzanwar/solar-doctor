@@ -769,3 +769,19 @@ summary:focus-visible,
   color: #4b5563;
   border: 1px solid #e5e7eb;
 }
+
+/* P2.12: Support responsive 6-item KPI grid on desktop */
+.dash-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 0;
+  border: 1px solid var(--dash-border);
+  background: var(--panel);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dash-kpi {
+  border-right: 1px solid var(--dash-border);
+  border-bottom: 1px solid var(--dash-border);
+}

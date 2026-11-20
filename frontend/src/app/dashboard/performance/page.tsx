@@ -16,6 +16,7 @@ import ForecastActualChart from "@/components/forecast/ForecastActualChart";
 import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
 import { EmptyState } from "@/components/ui/states";
 import DeficitView from "@/components/performance/DeficitView";
+import { useScope, isDateWithinScope } from "@/components/dashboard/scope";
 
 type Tab = "deficit" | "probabilistic" | "adaptive" | "history";
 const TABS: Array<[Tab, string]> = [
@@ -26,8 +27,9 @@ const TABS: Array<[Tab, string]> = [
 ];
 
 export default function ForecastsPage() {
+  const scope = useScope();
   const [plants, setPlants] = useState<Plant[]>([]);
-  const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
+  const [selectedPlantId, setSelectedPlantId] = useState<number | null>(scope.plantId || null);
   const [activeTab, setActiveTab] = useState<Tab>("deficit");
 
   const [horizonMinutes, setHorizonMinutes] = useState<number>(240);
@@ -50,14 +52,23 @@ export default function ForecastsPage() {
       try {
         const data = await plantsApi.list();
         setPlants(data);
-        if (data.length > 0) setSelectedPlantId(data[0].id);
+        if (data.length > 0) {
+          const initialId = scope.plantId && data.some((p) => p.id === scope.plantId) ? scope.plantId : data[0].id;
+          setSelectedPlantId(initialId);
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to load plants.");
       } finally {
         setLoadingPlants(false);
       }
     })();
-  }, []);
+  }, [scope.plantId]);
+
+  useEffect(() => {
+    if (scope.plantId != null && plants.some((p) => p.id === scope.plantId) && scope.plantId !== selectedPlantId) {
+      setSelectedPlantId(scope.plantId);
+    }
+  }, [scope.plantId, plants, selectedPlantId]);
 
   const loadProbabilistic = useCallback(
     async (plantId: number, horizon: number, interval: number) => {
@@ -148,9 +159,11 @@ export default function ForecastsPage() {
       ? unsupportedState
       : null;
 
-  const sortedForecasts = [...forecasts].sort(
-    (a, b) => new Date(b.forecast_time).getTime() - new Date(a.forecast_time).getTime()
-  );
+  const sortedForecasts = [...forecasts]
+    .filter((r) => isDateWithinScope(r.forecast_time, scope))
+    .sort(
+      (a, b) => new Date(b.forecast_time).getTime() - new Date(a.forecast_time).getTime()
+    );
 
   const displayedPoints =
     probData?.points.filter((pt) =>

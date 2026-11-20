@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/states";
-import { useScope } from "@/components/dashboard/scope";
+import { useScope, isDateWithinScope } from "@/components/dashboard/scope";
 import { alertsApi, inspectionsApi, plantsApi } from "@/lib/api";
 import type { Alert, InspectionRecord, Plant } from "@/lib/api";
 
@@ -637,9 +637,9 @@ export default function InspectionsPage() {
       {/* Historical Inspection Feed */}
       <div className="sd-card">
         <h3 style={{ margin: "0 0 0.75rem", fontSize: "0.9375rem", fontWeight: 700, color: "#1c2c20" }}>
-          Recent Inspections History
+          Recent Inspections History {scope.range && <span style={{ fontWeight: 400, color: "#546857", fontSize: "0.8125rem" }}>({scope.range})</span>}
         </h3>
-        {history.length > 0 ? (
+        {history.filter((h) => isDateWithinScope(h.created_at, scope)).length > 0 ? (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8125rem" }}>
               <thead>
@@ -654,7 +654,7 @@ export default function InspectionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {history.map((h) => (
+                {history.filter((h) => isDateWithinScope(h.created_at, scope)).map((h) => (
                   <tr key={h.id} style={{ borderBottom: "1px solid #e5ece5" }}>
                     <td className="mono" style={{ padding: "0.5rem", fontWeight: 600 }}>{h.id}</td>
                     <td className="mono" style={{ padding: "0.5rem" }}>{h.created_at ? new Date(h.created_at).toLocaleString("en-IN") : "-"}</td>

@@ -6,6 +6,8 @@ import pandas as pd
 import pytest
 from PIL import Image
 
+pytest.importorskip("albumentations")
+
 from ml.rgb.augment import eval_array, normalize, train_transform
 from ml.rgb.data import make_data_card
 from ml.rgb.data.prepare import extract_zip, normalise_class, prepare, verify_no_leak

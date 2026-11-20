@@ -366,6 +366,8 @@ WMO_CODES = {
 
 
 def _fetch_open_meteo(lat: float, lon: float, days: int, transport=None) -> WeatherData | None:
+    if os.environ.get("SOLARDOCTOR_WEATHER_FORCE_MOCK") == "1":
+        return None
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": lat,

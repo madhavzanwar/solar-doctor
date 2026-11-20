@@ -14,6 +14,7 @@ PUNE = dict(
 def _no_weather_key_and_isolated_registry(monkeypatch, tmp_path):
     monkeypatch.delenv("SOLARDOCTOR_WEATHER_API_KEY", raising=False)
     monkeypatch.delenv("WEATHER_API_KEY", raising=False)
+    monkeypatch.setenv("SOLARDOCTOR_WEATHER_FORCE_MOCK", "1")
     monkeypatch.setenv("SOLARDOCTOR_FORECAST_ARTIFACTS", str(tmp_path / "artifacts"))
     from solardoctor.physics.registry import reset_registry
     reset_registry()

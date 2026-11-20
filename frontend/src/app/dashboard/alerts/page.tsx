@@ -11,9 +11,11 @@ import {
   type DiagnosisResponse,
   type RootCauseTaxonomyItem,
 } from "@/lib/api";
+import { useScope, isDateWithinScope } from "@/components/dashboard/scope";
 import DiagnosisModal from "@/components/diagnosis/DiagnosisModal";
 
 export default function AlertsPage() {
+  const scope = useScope();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [taxonomy, setTaxonomy] = useState<RootCauseTaxonomyItem[]>([]);
@@ -104,16 +106,22 @@ export default function AlertsPage() {
     }
   };
 
-  const filtered = alerts.filter((a) => {
+  // Scope-filtered alerts
+  const scopedAlerts = alerts.filter((a) => {
+    if (scope.plantId != null && a.plant_id !== scope.plantId) return false;
+    return isDateWithinScope(a.timestamp || a.created_at, scope);
+  });
+
+  const filtered = scopedAlerts.filter((a) => {
     if (filter === "open") return !a.is_resolved;
     if (filter === "resolved") return a.is_resolved;
     return true;
   });
 
   const counts = {
-    all: alerts.length,
-    open: alerts.filter((a) => !a.is_resolved).length,
-    resolved: alerts.filter((a) => a.is_resolved).length,
+    all: scopedAlerts.length,
+    open: scopedAlerts.filter((a) => !a.is_resolved).length,
+    resolved: scopedAlerts.filter((a) => a.is_resolved).length,
   };
 
   return (
@@ -122,7 +130,7 @@ export default function AlertsPage() {
         <p className="dash-eyebrow">Operations</p>
         <h1 className="dash-section-title">Alerts</h1>
         <p className="dash-page-sub">
-          Anomaly log and inverter fault diagnosis for field dispatch.
+          Anomaly log and inverter fault diagnosis for field dispatch · Range: <span className="mono" style={{ textTransform: "capitalize", fontWeight: 600 }}>{scope.range}</span>
         </p>
       </div>
 

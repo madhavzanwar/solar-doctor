@@ -71,8 +71,53 @@ export function ScopeProvider({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
+const FALLBACK_API: ScopeApi = {
+  ...DEFAULT,
+  setPlantId: () => {},
+  setRange: () => {},
+  setCustom: () => {},
+};
+
 export function useScope(): ScopeApi {
   const v = useContext(Ctx);
-  if (!v) throw new Error("useScope must be used inside ScopeProvider");
+  if (!v) return FALLBACK_API;
   return v;
 }
+
+/** Utility to filter timestamp/date records according to the active global scope range */
+export function isDateWithinScope(
+  dateStr: string | Date | null | undefined,
+  scope: { range: RangeKey; from: string; to: string }
+): boolean {
+  if (!dateStr) return true;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return true;
+  const now = new Date();
+
+  if (scope.range === "today") {
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return d >= startOfToday;
+  }
+  if (scope.range === "7d") {
+    const cutoff = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    return d >= cutoff;
+  }
+  if (scope.range === "30d") {
+    const cutoff = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+    return d >= cutoff;
+  }
+  if (scope.range === "custom") {
+    if (scope.from) {
+      const fromD = new Date(scope.from);
+      if (d < fromD) return false;
+    }
+    if (scope.to) {
+      const toD = new Date(scope.to);
+      toD.setHours(23, 59, 59, 999);
+      if (d > toD) return false;
+    }
+    return true;
+  }
+  return true;
+}
+

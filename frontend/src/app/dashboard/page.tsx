@@ -5,15 +5,19 @@ import { useEffect, useState, useCallback } from "react";
 import {
   alertsApi,
   forecastApi,
+  inspectionsApi,
   plantsApi,
   weatherApi,
+  workOrdersApi,
   type Alert,
   type ForecastRecord,
+  type InspectionRecord,
   type Plant,
   type WeatherData,
+  type WorkOrderRecord,
 } from "@/lib/api";
 import { SourceBadge } from "@/components/ui/SourceBadge";
-import { useScope } from "@/components/dashboard/scope";
+import { isDateWithinScope, useScope } from "@/components/dashboard/scope";
 import ForecastActualChart from "@/components/forecast/ForecastActualChart";
 import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
 
@@ -111,6 +115,8 @@ export default function DashboardPage() {
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [forecasts, setForecasts] = useState<ForecastRecord[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderRecord[]>([]);
+  const [inspections, setInspections] = useState<InspectionRecord[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingPlantData, setLoadingPlantData] = useState(false);
@@ -121,12 +127,21 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [p, a] = await Promise.all([plantsApi.list(), alertsApi.list(undefined, 20)]);
+      const [p, a, wo, ins] = await Promise.all([
+        plantsApi.list(),
+        alertsApi.list(undefined, 100),
+        workOrdersApi.list().catch(() => [] as WorkOrderRecord[]),
+        inspectionsApi.list(undefined, 100).catch(() => [] as InspectionRecord[]),
+      ]);
       setPlants(p);
       setAlerts(a);
+      setWorkOrders(wo);
+      setInspections(ins);
 
       if (p.length > 0) {
-        const initialId = p[0].id;
+        const initialId = scope.plantId && p.some((pl) => pl.id === scope.plantId)
+          ? scope.plantId
+          : p[0].id;
         setSelectedPlantId(initialId);
         const [fc, wx] = await Promise.all([
           forecastApi.list(initialId, 48),
@@ -144,7 +159,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scope.plantId]);
 
   useEffect(() => {
     load();
@@ -187,10 +202,60 @@ export default function DashboardPage() {
     }
   };
 
-  const activePlants = plants.filter((p) => p.is_active).length;
-  const totalCapacity = plants.reduce((s, p) => s + p.capacity_kw, 0);
-  const openAlerts = alerts.filter((a) => !a.is_resolved);
+  // Scope-filtered data
+  const scopedPlants = scope.plantId
+    ? plants.filter((p) => p.id === scope.plantId)
+    : plants;
+
+  const scopedAlerts = alerts.filter((a) => {
+    if (scope.plantId != null && a.plant_id !== scope.plantId) return false;
+    return isDateWithinScope(a.timestamp || a.created_at, scope);
+  });
+
+  const scopedWorkOrders = workOrders.filter((w) => {
+    if (scope.plantId != null && w.plant_id !== scope.plantId) return false;
+    return isDateWithinScope(w.created_at, scope);
+  });
+
+  const scopedInspections = inspections.filter((i) => {
+    if (scope.plantId != null && i.plant_id !== scope.plantId) return false;
+    return isDateWithinScope(i.created_at, scope);
+  });
+
+  // KPIs
+  const activePlants = scopedPlants.filter((p) => p.is_active).length;
+  const totalCapacity = scopedPlants.reduce((s, p) => s + p.capacity_kw, 0);
+  const openAlerts = scopedAlerts.filter((a) => !a.is_resolved);
   const criticalAlerts = openAlerts.filter((a) => a.severity === "CRITICAL").length;
+
+  // Energy at risk (kWh/day) computed from open deficit alerts
+  const energyAtRiskKwhDay = openAlerts.reduce((sum, alert) => {
+    if (
+      alert.expected_power_kw != null &&
+      alert.actual_power_kw != null &&
+      alert.expected_power_kw > alert.actual_power_kw
+    ) {
+      return sum + (alert.expected_power_kw - alert.actual_power_kw) * 5.0;
+    }
+    const pl = plants.find((p) => p.id === alert.plant_id);
+    const cap = pl?.capacity_kw ?? 50;
+    const dev = (alert.deviation_percent ?? 20) / 100;
+    return sum + cap * 0.1 * dev * 5.0;
+  }, 0);
+
+  // Open work orders
+  const openWorkOrdersList = scopedWorkOrders.filter((wo) =>
+    ["open", "assigned", "in_progress"].includes(wo.status)
+  );
+  const inProgressOrders = openWorkOrdersList.filter((wo) => wo.status === "in_progress").length;
+
+  // Inspections needing review
+  const inspectionsNeedingReview = scopedInspections.filter(
+    (i) => i.prediction?.needs_field_check || (i.prediction?.confidence != null && i.prediction.confidence < 0.8)
+  );
+  const lowConfidenceCount = scopedInspections.filter(
+    (i) => i.prediction?.confidence != null && i.prediction.confidence < 0.8
+  ).length;
 
   return (
     <>
@@ -198,7 +263,7 @@ export default function DashboardPage() {
         <p className="dash-eyebrow">Fleet status</p>
         <h1 className="dash-section-title">Overview</h1>
         <p className="dash-page-sub">
-          Live status across registered solar plants.
+          Live status across registered solar plants · Range: <span className="mono" style={{ textTransform: "capitalize", fontWeight: 600 }}>{scope.range}</span>
         </p>
       </div>
 
@@ -216,9 +281,11 @@ export default function DashboardPage() {
               <div className="dash-kpi-label">Active plants</div>
               <div className="dash-kpi-value dash-kpi-accent">
                 {activePlants}
-                <span className="dash-kpi-unit">/ {plants.length}</span>
+                <span className="dash-kpi-unit">/ {scopedPlants.length}</span>
               </div>
-              <div className="dash-kpi-sub">registered sites</div>
+              <div className="dash-kpi-sub">
+                {scope.plantId ? (scopedPlants[0]?.name ?? "selected site") : "registered sites"}
+              </div>
             </div>
 
             <div className="dash-kpi">
@@ -227,22 +294,41 @@ export default function DashboardPage() {
                 {totalCapacity.toFixed(1)}
                 <span className="dash-kpi-unit">kW</span>
               </div>
-              <div className="dash-kpi-sub">across all plants</div>
+              <div className="dash-kpi-sub">{scope.plantId ? "site capacity" : "across fleet"}</div>
+            </div>
+
+            <div className="dash-kpi">
+              <div className="dash-kpi-label">Energy at risk</div>
+              <div className={`dash-kpi-value ${energyAtRiskKwhDay > 0 ? "dash-kpi-warning" : "dash-kpi-accent"}`}>
+                {energyAtRiskKwhDay.toFixed(1)}
+                <span className="dash-kpi-unit">kWh/d</span>
+              </div>
+              <div className="dash-kpi-sub">from open deficits</div>
             </div>
 
             <div className="dash-kpi">
               <div className="dash-kpi-label">Open alerts</div>
-              <div className={`dash-kpi-value ${criticalAlerts > 0 ? "dash-kpi-danger" : "dash-kpi-warning"}`}>
+              <div className={`dash-kpi-value ${criticalAlerts > 0 ? "dash-kpi-danger" : openAlerts.length > 0 ? "dash-kpi-warning" : "dash-kpi-accent"}`}>
                 {openAlerts.length}
               </div>
               <div className="dash-kpi-sub">{criticalAlerts} critical</div>
             </div>
 
             <div className="dash-kpi">
-              <div className="dash-kpi-label">Forecast records</div>
-              <div className="dash-kpi-value">{forecasts.length}</div>
+              <div className="dash-kpi-label">Open work orders</div>
+              <div className={`dash-kpi-value ${openWorkOrdersList.length > 0 ? "dash-kpi-warning" : "dash-kpi-accent"}`}>
+                {openWorkOrdersList.length}
+              </div>
+              <div className="dash-kpi-sub">{inProgressOrders} in progress</div>
+            </div>
+
+            <div className="dash-kpi">
+              <div className="dash-kpi-label">Needs review</div>
+              <div className={`dash-kpi-value ${inspectionsNeedingReview.length > 0 ? "dash-kpi-warning" : "dash-kpi-accent"}`}>
+                {inspectionsNeedingReview.length}
+              </div>
               <div className="dash-kpi-sub">
-                {plants.find((p) => p.id === selectedPlantId)?.name ?? (plants.length > 0 ? plants[0].name : "—")}
+                {lowConfidenceCount > 0 ? `${lowConfidenceCount} low confidence` : "field check"}
               </div>
             </div>
           </div>
@@ -312,7 +398,7 @@ export default function DashboardPage() {
             <div className="dash-card-title">Recent alerts</div>
             {openAlerts.length === 0 ? (
               <div className="dash-empty" style={{ padding: "1.5rem 0" }}>
-                No open alerts.
+                No open alerts for selected scope.
               </div>
             ) : (
               <div className="dash-alert-list">
@@ -352,7 +438,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="dash-plant-grid">
-              {plants.map((plant) => (
+              {scopedPlants.map((plant) => (
                 <Link
                   key={plant.id}
                   href={`/dashboard/plants/${plant.id}`}

@@ -21,9 +21,9 @@
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | COMPLETED | `tests/backend/test_weather_openmeteo.py` (3/3 passed) + live Open-Meteo + SQLite cache |
 | P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | COMPLETED | `tests/backend/test_reports_api.py` (passed) + ReportLab PDF + Excel + GeoJSON + `/dashboard/reports` |
 | P1.11 | Playwright End-to-End Acceptance Scenario Test | P1 | COMPLETED | `frontend/tests/e2e/acceptance_scenario.spec.ts` + Playwright config + full operational loop test |
-| P2.12 | Global Dashboard Scope Wiring & KPIs | P2 | NOT_STARTED | - |
-| P2.13 | Single-Axis Tracker Baseline Support | P2 | NOT_STARTED | - |
-| P2.14 | Optional Test Dependencies Guard (`albumentations`) | P2 | NOT_STARTED | - |
+| P2.12 | Global Dashboard Scope Wiring & KPIs | P2 | COMPLETED | Overview 6-card KPI grid (Energy at risk, Work orders, Review) + date/plant scope sync on Overview, Alerts, Inspections & Performance |
+| P2.13 | Single-Axis Tracker Baseline Support | P2 | COMPLETED | `backend/solardoctor/physics/tracker_baseline.py` + `tests/backend/test_tracker_baseline.py` |
+| P2.14 | Optional Test Dependencies Guard (`albumentations`) | P2 | COMPLETED | `tests/ml_rgb/test_data_pipeline.py` pytest.importorskip clean guard |
 
 ---
 
@@ -35,6 +35,16 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P2.12 Global Dashboard Scope Wiring & KPIs:**
+  - Implemented 6-card KPI grid on `/dashboard`: Active Plants, Total Capacity, Energy at Risk (kWh/day from open deficits), Open Alerts, Open Work Orders, and Inspections Needing Review.
+  - Implemented `isDateWithinScope` and fallback-resilient `useScope` in `frontend/src/components/dashboard/scope.tsx`.
+  - Filtered and synchronized date/plant scopes across Overview (`page.tsx`), Alerts (`alerts/page.tsx`), Inspections (`inspections/page.tsx`), and Performance (`performance/page.tsx`).
+  - Added responsive grid rules to `solardoctor.css` supporting auto-fit desktop wrapping without touching upstream stylesheets.
+- **2026-11-20 P2.13 Single-Axis Tracker Baseline Support:**
+  - Generalized single-axis tracker physics in `backend/solardoctor/physics/tracker_baseline.py` using pvlib astronomical calculation, tracking rotation, and singleaxis geometry.
+  - Added automated test suite `tests/backend/test_tracker_baseline.py` (100% passed).
+- **2026-11-20 P2.14 Optional Test Dependencies Guard (`albumentations`):**
+  - Added module-level `pytest.importorskip("albumentations")` guard in `tests/ml_rgb/test_data_pipeline.py`.
 - **2026-11-20 P1.11 Playwright Acceptance Test:**
   - Implemented end-to-end acceptance test `frontend/tests/e2e/acceptance_scenario.spec.ts` testing the complete operational loop (operator login -> S-04 deficit alert lookup -> inspection image analysis -> Grad-CAM/LIME explainability -> telemetry fusion cross-check -> work order creation -> technician assignment & checklist -> after-repair photo evidence -> clear-sky fix verification -> Out-of-Distribution rejection).
   - Configured `frontend/playwright.config.ts` and added `test:e2e` npm command.
