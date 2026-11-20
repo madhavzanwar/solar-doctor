@@ -18,7 +18,7 @@
 | P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | COMPLETED | `tests/backend/test_roi_api.py` + Vitest + form persistence + string breakdown |
 | P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | COMPLETED | Deficit metrics + plant/string info + Inspect & Create Work Order CTAs |
 | P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | COMPLETED | Plant physical/tariff/PI threshold persistence + RBAC user CRUD table & modal |
-| P1.9 | Keyless Open-Meteo Weather Unification | P1 | NOT_STARTED | - |
+| P1.9 | Keyless Open-Meteo Weather Unification | P1 | COMPLETED | `tests/backend/test_weather_openmeteo.py` (3/3 passed) + live Open-Meteo + SQLite cache |
 | P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | NOT_STARTED | - |
 | P1.11 | Playwright End-to-End Acceptance Scenario Test | P1 | NOT_STARTED | - |
 | P2.12 | Global Dashboard Scope Wiring & KPIs | P2 | NOT_STARTED | - |
@@ -35,6 +35,11 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P1.9 Keyless Open-Meteo Weather Unification:**
+  - Implemented keyless Open-Meteo REST provider (`_fetch_open_meteo`) in `solardoctor/physics/weather_service.py` querying real-time temperature, humidity, cloud cover, wind speed, WMO weather condition codes, and shortwave GHI radiation.
+  - Enabled SQLite `weather_cache` for Open-Meteo payloads with automatic TTL expiry.
+  - Graceful fallback: WeatherAPI if key configured, labelled offline mock only when network/transport fails.
+  - Added unit test suite `tests/backend/test_weather_openmeteo.py` (3/3 passed).
 - **2026-11-20 P1.8 Settings Persistence & User RBAC (`/dashboard/settings`):**
   - Connected `/dashboard/settings` to actual backend persistence (`plantsApi.update`, `plantsApi.updateConfig`, `plantsApi.setAnomalyThreshold`, and `roiApi.updateSettings`).
   - Added full RBAC user management suite calling `usersApi` (`GET /api/v1/users`, `POST /api/v1/users`, `PATCH /api/v1/users/{id}`, `DELETE /api/v1/users/{id}`).

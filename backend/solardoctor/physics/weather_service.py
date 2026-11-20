@@ -339,26 +339,142 @@ class WeatherAPIClient:
             raise WeatherAPIError(f"WeatherAPI request failed: {type(exc).__name__}") from None
 
 
-def _fetch(lat: float, lon: float, days: int, transport=None) -> WeatherData:
-    """WeatherAPI.com when a key is configured, otherwise (or on any failure) the labelled mock."""
-    key = _api_key()
-    if not key:
-        return _mock_weather_data(lat, lon)
+
+WMO_CODES = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Depositing rime fog",
+    51: "Light drizzle",
+    53: "Moderate drizzle",
+    55: "Dense drizzle",
+    61: "Slight rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    71: "Slight snow",
+    73: "Moderate snow",
+    75: "Heavy snow",
+    80: "Slight rain showers",
+    81: "Moderate rain showers",
+    82: "Violent rain showers",
+    95: "Thunderstorm",
+    96: "Thunderstorm with slight hail",
+    99: "Thunderstorm with heavy hail",
+}
+
+
+def _fetch_open_meteo(lat: float, lon: float, days: int, transport=None) -> WeatherData | None:
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "current": "temperature_2m,relative_humidity_2m,is_day,precipitation,weather_code,cloud_cover,wind_speed_10m,shortwave_radiation",
+        "hourly": "temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,cloud_cover,wind_speed_10m,shortwave_radiation,is_day",
+        "forecast_days": days,
+        "timezone": "auto",
+    }
     try:
-        raw = WeatherAPIClient(key, transport=transport).get_forecast(lat, lon, days=days)
-        location = raw.get("location", {})
-        return WeatherData(
-            latitude=lat, longitude=lon,
-            location_name=location.get("name", "Unknown"),
-            timezone_id=location.get("tz_id", "UTC"),
-            current=_parse_current(raw),
-            hourly_forecast=_parse_hourly_forecast(raw),
-            source="weatherapi.com",
+        with httpx.Client(timeout=REQUEST_TIMEOUT_S, transport=transport) as client:
+            resp = client.get(url, params=params)
+            resp.raise_for_status()
+            raw = resp.json()
+
+        tz_name = raw.get("timezone", "UTC")
+        curr_raw = raw.get("current", {})
+        time_str = curr_raw.get("time") or datetime.now(timezone.utc).isoformat()
+        curr_dt = datetime.fromisoformat(time_str)
+        if curr_dt.tzinfo is None:
+            curr_dt = curr_dt.replace(tzinfo=timezone.utc)
+
+        wmo = curr_raw.get("weather_code", 0)
+        cond = WMO_CODES.get(wmo, "Clear sky")
+        cur_irradiance = float(curr_raw.get("shortwave_radiation") or 0.0)
+
+        current_pt = WeatherPoint(
+            timestamp=curr_dt,
+            temperature_c=float(curr_raw.get("temperature_2m", 25.0)),
+            humidity_pct=float(curr_raw.get("relative_humidity_2m", 50.0)),
+            wind_speed_kph=float(curr_raw.get("wind_speed_10m", 0.0)) * 3.6,
+            cloud_cover_pct=float(curr_raw.get("cloud_cover", 0.0)),
+            uv_index=round(cur_irradiance / 100.0, 1),
+            condition_text=cond,
+            is_day=bool(curr_raw.get("is_day", 1)),
+            irradiance_w_m2=cur_irradiance,
         )
-    except Exception as exc:  # HTTP errors, timeouts, malformed payloads
-        logger.warning("WeatherAPI request failed for (%s, %s): %s; falling back to mock.",
-                       lat, lon, redact(f"{type(exc).__name__}: {exc}"))
-        return _mock_weather_data(lat, lon)
+
+        hourly_pts = []
+        h_data = raw.get("hourly", {})
+        times = h_data.get("time", [])
+        temps = h_data.get("temperature_2m", [])
+        humids = h_data.get("relative_humidity_2m", [])
+        clouds = h_data.get("cloud_cover", [])
+        winds = h_data.get("wind_speed_10m", [])
+        irrads = h_data.get("shortwave_radiation", [])
+        codes = h_data.get("weather_code", [])
+        is_days = h_data.get("is_day", [])
+
+        for i, t_str in enumerate(times):
+            dt = datetime.fromisoformat(t_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            irr = float(irrads[i]) if i < len(irrads) and irrads[i] is not None else 0.0
+            code = codes[i] if i < len(codes) and codes[i] is not None else 0
+            pt = WeatherPoint(
+                timestamp=dt,
+                temperature_c=float(temps[i]) if i < len(temps) and temps[i] is not None else 25.0,
+                humidity_pct=float(humids[i]) if i < len(humids) and humids[i] is not None else 50.0,
+                wind_speed_kph=(float(winds[i]) if i < len(winds) and winds[i] is not None else 0.0) * 3.6,
+                cloud_cover_pct=float(clouds[i]) if i < len(clouds) and clouds[i] is not None else 0.0,
+                uv_index=round(irr / 100.0, 1),
+                condition_text=WMO_CODES.get(code, "Clear sky"),
+                is_day=bool(is_days[i]) if i < len(is_days) and is_days[i] is not None else True,
+                irradiance_w_m2=irr,
+            )
+            hourly_pts.append(pt)
+
+        return WeatherData(
+            latitude=lat,
+            longitude=lon,
+            location_name=f"Site ({lat:.2f}, {lon:.2f})",
+            timezone_id=tz_name,
+            current=current_pt,
+            hourly_forecast=hourly_pts,
+            source="open-meteo",
+        )
+    except Exception as exc:
+        logger.warning("Open-Meteo fetch failed for (%s, %s): %s", lat, lon, exc)
+        return None
+
+
+def _fetch(lat: float, lon: float, days: int, transport=None) -> WeatherData:
+    """Keyless Open-Meteo first; fallback to WeatherAPI if key configured; honest mock only if offline."""
+    # 1. Try keyless Open-Meteo
+    om = _fetch_open_meteo(lat, lon, days=days, transport=transport)
+    if om is not None:
+        return om
+
+    # 2. Try WeatherAPI if key configured
+    key = _api_key()
+    if key:
+        try:
+            raw = WeatherAPIClient(key, transport=transport).get_forecast(lat, lon, days=days)
+            location = raw.get("location", {})
+            return WeatherData(
+                latitude=lat, longitude=lon,
+                location_name=location.get("name", "Unknown"),
+                timezone_id=location.get("tz_id", "UTC"),
+                current=_parse_current(raw),
+                hourly_forecast=_parse_hourly_forecast(raw),
+                source="weatherapi.com",
+            )
+        except Exception as exc:  # HTTP errors, timeouts, malformed payloads
+            logger.warning("WeatherAPI request failed for (%s, %s): %s",
+                           lat, lon, redact(f"{type(exc).__name__}: {exc}"))
+
+    # 3. Offline fallback
+    return _mock_weather_data(lat, lon)
 
 
 # -- Cache (weather_cache table) ----------------------------------------------
@@ -436,7 +552,7 @@ def get_current_weather(lat: float, lon: float, db=None, transport=None) -> Weat
 
     The mock is synthetic: it is NOT measured weather and must never be shown as such.
     """
-    if db is not None and _api_key():
+    if db is not None:
         cached = _cache_get(db, lat, lon, "current")
         if cached:
             return _wd_from_json(cached)
@@ -448,7 +564,7 @@ def get_current_weather(lat: float, lon: float, db=None, transport=None) -> Weat
 
 def get_forecast_weather(lat: float, lon: float, days: int = 3, db=None, transport=None) -> WeatherData:
     """Hourly forecast (<= 3 days). Mock when no key is configured (see get_current_weather)."""
-    if db is not None and _api_key():
+    if db is not None:
         cached = _cache_get(db, lat, lon, f"forecast{days}")
         if cached:
             return _wd_from_json(cached)
