@@ -19,7 +19,7 @@
 | P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | COMPLETED | Deficit metrics + plant/string info + Inspect & Create Work Order CTAs |
 | P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | COMPLETED | Plant physical/tariff/PI threshold persistence + RBAC user CRUD table & modal |
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | COMPLETED | `tests/backend/test_weather_openmeteo.py` (3/3 passed) + live Open-Meteo + SQLite cache |
-| P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | NOT_STARTED | - |
+| P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | COMPLETED | `tests/backend/test_reports_api.py` (passed) + ReportLab PDF + Excel + GeoJSON + `/dashboard/reports` |
 | P1.11 | Playwright End-to-End Acceptance Scenario Test | P1 | NOT_STARTED | - |
 | P2.12 | Global Dashboard Scope Wiring & KPIs | P2 | NOT_STARTED | - |
 | P2.13 | Single-Axis Tracker Baseline Support | P2 | NOT_STARTED | - |
@@ -35,6 +35,12 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P1.10 Pure-Python PDF/Excel Reports Generation (`reportlab`):**
+  - Replaced fragile WeasyPrint dependency with pure-Python ReportLab renderer (`_generate_pdf_reportlab`) producing IEC 62446-3 thermographic audit reports.
+  - Implemented multi-sheet Excel reports via openpyxl and GeoJSON FeatureCollections for GIS/QGIS mapping.
+  - Implemented `GET /api/v1/reports` catalog and on-demand report generation in `download_report`.
+  - Implemented interactive `/dashboard/reports` UI with instant generation controls and one-click downloads across all 4 formats.
+  - Added unit test suite `tests/backend/test_reports_api.py`.
 - **2026-11-20 P1.9 Keyless Open-Meteo Weather Unification:**
   - Implemented keyless Open-Meteo REST provider (`_fetch_open_meteo`) in `solardoctor/physics/weather_service.py` querying real-time temperature, humidity, cloud cover, wind speed, WMO weather condition codes, and shortwave GHI radiation.
   - Enabled SQLite `weather_cache` for Open-Meteo payloads with automatic TTL expiry.

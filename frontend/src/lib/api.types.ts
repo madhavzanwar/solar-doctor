@@ -54,4 +54,5 @@ export type {
   UserCreateInput,
   UserUpdateInput,
   AnomalyThresholdInput,
+  ReportSummary,
 } from "./api.types.pending";

@@ -266,18 +266,248 @@ def generate_excel_report(
     return output_path
 
 
+
+def generate_geojson_report(
+    batch_result: dict,
+    output_path: str | Path,
+    site_meta: dict | None = None,
+) -> Path:
+    """Generate GeoJSON FeatureCollection report of panel anomalies."""
+    site_meta = site_meta or {}
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    park_id = batch_result.get("park_id", "inspection")
+    base_lat = float(site_meta.get("lat") or 18.65)
+    base_lon = float(site_meta.get("lon") or 73.76)
+
+    all_dets = []
+    for result in batch_result.get("results", []):
+        for det in result.get("detections", []):
+            all_dets.append({**det, "image_id": result.get("image_id", "")})
+    for det in batch_result.get("detections", []):
+        all_dets.append({**det, "image_id": batch_result.get("image_id", "")})
+
+    features = []
+    for idx, det in enumerate(all_dets):
+        panel_id = det.get("panel_id") or f"P-{idx+1}"
+        loc = _parse_panel_id(panel_id)
+        row_n = int(loc["Row_No"]) if loc["Row_No"].isdigit() else (idx // 10 + 1)
+        col_n = int(loc["Panel_No"]) if loc["Panel_No"].isdigit() else (idx % 10 + 1)
+
+        plat = base_lat + (row_n * 0.00005)
+        plon = base_lon + (col_n * 0.00005)
+
+        feature = {
+            "type": "Feature",
+            "id": idx + 1,
+            "geometry": {
+                "type": "Point",
+                "coordinates": [round(plon, 6), round(plat, 6)],
+            },
+            "properties": {
+                "panel_id": panel_id,
+                "park_id": park_id,
+                "fault_class": det.get("class", "unknown"),
+                "fault_display": _fault_display(det.get("class", "")),
+                "severity": det.get("severity", "LOW"),
+                "iec_coa": det.get("iec_coa", 2),
+                "delta_t": det.get("delta_t_measured") or det.get("delta_t_normalized"),
+                "recommended_action": det.get("action", "Field Check"),
+            },
+        }
+        features.append(feature)
+
+    geojson_doc = {
+        "type": "FeatureCollection",
+        "name": f"{park_id}_anomalies",
+        "crs": {
+            "type": "name",
+            "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
+        },
+        "features": features,
+    }
+
+    output_path.write_text(json.dumps(geojson_doc, indent=2))
+    logger.info("GeoJSON report saved: %s", output_path)
+    return output_path
+
+
+def _generate_pdf_reportlab(
+    batch_result: dict,
+    output_path: str | Path,
+    site_meta: dict | None = None,
+) -> Path:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+
+    site_meta = site_meta or {}
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    all_detections = []
+    for result in batch_result.get("results", []):
+        for det in result.get("detections", []):
+            all_detections.append({**det, "image_id": result.get("image_id", "")})
+    for det in batch_result.get("detections", []):
+        all_detections.append({**det, "image_id": batch_result.get("image_id", "")})
+
+    _SEV_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    all_detections.sort(key=lambda d: _SEV_ORDER.get(d.get("severity", "LOW"), 99))
+
+    fault_counts: dict[str, int] = {}
+    for det in all_detections:
+        ft = _fault_display(det.get("class", ""))
+        fault_counts[ft] = fault_counts.get(ft, 0) + 1
+
+    site_name = site_meta.get("site_name") or batch_result.get("park_id", "PCCoE Rooftop")
+    location = site_meta.get("location", "Pune, Maharashtra, India")
+    flight_date = batch_result.get("flight_date") or datetime.now().strftime("%Y-%m-%d")
+    gen_time = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    economics = {
+        "cost_per_kwh_usd": site_meta.get("cost_per_kwh_usd", 0.08),
+        "panel_capacity_kw": site_meta.get("panel_capacity_kw", 0.4),
+        "peak_sun_hours_per_day": site_meta.get("peak_sun_hours_per_day", 5.0),
+    }
+    revenue_loss = compute_revenue_loss(all_detections, economics)
+
+    doc = SimpleDocTemplate(str(output_path), pagesize=letter, leftMargin=36, rightMargin=36, topMargin=36, bottomMargin=36)
+    styles = getSampleStyleSheet()
+
+    header_style = ParagraphStyle(
+        'DocHeader',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor('#1b4332'),
+    )
+    sub_style = ParagraphStyle(
+        'DocSub',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#555555'),
+    )
+    section_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=13,
+        leading=16,
+        textColor=colors.HexColor('#2d3748'),
+        spaceBefore=12,
+        spaceAfter=6,
+    )
+    cell_style = ParagraphStyle(
+        'CellText',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8,
+        leading=10,
+    )
+    cell_bold = ParagraphStyle(
+        'CellBold',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8,
+        leading=10,
+    )
+
+    story = []
+
+    # Title & Metadata
+    story.append(Paragraph("SolarDoctor — IEC 62446-3 Inspection Report", header_style))
+    story.append(Paragraph(f"Standard: IEC TS 62446-3:2017 Photovoltaic System Thermography | Generated {gen_time}", sub_style))
+    story.append(Spacer(1, 12))
+
+    # Executive Summary Table
+    meta_data = [
+        [Paragraph("Site Name", cell_bold), Paragraph(str(site_name), cell_style), Paragraph("Inspection Date", cell_bold), Paragraph(str(flight_date), cell_style)],
+        [Paragraph("Location", cell_bold), Paragraph(str(location), cell_style), Paragraph("Total Panels Audited", cell_bold), Paragraph(str(batch_result.get("total_panels", len(all_detections))), cell_style)],
+        [Paragraph("DC Capacity", cell_bold), Paragraph(f"{site_meta.get('capacity_mw', '0.1')} MW", cell_style), Paragraph("Total Anomalies", cell_bold), Paragraph(str(len(all_detections)), cell_style)],
+        [Paragraph("Daily Revenue Risk", cell_bold), Paragraph(f"${revenue_loss:.2f} / day", cell_bold), Paragraph("Highest Severity", cell_bold), Paragraph(all_detections[0].get("severity", "NONE") if all_detections else "NONE", cell_bold)],
+    ]
+    t_meta = Table(meta_data, colWidths=[120, 150, 120, 150])
+    t_meta.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_meta)
+    story.append(Spacer(1, 14))
+
+    # Defect Distribution Section
+    story.append(Paragraph("1. Defect Classification & Count Breakdown", section_style))
+    dist_data = [[Paragraph("Fault Classification", cell_bold), Paragraph("IEC CoA Tier", cell_bold), Paragraph("Count", cell_bold), Paragraph("Action", cell_bold)]]
+    for ft, cnt in sorted(fault_counts.items()):
+        dist_data.append([
+            Paragraph(ft, cell_style),
+            Paragraph("CoA 2-3", cell_style),
+            Paragraph(str(cnt), cell_style),
+            Paragraph("Cleaning / Diode Repair / Replacement", cell_style),
+        ])
+    if len(dist_data) == 1:
+        dist_data.append([Paragraph("No thermal defects detected", cell_style), Paragraph("-", cell_style), Paragraph("0", cell_style), Paragraph("Normal monitoring", cell_style)])
+
+    t_dist = Table(dist_data, colWidths=[180, 100, 80, 180])
+    t_dist.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1e293b')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#94a3b8')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f1f5f9')]),
+        ('PADDING', (0,0), (-1,-1), 4),
+    ]))
+    story.append(t_dist)
+    story.append(Spacer(1, 14))
+
+    # Detailed Findings
+    story.append(Paragraph("2. Itemized Anomaly Log (Top Detections)", section_style))
+    det_rows = [[Paragraph("Item", cell_bold), Paragraph("Panel ID", cell_bold), Paragraph("Class", cell_bold), Paragraph("Severity", cell_bold), Paragraph("ΔT (K)", cell_bold), Paragraph("Recommended Action", cell_bold)]]
+    for i, d in enumerate(all_detections[:50], start=1):
+        delta_t = d.get("delta_t_measured") or d.get("delta_t_normalized") or "-"
+        det_rows.append([
+            Paragraph(str(i), cell_style),
+            Paragraph(str(d.get("panel_id") or "N/A"), cell_bold),
+            Paragraph(_fault_display(d.get("class", "")), cell_style),
+            Paragraph(str(d.get("severity", "LOW")), cell_style),
+            Paragraph(str(delta_t), cell_style),
+            Paragraph(str(d.get("action") or "Field Check"), cell_style),
+        ])
+    if len(det_rows) == 1:
+        det_rows.append([Paragraph("1", cell_style), Paragraph("All Clear", cell_style), Paragraph("Healthy array", cell_style), Paragraph("INFO", cell_style), Paragraph("0", cell_style), Paragraph("Continue periodic telemetry monitoring", cell_style)])
+
+    t_dets = Table(det_rows, colWidths=[35, 85, 140, 70, 60, 150])
+    t_dets.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#334155')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')]),
+        ('PADDING', (0,0), (-1,-1), 4),
+    ]))
+    story.append(t_dets)
+
+    doc.build(story)
+    logger.info("ReportLab PDF report saved: %s", output_path)
+    return output_path
+
+
 def generate_pdf_report(
     batch_result: dict,
     output_path: str | Path,
     site_meta: dict | None = None,
 ) -> Path:
-    """Generate PDF inspection report using Jinja2 + WeasyPrint."""
+    """Generate PDF inspection report using Jinja2 + WeasyPrint, with pure-Python ReportLab fallback."""
     try:
         from jinja2 import Environment, FileSystemLoader
         from weasyprint import HTML
-    except ImportError:
-        logger.error("PDF requires: pip install jinja2 weasyprint")
-        raise
+    except (ImportError, OSError, Exception) as exc:
+        logger.info("WeasyPrint not available (%s); using pure-Python ReportLab renderer.", exc)
+        return _generate_pdf_reportlab(batch_result, output_path, site_meta)
 
     site_meta = site_meta or {}
     output_path = Path(output_path)
@@ -365,6 +595,10 @@ def generate_pdf_report(
     template = env.get_template("report.html")
     html_content = template.render(**context)
 
-    HTML(string=html_content, base_url=str(_TEMPLATES_DIR)).write_pdf(str(output_path))
+    try:
+        HTML(string=html_content, base_url=str(_TEMPLATES_DIR)).write_pdf(str(output_path))
+    except Exception as exc:
+        logger.warning("WeasyPrint render failed: %s; falling back to ReportLab", exc)
+        return _generate_pdf_reportlab(batch_result, output_path, site_meta)
     logger.info("PDF report saved: %s", output_path)
     return output_path

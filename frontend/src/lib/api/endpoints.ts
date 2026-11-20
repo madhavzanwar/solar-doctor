@@ -32,6 +32,7 @@ import type {
   UserCreateInput,
   UserUpdateInput,
   AnomalyThresholdInput,
+  ReportSummary,
 } from "../api.types";
 import { ApiError } from "./errors";
 import { apiFetch } from "./http";
@@ -248,4 +249,10 @@ export const usersApi = {
     apiFetch<void>(`/api/v1/users/${id}`, {
       method: "DELETE",
     }),
+};
+// ── Reports endpoints ──────────────────────────────────────────────────────────
+
+export const reportsApi = {
+  list: () => apiFetch<ReportSummary[]>("/api/v1/reports"),
+  getDownloadUrl: (id: string, format: string) => `/api/v1/report/${id}?format=${format}`,
 };

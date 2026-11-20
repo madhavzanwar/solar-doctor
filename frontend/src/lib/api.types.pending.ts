@@ -396,3 +396,15 @@ export interface RoiResponse {
   settings: PlantRoiSettings;
   strings: StringRoiDecision[];
 }
+
+
+export interface ReportSummary {
+  id: string;
+  title: string;
+  park_id: string;
+  plant_id?: number;
+  created_at?: string;
+  status: string;
+  detections_count?: number;
+  formats: string[];
+}
