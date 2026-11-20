@@ -16,6 +16,7 @@ from solardoctor.db.models import (
     FAULT_RESOLVED,
     FAULT_STALE,
     FAULT_STATUSES,
+    FAULT_VERIFIED,
     PanelFault,
 )
 
@@ -45,7 +46,8 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     FAULT_STALE: frozenset({FAULT_OPEN, FAULT_ASSIGNED, FAULT_IN_PROGRESS, FAULT_RESOLVED}),
     FAULT_ASSIGNED: frozenset({FAULT_OPEN, FAULT_IN_PROGRESS, FAULT_RESOLVED}),
     FAULT_IN_PROGRESS: frozenset({FAULT_OPEN, FAULT_ASSIGNED, FAULT_RESOLVED}),
-    FAULT_RESOLVED: frozenset({FAULT_OPEN}),
+    FAULT_RESOLVED: frozenset({FAULT_OPEN, FAULT_VERIFIED}),
+    FAULT_VERIFIED: frozenset({FAULT_OPEN}),
 }
 
 

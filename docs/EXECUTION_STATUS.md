@@ -13,9 +13,9 @@
 | P0.1 | Database Migration 0013 & Schema Extensions | P0 | COMPLETED | Alembic upgrade/downgrade/upgrade test + SQLite column pragma verification |
 | P0.2 | Unified Inspection & Vision Router (`/inspections`) with Offline Fallback | P0 | COMPLETED | `tests/backend/test_inspections_api.py` (5/5 passed) + live TestClient |
 | P0.3 | Inspection Screen (`/dashboard/inspections`) & Evidence Viewer | P0 | IN_PROGRESS | - |
-| P0.4 | Work Orders Lifecycle API (`/work-orders`) & Fix Verification | P0 | NOT_STARTED | - |
-| P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | NOT_STARTED | - |
-| P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | NOT_STARTED | - |
+| P0.4 | Work Orders Lifecycle API (`/work-orders`) & Fix Verification | P0 | COMPLETED | `tests/backend/test_work_orders_api.py` (100% passed) |
+| P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | IN_PROGRESS | - |
+| P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | IN_PROGRESS | Backend API verified (`tests/backend/test_roi_api.py`) |
 | P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | NOT_STARTED | - |
 | P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | NOT_STARTED | - |
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | NOT_STARTED | - |
@@ -35,6 +35,15 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P0.4 Work Orders Lifecycle API (`/work-orders`) & Verification:**
+  - Implemented full CRUD lifecycle (`GET /api/v1/work-orders`, `POST /api/v1/work-orders`, `GET /api/v1/work-orders/{id}`, `PATCH /api/v1/work-orders/{id}`).
+  - Enforced state transition constraints (`open -> assigned -> in_progress -> resolved -> verified`) with ownership guard and completion guards (resolution note, after photo evidence, checklist completion).
+  - Implemented `POST /api/v1/work-orders/{id}/verify` computing post-repair Performance Index recovery and auto-resolving linked `PlantAlert`.
+  - Added comprehensive pytest suite `tests/backend/test_work_orders_api.py`.
+- **2026-11-20 P0.6 ROI API (`/roi`):**
+  - Implemented `GET /api/v1/roi/{plant_id}` evaluating financial recovery ₹/day & ₹/month, payback days, optimal cleaning interval, rain-aware advisory and string breakdown.
+  - Implemented `PUT /api/v1/roi/{plant_id}/settings` to persist user cost parameters and tariff presets.
+  - Added test suite `tests/backend/test_roi_api.py`.
 - **2026-11-20 P0.2 Unified Inspection & Vision Router (`/inspections`) with Offline Fallback:**
   - Implemented `OfflineClassifier` fallback in `backend/solardoctor/vision/classifier.py` for deterministic offline defect classification, calibrated confidence, OOD detection, Grad-CAM and LIME overlay synthesis.
   - Implemented `backend/solardoctor/api/routers/inspections.py` with `POST /api/v1/inspections`, `GET /api/v1/inspections`, `GET /api/v1/inspections/{id}`, and streaming endpoints (`/image`, `/gradcam`, `/lime`).
