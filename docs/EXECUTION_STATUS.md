@@ -20,7 +20,7 @@
 | P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | COMPLETED | Plant physical/tariff/PI threshold persistence + RBAC user CRUD table & modal |
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | COMPLETED | `tests/backend/test_weather_openmeteo.py` (3/3 passed) + live Open-Meteo + SQLite cache |
 | P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | COMPLETED | `tests/backend/test_reports_api.py` (passed) + ReportLab PDF + Excel + GeoJSON + `/dashboard/reports` |
-| P1.11 | Playwright End-to-End Acceptance Scenario Test | P1 | NOT_STARTED | - |
+| P1.11 | Playwright End-to-End Acceptance Scenario Test | P1 | COMPLETED | `frontend/tests/e2e/acceptance_scenario.spec.ts` + Playwright config + full operational loop test |
 | P2.12 | Global Dashboard Scope Wiring & KPIs | P2 | NOT_STARTED | - |
 | P2.13 | Single-Axis Tracker Baseline Support | P2 | NOT_STARTED | - |
 | P2.14 | Optional Test Dependencies Guard (`albumentations`) | P2 | NOT_STARTED | - |
@@ -35,6 +35,10 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P1.11 Playwright Acceptance Test:**
+  - Implemented end-to-end acceptance test `frontend/tests/e2e/acceptance_scenario.spec.ts` testing the complete operational loop (operator login -> S-04 deficit alert lookup -> inspection image analysis -> Grad-CAM/LIME explainability -> telemetry fusion cross-check -> work order creation -> technician assignment & checklist -> after-repair photo evidence -> clear-sky fix verification -> Out-of-Distribution rejection).
+  - Configured `frontend/playwright.config.ts` and added `test:e2e` npm command.
+  - Added deterministic non-panel fixture `frontend/public/images/non_panel_test.png`.
 - **2026-11-20 P1.10 Pure-Python PDF/Excel Reports Generation (`reportlab`):**
   - Replaced fragile WeasyPrint dependency with pure-Python ReportLab renderer (`_generate_pdf_reportlab`) producing IEC 62446-3 thermographic audit reports.
   - Implemented multi-sheet Excel reports via openpyxl and GeoJSON FeatureCollections for GIS/QGIS mapping.
