@@ -169,7 +169,7 @@ def test_token_not_sent_to_public_space(monkeypatch, tmp_path):
         return Resp(DATA)
 
     space = "https://huggingface.co/spaces/parakh20/axalon-api/resolve/main/ml/checkpoints/best.pt"
-    own = "https://huggingface.co/madhavzanwar/solar-doctor-thermal-yolo11x/resolve/main/best.pt"
+    own = "https://huggingface.co/solar-doctor/solar-doctor-thermal-yolo11x/resolve/main/best.pt"
     assert fw.fetch([space], tmp_path / "a.pt", SHA, opener=op, **QUIET) == 0
     assert fw.fetch([own], tmp_path / "b.pt", SHA, opener=op, **QUIET) == 0
     assert auth == [None, "Bearer secret"]

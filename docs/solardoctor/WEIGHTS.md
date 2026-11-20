@@ -70,7 +70,7 @@ Nothing has been uploaded by the build agents.
 export HF_TOKEN=hf_xxx                       # your own write token; do not commit or paste it anywhere
 python scripts/fetch_weights.py
 python scripts/publish_weights_hf.py --dry-run
-python scripts/publish_weights_hf.py         # creates madhavzanwar/solar-doctor-thermal-yolo11x, uploads model card + best.pt
+python scripts/publish_weights_hf.py         # creates solar-doctor/solar-doctor-thermal-yolo11x, uploads model card + best.pt
 ```
 The script refuses any file whose sha256 differs from the pinned value and uploads a model card stating the
 licence, source, and that the 0.792 mAP is upstream's and unverified. After publishing, optionally make the

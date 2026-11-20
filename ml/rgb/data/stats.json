@@ -1,0 +1,408 @@
+{
+  "after_cleaning_per_class": {
+    "bird_drop": 123,
+    "clean": 172,
+    "dusty": 136,
+    "electrical_damage": 91,
+    "physical_damage": 75,
+    "snow_covered": 127
+  },
+  "cross_label_groups": [
+    {
+      "group_id": 40,
+      "members": [
+        {
+          "label": "bird_drop",
+          "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (3).jpeg"
+        },
+        {
+          "label": "physical_damage",
+          "rel_path": "Faulty_solar_panel_Train/Physical-Damage/Physical (44).jpg"
+        }
+      ]
+    },
+    {
+      "group_id": 110,
+      "members": [
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Train/Clean/Clean (157).jpg"
+        },
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Train/Clean/Clean (166).jpg"
+        },
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Train/Clean/Clean (185).jpg"
+        },
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Train/Clean/Clean (3).jpg"
+        },
+        {
+          "label": "physical_damage",
+          "rel_path": "Faulty_solar_panel_Train/Physical-Damage/Physical (66).jpg"
+        }
+      ]
+    },
+    {
+      "group_id": 113,
+      "members": [
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Train/Clean/Clean (16).JPG"
+        },
+        {
+          "label": "dusty",
+          "rel_path": "Faulty_solar_panel_Train/Dusty/Dust (182).jpg"
+        }
+      ]
+    },
+    {
+      "group_id": 154,
+      "members": [
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Train/Clean/Clean (64).jpg"
+        },
+        {
+          "label": "dusty",
+          "rel_path": "Faulty_solar_panel_Train/Dusty/Dust (31).jpg"
+        }
+      ]
+    },
+    {
+      "group_id": 467,
+      "members": [
+        {
+          "label": "clean",
+          "rel_path": "Faulty_solar_panel_Validation/Clean/Clean (84).jpg"
+        },
+        {
+          "label": "dusty",
+          "rel_path": "Faulty_solar_panel_Validation/Dusty/Dust (154).jpg"
+        }
+      ]
+    },
+    {
+      "group_id": 525,
+      "members": [
+        {
+          "label": "physical_damage",
+          "rel_path": "Faulty_solar_panel_Validation/Physical-Damage/Physical (57).jpg"
+        },
+        {
+          "label": "snow_covered",
+          "rel_path": "solar-Panel-Dataset_Test/Snow-Covered/images (8).jpeg"
+        }
+      ]
+    }
+  ],
+  "edges": {
+    "embedding": 128,
+    "embedding_only": 46,
+    "hash": 88
+  },
+  "embedding_only_examples": [
+    {
+      "a": "Faulty_solar_panel_Train/Snow-Covered/Snow (81).JPG",
+      "b": "Faulty_solar_panel_Validation/Snow-Covered/Snow (87).JPG",
+      "cosine": 0.9924932269247109
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (136).JPG",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (63).jpg",
+      "cosine": 0.9907104550388646
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (191).jpg",
+      "b": "Faulty_solar_panel_Validation/Bird-drop/Bird (197).jpg",
+      "cosine": 0.9887079131054637
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (132).jpg",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (167).JPG",
+      "cosine": 0.9878448188631381
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (132).jpg",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (137).JPG",
+      "cosine": 0.9859868933086258
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Electrical-damage/Electrical (4).png",
+      "b": "Faulty_solar_panel_Train/Electrical-damage/Electrical (86).JPG",
+      "cosine": 0.9848628091396509
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Physical-Damage/Physical (23).jpg",
+      "b": "Faulty_solar_panel_Train/Physical-Damage/Physical (49).jpg",
+      "cosine": 0.9844307271742734
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Physical-Damage/Physical (25).jpg",
+      "b": "Faulty_solar_panel_Train/Physical-Damage/Physical (49).jpg",
+      "cosine": 0.9843382946727094
+    },
+    {
+      "a": "Faulty_solar_panel_Validation/Bird-drop/image (14).jpeg",
+      "b": "solar-Panel-Dataset_Test/Bird-drop/image (14).jpeg",
+      "cosine": 0.9814709554889116
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (126).jpg",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (129).jpg",
+      "cosine": 0.9812841087179697
+    }
+  ],
+  "exact_duplicate_examples": [
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (132).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (195).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (141).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Validation/Bird-drop/Bird (142).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (144).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (147).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (144).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (182).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (144).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (6).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (166).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (60).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (190).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (194).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (37).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (41).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (38).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Validation/Bird-drop/Bird (174).jpg"
+    },
+    {
+      "kept_rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (5).jpg",
+      "reason": "exact_duplicate",
+      "rel_path": "Faulty_solar_panel_Train/Bird-drop/Bird (70).jpg"
+    }
+  ],
+  "fold_per_class": {
+    "-1": {
+      "bird_drop": 17,
+      "clean": 24,
+      "dusty": 20,
+      "electrical_damage": 13,
+      "physical_damage": 12,
+      "snow_covered": 17
+    },
+    "0": {
+      "bird_drop": 21,
+      "clean": 30,
+      "dusty": 23,
+      "electrical_damage": 15,
+      "physical_damage": 13,
+      "snow_covered": 22
+    },
+    "1": {
+      "bird_drop": 22,
+      "clean": 30,
+      "dusty": 23,
+      "electrical_damage": 15,
+      "physical_damage": 12,
+      "snow_covered": 22
+    },
+    "2": {
+      "bird_drop": 21,
+      "clean": 30,
+      "dusty": 23,
+      "electrical_damage": 16,
+      "physical_damage": 12,
+      "snow_covered": 22
+    },
+    "3": {
+      "bird_drop": 20,
+      "clean": 29,
+      "dusty": 23,
+      "electrical_damage": 16,
+      "physical_damage": 14,
+      "snow_covered": 22
+    },
+    "4": {
+      "bird_drop": 22,
+      "clean": 29,
+      "dusty": 24,
+      "electrical_damage": 16,
+      "physical_damage": 12,
+      "snow_covered": 22
+    }
+  },
+  "leak_check": {
+    "min_dhash_dist": 8,
+    "min_phash_dist": 12,
+    "ok": true
+  },
+  "near_dup_groups_per_class": {
+    "bird_drop": 18,
+    "clean": 15,
+    "dusty": 7,
+    "electrical_damage": 14,
+    "physical_damage": 14,
+    "snow_covered": 16
+  },
+  "near_dup_images_per_class": {
+    "bird_drop": 40,
+    "clean": 32,
+    "dusty": 11,
+    "electrical_damage": 32,
+    "physical_damage": 33,
+    "snow_covered": 35
+  },
+  "near_duplicate_examples": [
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (127).jpg",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (191).jpg",
+      "cosine": 0.980743333125911,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (146).jpg",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (36).jpg",
+      "cosine": 0.9978411382092616,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (192).jpg",
+      "b": "Faulty_solar_panel_Train/Bird-drop/Bird (81).jpg",
+      "cosine": 0.9715430859681939,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (192).jpg",
+      "b": "Faulty_solar_panel_Validation/Bird-drop/Bird (87).jpg",
+      "cosine": 0.9715430859681939,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (39).jpg",
+      "b": "Faulty_solar_panel_Validation/Bird-drop/Bird (178).jpg",
+      "cosine": 0.9959333501162175,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Bird-drop/Bird (81).jpg",
+      "b": "Faulty_solar_panel_Validation/Bird-drop/Bird (87).jpg",
+      "cosine": 0.9999999999999998,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Clean/Clean (10).JPG",
+      "b": "Faulty_solar_panel_Train/Clean/Clean (141).JPG",
+      "cosine": 1.0,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Clean/Clean (171).jpg",
+      "b": "Faulty_solar_panel_Train/Clean/Clean (31).jpg",
+      "cosine": 0.9968963883733252,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Electrical-damage/Electrical (42).jpg",
+      "b": "Faulty_solar_panel_Train/Electrical-damage/Electrical (9).jpg",
+      "cosine": 0.9956687234743871,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    },
+    {
+      "a": "Faulty_solar_panel_Train/Physical-Damage/Physical (10).jpg",
+      "b": "Faulty_solar_panel_Train/Physical-Damage/Physical (34).jpg",
+      "cosine": 0.9953199219956047,
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "source": "both"
+    }
+  ],
+  "raw_per_class": {
+    "bird_drop": 134,
+    "clean": 177,
+    "dusty": 143,
+    "electrical_damage": 103,
+    "physical_damage": 86,
+    "snow_covered": 146
+  },
+  "removed_per_reason": {
+    "exact_duplicate": 65
+  },
+  "split_per_class": {
+    "test": {
+      "bird_drop": 17,
+      "clean": 24,
+      "dusty": 20,
+      "electrical_damage": 13,
+      "physical_damage": 12,
+      "snow_covered": 17
+    },
+    "train": {
+      "bird_drop": 89,
+      "clean": 124,
+      "dusty": 97,
+      "electrical_damage": 65,
+      "physical_damage": 50,
+      "snow_covered": 92
+    },
+    "val": {
+      "bird_drop": 17,
+      "clean": 24,
+      "dusty": 19,
+      "electrical_damage": 13,
+      "physical_damage": 13,
+      "snow_covered": 18
+    }
+  },
+  "thresholds": {
+    "cosine": 0.95,
+    "dhash": 6,
+    "hash_variants": "orig+hflip+vflip+rot90/180/270",
+    "phash": 6,
+    "seed": 42
+  }
+}

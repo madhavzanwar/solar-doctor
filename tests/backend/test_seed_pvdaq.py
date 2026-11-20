@@ -7,6 +7,7 @@ No network.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -166,6 +167,26 @@ def test_write_is_idempotent_and_labelled(files, tmp_path, monkeypatch):
     s._engine = s._SessionLocal = None
 
 
+def test_imported_pvdaq_plant_is_a_tracker_with_no_deficit_scan(files, tmp_path, monkeypatch):
+    monkeypatch.setenv("SOLARDOCTOR_DB_URL", f"sqlite:///{tmp_path / 'pt.db'}")
+    from solardoctor.db import session as s
+    s._engine = s._SessionLocal = None
+    from solardoctor.db.session import get_session, init_db
+    from solardoctor.physics import deficit
+    from solardoctor.physics.models import Plant, PlantAlert
+    from solardoctor.physics.tracker import BASELINE_UNSUPPORTED_STATUS, is_tracker_plant
+    init_db()
+    db = get_session()
+    pvdaq.write_mapped(db, pvdaq.map_pvdaq(files / "ac.csv", files / "irr.csv", files / "meta.json", START, END))
+    plant = db.query(Plant).one()
+    assert is_tracker_plant(plant)
+    res = deficit.scan_and_persist(db, plant.id, START, END)
+    assert res["status"] == BASELINE_UNSUPPORTED_STATUS == "baseline_unsupported_for_trackers" and res["events"] == []
+    assert db.query(PlantAlert).count() == 0
+    db.close()
+    s._engine = s._SessionLocal = None
+
+
 def test_empty_window_is_an_error(files):
     with pytest.raises(pvdaq.PvdaqUnavailable):
         pvdaq.map_pvdaq(files / "ac.csv", files / "irr.csv", files / "meta.json",
@@ -174,7 +195,9 @@ def test_empty_window_is_an_error(files):
 
 def test_cli_offline_mode(files, tmp_path):
     env = {"SOLARDOCTOR_DB_URL": f"sqlite:///{tmp_path / 'cli.db'}", "PYTHONSAFEPATH": "1",
-           "PYTHONPATH": f"{REPO_ROOT / 'backend'}:{REPO_ROOT}", "PATH": "/usr/bin:/bin"}
+           "PYTHONPATH": os.pathsep.join([str(REPO_ROOT / "backend"), str(REPO_ROOT)]),
+           # a scrubbed environment, keeping only what the interpreter needs to start (Windows needs SYSTEMROOT)
+           **{k: os.environ[k] for k in ("PATH", "SYSTEMROOT") if k in os.environ}}
     run = subprocess.run(
         [sys.executable, str(REPO_ROOT / "scripts" / "import_pvdaq.py"), "--ac-csv", str(files / "ac.csv"),
          "--irr-csv", str(files / "irr.csv"), "--metadata", str(files / "meta.json"),

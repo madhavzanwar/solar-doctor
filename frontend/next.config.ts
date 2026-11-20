@@ -18,7 +18,7 @@ function apiOrigin(): string {
  * only cross-origin call is the API. Next.js App Router injects small inline bootstrap scripts, so script-src
  * keeps 'unsafe-inline' (a nonce-based policy would need dynamic rendering for every page). Tokens live in
  * localStorage, so this policy is a real mitigation against injected scripts, not decoration: no remote script
- * hosts are allowed. When the Leaflet map ships, add its tile host to img-src.
+ * hosts are allowed. img-src also allows the two Leaflet basemap tile hosts used by src/lib/map.ts.
  */
 function contentSecurityPolicy(): string {
   const api = apiOrigin();
@@ -26,7 +26,8 @@ function contentSecurityPolicy(): string {
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", ...(isProd ? [] : ["'unsafe-eval'"])],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:"],
+    // Map basemap tiles (src/lib/map.ts): CARTO Positron and Esri World Imagery.
+    "img-src": ["'self'", "data:", "blob:", "https://*.basemaps.cartocdn.com", "https://server.arcgisonline.com"],
     "font-src": ["'self'", "data:"],
     "connect-src": ["'self'", api, ...(isProd ? [] : ["ws:", "wss:"])],
     "media-src": ["'self'"],
@@ -53,7 +54,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // next/image serves AVIF when the browser accepts it, WebP otherwise
-  images: { formats: ["image/avif", "image/webp"] },
+  images: { formats: ["image/avif", "image/webp"], qualities: [40, 75] },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

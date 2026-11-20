@@ -14,11 +14,21 @@ import { TrackerUnsupported } from "@/components/ui/TrackerUnsupported";
 import ProbabilisticBandChart from "@/components/forecast/ProbabilisticBandChart";
 import ForecastActualChart from "@/components/forecast/ForecastActualChart";
 import OnlineAdapterChip from "@/components/forecast/OnlineAdapterChip";
+import { EmptyState } from "@/components/ui/states";
+import DeficitView from "@/components/performance/DeficitView";
+
+type Tab = "deficit" | "probabilistic" | "adaptive" | "history";
+const TABS: Array<[Tab, string]> = [
+  ["deficit", "Expected vs actual"],
+  ["probabilistic", "Probabilistic & ramp"],
+  ["adaptive", "Online learning"],
+  ["history", "Point history"],
+];
 
 export default function ForecastsPage() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"probabilistic" | "adaptive" | "history">("probabilistic");
+  const [activeTab, setActiveTab] = useState<Tab>("deficit");
 
   const [horizonMinutes, setHorizonMinutes] = useState<number>(240);
   const [intervalMinutes, setIntervalMinutes] = useState<number>(15);
@@ -31,6 +41,7 @@ export default function ForecastsPage() {
   const [loadingFc, setLoadingFc] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deficitRefresh, setDeficitRefresh] = useState(0);
   /** Set when the API answered 422 baseline_unsupported_for_trackers for this plant. */
   const [unsupportedState, setUnsupportedState] = useState<{ plantId: number; message: string } | null>(null);
 
@@ -92,7 +103,7 @@ export default function ForecastsPage() {
     if (selectedPlantId != null && !isTrackerPlant(plant)) {
       if (activeTab === "probabilistic") {
         loadProbabilistic(selectedPlantId, horizonMinutes, intervalMinutes);
-      } else {
+      } else if (activeTab !== "deficit") {
         loadForecasts(selectedPlantId);
       }
     }
@@ -120,6 +131,17 @@ export default function ForecastsPage() {
   };
 
   const selectedPlant = plants.find((p) => p.id === selectedPlantId);
+
+  // Arrow keys move between tabs (roving tabindex), per the ARIA tabs pattern.
+  const onTabKey = (e: React.KeyboardEvent) => {
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const i = TABS.findIndex(([id]) => id === activeTab);
+    const next = TABS[(i + step + TABS.length) % TABS.length][0];
+    setActiveTab(next);
+    document.getElementById(`perf-tab-${next}`)?.focus();
+  };
   const unsupported: { message?: string } | null = isTrackerPlant(selectedPlant)
     ? {}
     : unsupportedState && unsupportedState.plantId === selectedPlantId
@@ -154,10 +176,10 @@ export default function ForecastsPage() {
     <>
       <div className="dash-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
-          <p className="dash-eyebrow">Forecasting</p>
+          <p className="dash-eyebrow">Performance</p>
           <h1 className="dash-section-title">Performance</h1>
           <p className="dash-page-sub">
-            Probabilistic bands, live online learning from SCADA, and point forecast history.
+            Expected vs actual power, deficit and soiling, plus probabilistic forecasts and online learning.
           </p>
         </div>
         {selectedPlantId && activeTab !== "adaptive" && (
@@ -169,28 +191,22 @@ export default function ForecastsPage() {
 
       {error && <div className="dash-error">{error}</div>}
 
-      <div className="dash-tabs">
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "probabilistic" ? " active" : ""}`}
-          onClick={() => setActiveTab("probabilistic")}
-        >
-          Probabilistic & ramp
-        </button>
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "adaptive" ? " active" : ""}`}
-          onClick={() => setActiveTab("adaptive")}
-        >
-          Online learning
-        </button>
-        <button
-          type="button"
-          className={`dash-tab${activeTab === "history" ? " active" : ""}`}
-          onClick={() => setActiveTab("history")}
-        >
-          Point history
-        </button>
+      <div className="dash-tabs" role="tablist" aria-label="Performance views" onKeyDown={onTabKey}>
+        {TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`perf-tab-${id}`}
+            aria-selected={activeTab === id}
+            aria-controls="perf-panel"
+            tabIndex={activeTab === id ? 0 : -1}
+            className={`dash-tab${activeTab === id ? " active" : ""}`}
+            onClick={() => setActiveTab(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="dash-toolbar">
@@ -252,7 +268,15 @@ export default function ForecastsPage() {
         )}
 
         <div className="dash-toolbar-spacer" style={{ display: "flex", gap: "0.5rem" }}>
-          {activeTab === "probabilistic" ? (
+          {activeTab === "deficit" ? (
+            <button
+              className="dash-btn dash-btn-primary"
+              onClick={() => setDeficitRefresh((n) => n + 1)}
+              disabled={!selectedPlantId || !!unsupported}
+            >
+              Refresh
+            </button>
+          ) : activeTab === "probabilistic" ? (
             <button
               className="dash-btn dash-btn-primary"
               onClick={() =>
@@ -276,7 +300,17 @@ export default function ForecastsPage() {
         </div>
       </div>
 
+      <div role="tabpanel" id="perf-panel" aria-labelledby={`perf-tab-${activeTab}`}>
       {activeTab !== "adaptive" && unsupported && <TrackerUnsupported detail={unsupported.message} />}
+
+      {activeTab === "deficit" && !unsupported && selectedPlantId != null && (
+        <DeficitView key={selectedPlantId} plantId={selectedPlantId} refreshKey={deficitRefresh} timeZone={selectedPlant?.timezone} />
+      )}
+      {activeTab === "deficit" && !loadingPlants && !error && plants.length === 0 && (
+        <EmptyState icon="panel" title="No plants yet">
+          Register a plant to compare its output with the expected-power baseline.
+        </EmptyState>
+      )}
 
       {activeTab === "probabilistic" && !unsupported && (
         <>
@@ -771,6 +805,7 @@ export default function ForecastsPage() {
           )}
         </>
       )}
+      </div>
     </>
   );
 }

@@ -1,0 +1,21 @@
+{
+  "resolved": {
+    "facebook/dinov2-small": {
+      "sha": "ed25f3a31f01632728cabb09d1542f84ab7b0056",
+      "license": "apache-2.0"
+    },
+    "openai/clip-vit-base-patch32": {
+      "sha": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+      "license": null
+    },
+    "timm/convnext_tiny.fb_in22k_ft_in1k": {
+      "sha": "bc48a87f119bae1b06418f5340bfa97ef75d4609",
+      "license": "apache-2.0"
+    },
+    "timm/efficientnet_b0.ra_in1k": {
+      "sha": "1b5383e5f79cc0f7fc067e372f8f26a5fa73f26a",
+      "license": "apache-2.0"
+    }
+  },
+  "failed": {}
+}

@@ -33,7 +33,7 @@ EXPECTED_SHA256 = "fabb41c88f9db29fa5e6803542a6804ee6c0b356aabd7e7c1c0ed6f2d7272
 EXPECTED_SIZE = 114395865
 DEST = Path(__file__).resolve().parents[1] / "ml" / "thermal" / "checkpoints" / "best.pt"
 DEFAULT_URLS = (
-    "https://huggingface.co/madhavzanwar/solar-doctor-thermal-yolo11x/resolve/main/best.pt",
+    "https://huggingface.co/solar-doctor/solar-doctor-thermal-yolo11x/resolve/main/best.pt",
     "https://huggingface.co/spaces/parakh20/axalon-api/resolve/main/ml/checkpoints/best.pt",
 )
 CHUNK = 1 << 20

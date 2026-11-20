@@ -63,9 +63,10 @@ Work orders, ROI, Map, Reports and Settings pages exist as real routes with head
 
 | Item | Why it matters |
 |---|---|
-| **`HF_TOKEN` (write scope)** | The thermal weights `best.pt` were **recovered** from the original project's public Hugging Face Space (sha256-pinned, verified; see `docs/solardoctor/WEIGHTS.md`) and all 10 weight-dependent tests pass with the file in place. They are still fetched from that third-party Space; publish our own copy with `scripts/publish_weights_hf.py` (needs your token) to remove the dependency. CI caches the file and runs those tests when it is present. |
+| **`HF_TOKEN` (write scope)** | The thermal weights `best.pt` were **recovered** from the original project's public Hugging Face Space (sha256-pinned, verified; see `docs/solardoctor/WEIGHTS.md`) and all 10 weight-dependent tests pass with the file in place. Since 2026-11-06 our own copy is published (public, AGPL-3.0) at https://huggingface.co/solar-doctor/solar-doctor-thermal-yolo11x and `scripts/fetch_weights.py` tries it first, falling back to that Space. CI caches the file and runs those tests when it is present. |
 | **Kaggle credentials** (`KAGGLE_USERNAME`, `KAGGLE_KEY`) | Prompt 2 downloads the 6-class panel dataset. Licence on Kaggle is "Unknown": train privately, never redistribute images. |
 | **Hugging Face token (write scope)** | Publish the RGB model and the demo Space. |
+| **Public demo blocked on dataset licence** | The RGB model is trained on `metalmerge/solar-panel-inspection` (a mirror of the Kaggle set; licence unknown). `solar-doctor/solar-doctor-rgb-defect` is therefore a **private** Hugging Face repo and no demo Space exists. Do not make the repo or a Space public until the data licence is resolved or the model is retrained on permissively licensed images. |
 | **Photos and licences** | Only the hero photo ships (Unsplash licence, **not verified** from the sandbox). Four more are wanted (Indian rooftop, dusty close-up, technician cleaning, drone over a farm): the sandbox could not read Unsplash/Pexels pages, so none were added. Pick free-licence photos, check each page, and add them to `docs/IMAGE_CREDITS.md`. |
 | **Real phone photos of panels (about 30)** | Prompt 3 asks for them to test the model honestly. |
 | **Vercel / Hugging Face Spaces / Postgres accounts** | Prompt 3 deployment. |
@@ -124,3 +125,5 @@ kept out of the repo.
 3. Every agent must first run `git fetch origin && git checkout -B <branch> origin/main` (worktrees can start stale),
    commit after every step, and never push; the session lead merges only after the independent `sd-qa` review signs off.
 4. Run Prompt 3 only after Prompt 2 is merged and tagged.
+
+Physics jobs: run physics jobs with a single worker (alert idempotency relies on a single writer; no unique constraint).

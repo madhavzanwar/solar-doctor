@@ -1,0 +1,17 @@
+# Training / evaluation only (serving deps live in requirements_platform.txt). torch/torchvision installed separately (CUDA build).
+timm
+transformers
+huggingface_hub
+safetensors
+albumentations
+imagehash
+kaggle
+pandas
+scikit-learn
+scipy
+matplotlib
+onnx
+onnxscript
+onnxruntime
+lime
+grad-cam

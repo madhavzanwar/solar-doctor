@@ -69,6 +69,8 @@ describe("single-axis tracker plants (baseline_unsupported_for_trackers)", () =>
     vi.doMock("@/lib/api", () => ({
       plantsApi: { list: vi.fn(async () => [plain]) },
       forecastApi: { getProbabilistic: vi.fn(async () => Promise.reject(err)), list: vi.fn(), generate: vi.fn() },
+      // the page now opens on the deficit tab, which hits the performance API first
+      performanceApi: { get: vi.fn(async () => Promise.reject(err)), scan: vi.fn(), peers: vi.fn() },
     }));
     vi.doMock("@/components/forecast/OnlineAdapterChip", () => ({ default: () => null }));
     const { default: Page } = await import("@/app/dashboard/performance/page");

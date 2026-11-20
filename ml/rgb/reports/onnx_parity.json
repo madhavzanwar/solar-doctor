@@ -1,0 +1,9 @@
+{
+  "opset": 17,
+  "tolerance": 0.0001,
+  "max_abs_diff": {
+    "random": 1.0967254638671875e-05,
+    "real": 9.179115295410156e-06
+  },
+  "passed": true
+}

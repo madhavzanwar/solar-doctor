@@ -17,7 +17,7 @@ import os
 import sys
 from pathlib import Path
 
-REPO = "madhavzanwar/solar-doctor-thermal-yolo11x"
+REPO = "solar-doctor/solar-doctor-thermal-yolo11x"
 SHA256 = "fabb41c88f9db29fa5e6803542a6804ee6c0b356aabd7e7c1c0ed6f2d727297d"
 DEFAULT_SRC = Path(__file__).resolve().parents[1] / "ml" / "thermal" / "checkpoints" / "best.pt"
 

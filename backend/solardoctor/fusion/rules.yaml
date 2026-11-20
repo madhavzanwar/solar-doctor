@@ -1,0 +1,124 @@
+# SolarDoctor fusion decision table (docs/solardoctor/prompts/02-intelligence.md, Workstream 3 item 2).
+# Rows are evaluated in ascending `precedence`; the first match wins.
+#   telemetry: deficit | no_deficit | inconclusive | any   (a list means "any of")
+#   photo:     unclear | clean | dusty | bird_drop | snow_covered | electrical_damage | physical_damage | any
+#   decider:   absent = fixed action; roi = ROI engine picks CLEAN NOW / WAIT; snow = melt forecast picks WAIT / CLEAR IF SAFE
+#   severity:  base severity; severity_by_action overrides per final action; escalate_on_critical_telemetry lifts to
+#              CRITICAL when the physics alert is CRITICAL.
+#   confidence_basis: photo = calibrated photo confidence; zero = no verdict-level confidence.
+version: 1
+rules:
+  - id: unclear_photo
+    precedence: 1
+    telemetry: any
+    photo: unclear
+    verdict: Unclear photo
+    action: NEEDS FIELD CHECK
+    severity: MEDIUM
+    confidence_basis: zero
+    reason: "The photo cannot be trusted ({photo_issue}), so no diagnosis is made. Send someone to inspect the panels on site."
+
+  - id: inconclusive
+    precedence: 2
+    telemetry: inconclusive
+    photo: any
+    verdict: Inconclusive
+    action: RE-CHECK NEXT CLEAR DAY
+    severity: LOW
+    confidence_basis: zero
+    reason: "No usable clear-sky telemetry ({telemetry_issue}), so a missing alert proves nothing. Re-check on the next clear day."
+
+  - id: soiling_confirmed
+    precedence: 3
+    telemetry: deficit
+    photo: [dusty, bird_drop]
+    verdict: Soiling confirmed
+    decider: roi
+    severity: HIGH
+    severity_by_action: {WAIT: LOW}
+    escalate_on_critical_telemetry: true
+    confidence_basis: photo
+    reason: "Output is {deficit_pct} below expectation on clear-sky hours and the photo shows {photo_class_label} ({photo_conf_pct}). {roi_reason}"
+
+  - id: snow_loss
+    precedence: 4
+    telemetry: deficit
+    photo: snow_covered
+    verdict: Snow loss
+    decider: snow
+    severity: MEDIUM
+    confidence_basis: photo
+    reason: "Output is {deficit_pct} below expectation and the photo shows snow cover ({photo_conf_pct}). {snow_reason}"
+
+  - id: electrical_suspected
+    precedence: 5
+    telemetry: deficit
+    photo: clean
+    verdict: Not visible in RGB, electrical or inverter fault suspected
+    action: FIELD CHECK
+    severity: HIGH
+    escalate_on_critical_telemetry: true
+    confidence_basis: photo
+    reason: "Output is {deficit_pct} below expectation but the panels look clean ({photo_conf_pct}), so dirt does not explain the loss. Run an IV-curve or thermal check and read the inverter error codes."
+
+  - id: hardware_fault
+    precedence: 6
+    telemetry: deficit
+    photo: [electrical_damage, physical_damage]
+    verdict: Hardware fault
+    action: REPLACE / WARRANTY CLAIM
+    severity: CRITICAL
+    confidence_basis: photo
+    reason: "Output is {deficit_pct} below expectation and the photo shows {photo_class_label} ({photo_conf_pct}). Isolate the string and start a replacement or warranty claim. Safety warning: do not touch damaged or hot modules without isolating the DC side."
+
+  - id: early_soiling
+    precedence: 7
+    telemetry: no_deficit
+    photo: [dusty, bird_drop]
+    verdict: Cosmetic or early soiling
+    action: WAIT
+    severity: LOW
+    confidence_basis: photo
+    reason: "No measurable deficit yet, but the photo shows {photo_class_label} ({photo_conf_pct}). Wait and re-check in {recheck_days} days."
+
+  - id: latent_damage
+    precedence: 8
+    telemetry: no_deficit
+    photo: physical_damage
+    verdict: Latent damage
+    action: FIELD CHECK
+    severity: HIGH
+    confidence_basis: photo
+    reason: "No measurable deficit, but the photo shows physical damage ({photo_conf_pct}). Inspect on site; cracked or broken modules can become a safety risk (water ingress, hot spots)."
+
+# Combinations the spec table does not list. Not part of the spec; kept separate so the table above stays exact.
+fallback_rules:
+  - id: healthy
+    precedence: 100
+    telemetry: no_deficit
+    photo: clean
+    verdict: Healthy
+    action: NO ACTION
+    severity: LOW
+    confidence_basis: photo
+    reason: "No measurable deficit and the panels look clean ({photo_conf_pct})."
+
+  - id: snow_no_loss
+    precedence: 101
+    telemetry: no_deficit
+    photo: snow_covered
+    verdict: Snow cover, no measurable loss
+    action: WAIT
+    severity: LOW
+    confidence_basis: photo
+    reason: "Snow is visible ({photo_conf_pct}) but no deficit is measured yet. Wait and re-check in {recheck_days} days."
+
+  - id: latent_electrical
+    precedence: 102
+    telemetry: no_deficit
+    photo: electrical_damage
+    verdict: Latent electrical damage
+    action: FIELD CHECK
+    severity: HIGH
+    confidence_basis: photo
+    reason: "No measurable deficit, but the photo shows electrical damage ({photo_conf_pct}). Inspect on site with a safety check before the fault grows."
