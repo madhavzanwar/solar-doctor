@@ -13,13 +13,13 @@ export type ProbabilisticForecastPoint = S["ProbabilisticForecastPoint"];
 export type RampRiskSummary = S["RampRiskSummarySchema"];
 export type ProbabilisticForecastResponse = S["ProbabilisticForecastResponse"];
 export type OnlineAdapterStatus = S["OnlineAdapterStatusResponse"];
-export type Alert = S["AlertResponse"];
 export type TechnicianStep = S["TechnicianStep"];
 export type DiagnosisResponse = S["DiagnosisResponse"];
 export type DiagnosisRequest = Pick<S["DiagnosisRequest"], "plant_id"> & Partial<S["DiagnosisRequest"]>;
 export type RootCauseTaxonomyItem = S["RootCauseTaxonomyItem"];
 
 export type {
+  Alert,
   DeficitEvent,
   DeficitSeverity,
   GridPanel,

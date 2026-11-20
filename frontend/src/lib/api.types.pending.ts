@@ -81,6 +81,26 @@ export interface SoilingAnalytics {
   days?: number;
 }
 
+export interface Alert {
+  id: number;
+  plant_id: number;
+  timestamp: string;
+  alert_type: string;
+  severity: "CRITICAL" | "WARNING" | "INFO" | string;
+  message: string;
+  expected_power_kw?: number | null;
+  actual_power_kw?: number | null;
+  deviation_percent?: number | null;
+  is_resolved: boolean;
+  resolved_at?: string | null;
+  created_at: string;
+  scope?: string;
+  inverter_id?: number | null;
+  string_id?: number | null;
+  baseline?: string | null;
+  evidence?: Record<string, unknown> | null;
+}
+
 export interface PerformanceAlert {
   id: number;
   plant_id: number;

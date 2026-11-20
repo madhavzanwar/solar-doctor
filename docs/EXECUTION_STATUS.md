@@ -16,7 +16,7 @@
 | P0.4 | Work Orders Lifecycle API (`/work-orders`) & Fix Verification | P0 | COMPLETED | `tests/backend/test_work_orders_api.py` (100% passed) |
 | P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | COMPLETED | Vitest + `tsc --noEmit` + Kanban 5-column board + 440px drawer + verify action |
 | P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | COMPLETED | `tests/backend/test_roi_api.py` + Vitest + form persistence + string breakdown |
-| P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | NOT_STARTED | - |
+| P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | COMPLETED | Deficit metrics + plant/string info + Inspect & Create Work Order CTAs |
 | P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | NOT_STARTED | - |
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | NOT_STARTED | - |
 | P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | NOT_STARTED | - |
@@ -35,6 +35,10 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P1.7 Alerts Integration Bridge (`/dashboard/alerts`):**
+  - Updated `/dashboard/alerts` to surface plant name, string identification (`String #` or `String-level`), actual deficit percentage with severity color coding, and expected vs actual power output.
+  - Added direct action links: "Inspect" (`/dashboard/inspections?alert_id=...&plant_id=...&string_id=...`) and "Create Work Order" (`/dashboard/work-orders?create=1&alert_id=...&plant_id=...&string_id=...`).
+  - Preserved existing Diagnose modal and resolve workflows.
 - **2026-11-20 P0.3, P0.5, P0.6 Frontend Screens & Full Operational Integration:**
   - Implemented `/dashboard/inspections`: Dropzone with multi-format support (JPG/PNG/WebP), sample loader (`dusty-panel-closeup.webp`), Grad-CAM/LIME/Side-by-side tabs with opacity slider, top-3 distribution bars, OOD alerts, telemetry cross-check, fusion verdict, and "Create Work Order" modal trigger.
   - Implemented `/dashboard/work-orders`: 5-column Kanban board (`open`, `assigned`, `in_progress`, `resolved`, `verified`) and List view, 440px slide-out drawer, checklist toggles, proof photo attachment, resolution notes, and "Verify Fix" action against real backend telemetry.

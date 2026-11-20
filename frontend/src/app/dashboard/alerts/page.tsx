@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   alertsApi,
   diagnosisApi,
@@ -188,13 +189,26 @@ export default function AlertsPage() {
                 {filtered.map((a) => {
                   const severity = a.severity as "CRITICAL" | "WARNING" | "INFO";
                   const isDiagnosing = diagnosingId === a.id;
+                  const plant = plants.find((p) => p.id === a.plant_id);
+                  const plantName = plant ? plant.name : `Plant #${a.plant_id}`;
+                  const stringInfo = a.string_id != null ? `String #${a.string_id}` : (a.scope === "string" ? "String-level" : null);
+                  const shortfallKw = (a.expected_power_kw != null && a.actual_power_kw != null)
+                    ? (a.expected_power_kw - a.actual_power_kw)
+                    : null;
 
                   return (
                     <div key={a.id} className={`dash-alert-row ${severity}`}>
                       <span className={`dash-alert-badge ${severity}`}>{severity}</span>
-                      <div style={{ minWidth: 0 }}>
-                        <div className="dash-alert-msg" style={{ fontWeight: 600 }}>
-                          {a.message}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <span className="dash-alert-msg" style={{ fontWeight: 600 }}>
+                            {a.message}
+                          </span>
+                          {stringInfo && (
+                            <span className="sd-badge sd-badge-muted" style={{ fontSize: "0.68rem" }}>
+                              {stringInfo}
+                            </span>
+                          )}
                         </div>
                         <div
                           style={{
@@ -205,20 +219,46 @@ export default function AlertsPage() {
                             overflowWrap: "anywhere",
                           }}
                         >
-                          Plant #{a.plant_id}
+                          <strong>{plantName}</strong>
                           {" · "}
-                          {a.alert_type}
-                          {a.deviation_percent != null &&
-                            ` · ${a.deviation_percent.toFixed(1)}% shortfall`}
-                          {a.expected_power_kw != null &&
-                            a.actual_power_kw != null &&
-                            ` · ${a.actual_power_kw.toFixed(0)} / ${a.expected_power_kw.toFixed(0)} kW`}
+                          <span style={{ fontFamily: "var(--font-mono, monospace)" }}>{a.alert_type}</span>
+                          {a.deviation_percent != null && (
+                            <>
+                              {" · "}
+                              <span style={{ color: a.deviation_percent > 20 ? "var(--red, #b91c1c)" : "var(--amber, #b45309)", fontWeight: 600 }}>
+                                {a.deviation_percent.toFixed(1)}% deficit
+                              </span>
+                            </>
+                          )}
+                          {a.expected_power_kw != null && a.actual_power_kw != null && (
+                            <>
+                              {" · "}
+                              <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                                {a.actual_power_kw.toFixed(1)} kW actual / {a.expected_power_kw.toFixed(1)} kW expected
+                                {shortfallKw !== null && shortfallKw > 0 && ` (${shortfallKw.toFixed(1)} kW loss)`}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                       <span className="dash-alert-time">
                         {new Date(a.timestamp).toLocaleString()}
                       </span>
-                      <div className="dash-alert-actions">
+                      <div className="dash-alert-actions" style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                        <Link
+                          href={`/dashboard/inspections?alert_id=${a.id}&plant_id=${a.plant_id}${a.string_id ? `&string_id=${a.string_id}` : ""}`}
+                          className="dash-btn dash-btn-ghost dash-btn-sm"
+                          title="Open visual AI inspection with this alert pre-filled"
+                        >
+                          Inspect
+                        </Link>
+                        <Link
+                          href={`/dashboard/work-orders?create=1&alert_id=${a.id}&plant_id=${a.plant_id}${a.string_id ? `&string_id=${a.string_id}` : ""}`}
+                          className="dash-btn dash-btn-ghost dash-btn-sm"
+                          title="Dispatch technician and create work order"
+                        >
+                          Create Work Order
+                        </Link>
                         <button
                           className="dash-btn dash-btn-ghost dash-btn-sm"
                           onClick={() => handleDiagnoseAlert(a.id)}
