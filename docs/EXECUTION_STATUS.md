@@ -17,7 +17,7 @@
 | P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | COMPLETED | Vitest + `tsc --noEmit` + Kanban 5-column board + 440px drawer + verify action |
 | P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | COMPLETED | `tests/backend/test_roi_api.py` + Vitest + form persistence + string breakdown |
 | P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | COMPLETED | Deficit metrics + plant/string info + Inspect & Create Work Order CTAs |
-| P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | NOT_STARTED | - |
+| P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | COMPLETED | Plant physical/tariff/PI threshold persistence + RBAC user CRUD table & modal |
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | NOT_STARTED | - |
 | P1.10 | Pure-Python PDF/Excel Reports Generation (`reportlab`) | P1 | NOT_STARTED | - |
 | P1.11 | Playwright End-to-End Acceptance Scenario Test | P1 | NOT_STARTED | - |
@@ -35,6 +35,11 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P1.8 Settings Persistence & User RBAC (`/dashboard/settings`):**
+  - Connected `/dashboard/settings` to actual backend persistence (`plantsApi.update`, `plantsApi.updateConfig`, `plantsApi.setAnomalyThreshold`, and `roiApi.updateSettings`).
+  - Added full RBAC user management suite calling `usersApi` (`GET /api/v1/users`, `POST /api/v1/users`, `PATCH /api/v1/users/{id}`, `DELETE /api/v1/users/{id}`).
+  - Added user creation modal, role modification selector, active/disabled toggling, and role matrix reference.
+  - Extended technician write policies in `principal.py` to permit work-order updates and fix verification (`_TECHNICIAN_WRITES`).
 - **2026-11-20 P1.7 Alerts Integration Bridge (`/dashboard/alerts`):**
   - Updated `/dashboard/alerts` to surface plant name, string identification (`String #` or `String-level`), actual deficit percentage with severity color coding, and expected vs actual power output.
   - Added direct action links: "Inspect" (`/dashboard/inspections?alert_id=...&plant_id=...&string_id=...`) and "Create Work Order" (`/dashboard/work-orders?create=1&alert_id=...&plant_id=...&string_id=...`).

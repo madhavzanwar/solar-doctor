@@ -81,6 +81,35 @@ export interface SoilingAnalytics {
   days?: number;
 }
 
+export interface UserRecord {
+  id: number;
+  email: string;
+  role: "admin" | "operator" | "technician" | "viewer" | string;
+  disabled: boolean;
+  project_ids: (number | string)[];
+  created_at?: string;
+}
+
+export interface UserCreateInput {
+  email: string;
+  password?: string;
+  role: string;
+  project_ids?: (number | string)[];
+}
+
+export interface UserUpdateInput {
+  role?: string;
+  disabled?: boolean;
+  password?: string;
+  project_ids?: (number | string)[];
+}
+
+export interface AnomalyThresholdInput {
+  plant_id: number;
+  warning_threshold_percent: number;
+  critical_threshold_percent?: number;
+}
+
 export interface Alert {
   id: number;
   plant_id: number;

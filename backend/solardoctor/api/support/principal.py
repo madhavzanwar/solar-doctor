@@ -58,6 +58,8 @@ _READ_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 _TECHNICIAN_WRITES = (
     ("PATCH", re.compile(r"/faults/[0-9]+")),
     ("POST", re.compile(r"/faults/[0-9]+/(?:comments|photos)")),
+    ("PATCH", re.compile(r"/work-orders/[0-9]+")),
+    ("POST", re.compile(r"/work-orders/[0-9]+/verify")),
 )
 
 NOT_AUTHENTICATED = "Not authenticated"

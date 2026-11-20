@@ -50,4 +50,8 @@ export type {
   RoiResponse,
   PlantRoiSettings,
   StringRoiDecision,
+  UserRecord,
+  UserCreateInput,
+  UserUpdateInput,
+  AnomalyThresholdInput,
 } from "./api.types.pending";

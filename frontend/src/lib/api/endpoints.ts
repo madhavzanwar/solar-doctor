@@ -28,6 +28,10 @@ import type {
   WorkOrderVerifyResult,
   RoiResponse,
   PlantRoiSettings,
+  UserRecord,
+  UserCreateInput,
+  UserUpdateInput,
+  AnomalyThresholdInput,
 } from "../api.types";
 import { ApiError } from "./errors";
 import { apiFetch } from "./http";
@@ -37,12 +41,27 @@ import { apiFetch } from "./http";
 export const plantsApi = {
   list: () => apiFetch<Plant[]>("/api/v1/plants"),
   get: (id: number) => apiFetch<Plant>(`/api/v1/plants/${id}`),
-  create: (data: PlantCreate) =>
+  create: (data: PlantCreate) => 
     apiFetch<Plant>("/api/v1/plants", {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  update: (id: number, data: Partial<Plant>) =>
+    apiFetch<Plant>(`/api/v1/plants/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   getConfig: (id: number) => apiFetch<PlantConfig>(`/api/v1/plants/${id}/config`),
+  updateConfig: (id: number, data: Partial<PlantConfig>) =>
+    apiFetch<PlantConfig>(`/api/v1/plants/${id}/config`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  setAnomalyThreshold: (data: AnomalyThresholdInput) =>
+    apiFetch<{ message: string }>("/api/v1/anomaly/threshold", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ── Forecast endpoints ─────────────────────────────────────────────────────────
@@ -208,5 +227,25 @@ export const roiApi = {
     apiFetch<PlantRoiSettings>(`/api/v1/roi/${plantId}/settings`, {
       method: "PUT",
       body: JSON.stringify(settings),
+    }),
+};
+
+// ── Users endpoints ─────────────────────────────────────────────────────────────
+
+export const usersApi = {
+  list: () => apiFetch<UserRecord[]>("/api/v1/users"),
+  create: (data: UserCreateInput) => 
+    apiFetch<UserRecord>("/api/v1/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: number, data: UserUpdateInput) => 
+    apiFetch<UserRecord>(`/api/v1/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: number) => 
+    apiFetch<void>(`/api/v1/users/${id}`, {
+      method: "DELETE",
     }),
 };
