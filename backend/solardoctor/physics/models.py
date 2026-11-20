@@ -93,6 +93,12 @@ class Plant(Base):
     pi_warning: Mapped[float] = mapped_column(Float, default=0.95, server_default="0.95", nullable=False)
     pi_critical: Mapped[float] = mapped_column(Float, default=0.90, server_default="0.9", nullable=False)
     deficit_min_clear_hours: Mapped[int] = mapped_column(Integer, default=3, server_default="3", nullable=False)
+    # ROI & Cleaning decision fields (solardoctor.roi)
+    cleaning_cost_per_module_inr: Mapped[float] = mapped_column(Float, default=50.0, server_default="50.0", nullable=False)
+    water_l_per_module: Mapped[float] = mapped_column(Float, default=2.5, server_default="2.5", nullable=False)
+    water_cost_inr_per_l: Mapped[float] = mapped_column(Float, default=0.05, server_default="0.05", nullable=False)
+    labour_cost_inr: Mapped[float] = mapped_column(Float, default=1500.0, server_default="1500.0", nullable=False)
+    tariff_preset: Mapped[str] = mapped_column(String(32), default="c_and_i", server_default="c_and_i", nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         UTCDateTime, default=utcnow, onupdate=utcnow, nullable=False

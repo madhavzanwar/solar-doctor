@@ -15,8 +15,9 @@ FAULT_RESOLVED = "resolved"  # user-confirmed fix or auto-resolved after N misse
 # Repair workflow states (O&M dispatch) — layered on top of the detection states.
 FAULT_ASSIGNED = "assigned"        # a named person/crew owns the repair
 FAULT_IN_PROGRESS = "in_progress"  # repair work has started on site
+FAULT_VERIFIED = "verified"        # telemetry-verified post-repair recovery
 
-FAULT_STATUSES = (FAULT_OPEN, FAULT_STALE, FAULT_ASSIGNED, FAULT_IN_PROGRESS, FAULT_RESOLVED)
+FAULT_STATUSES = (FAULT_OPEN, FAULT_STALE, FAULT_ASSIGNED, FAULT_IN_PROGRESS, FAULT_RESOLVED, FAULT_VERIFIED)
 
 
 # Allowed values for Project.status
@@ -49,8 +50,11 @@ class Park(Base):
 
 class Inspection(Base):
     __tablename__ = "inspections"
-    id = Column(String, primary_key=True)           # "BATCH-PARK_01-20260411-143022"
-    park_id = Column(String, ForeignKey("parks.id"), nullable=False)
+    id = Column(String, primary_key=True)           # "BATCH-PARK_01-20260411-143022" or "INSP-..."
+    park_id = Column(String, ForeignKey("parks.id"), nullable=True)
+    plant_id = Column(Integer, ForeignKey("plants.id", ondelete="SET NULL"), nullable=True, index=True)
+    string_id = Column(Integer, ForeignKey("strings.id", ondelete="SET NULL"), nullable=True, index=True)
+    alert_id = Column(Integer, ForeignKey("plant_alerts.id", ondelete="SET NULL"), nullable=True, index=True)
     flight_date = Column(String, nullable=True)     # store as ISO date string
     total_images = Column(Integer, default=0)
     total_detections = Column(Integer, default=0)
@@ -64,6 +68,28 @@ class Inspection(Base):
     irradiance_wm2 = Column(Float, nullable=True)
     wind_speed_bft = Column(Float, nullable=True)
     cloud_coverage_okta = Column(Float, nullable=True)
+    # SolarDoctor single-image inspection, defect classification & fusion persistence
+    image_path = Column(String(512), nullable=True)
+    image_sha256 = Column(String(64), nullable=True)
+    captured_at = Column(DateTime, nullable=True)
+    source = Column(String(32), default="upload", nullable=False)
+    model_version = Column(String(64), nullable=True)
+    predicted_class = Column(String(64), nullable=True)
+    probs_json = Column(Text, nullable=True)
+    confidence = Column(Float, nullable=True)
+    ood_score = Column(Float, nullable=True)
+    needs_field_check = Column(Boolean, default=False, nullable=False)
+    field_check_reason = Column(Text, nullable=True)
+    xai_gradcam_path = Column(String(512), nullable=True)
+    xai_lime_path = Column(String(512), nullable=True)
+    fused_verdict = Column(String(64), nullable=True)
+    fused_action = Column(String(64), nullable=True)
+    fused_severity = Column(String(32), nullable=True)
+    fused_reason = Column(Text, nullable=True)
+    recoverable_kwh_day = Column(Float, nullable=True)
+    recoverable_inr_day = Column(Float, nullable=True)
+    payback_days = Column(Float, nullable=True)
+    status = Column(String(32), default="completed", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -116,6 +142,18 @@ class PanelFault(Base):
     last_bbox = Column(Text, nullable=True)                 # JSON last bbox (for UI preview)
     last_gps = Column(Text, nullable=True)                  # JSON last GPS
     notes = Column(Text, nullable=True)                     # operator notes
+    # ── SolarDoctor plant, alert, string & inspection linkages ──
+    plant_id = Column(Integer, ForeignKey("plants.id", ondelete="SET NULL"), nullable=True, index=True)
+    string_id = Column(Integer, ForeignKey("strings.id", ondelete="SET NULL"), nullable=True, index=True)
+    alert_id = Column(Integer, ForeignKey("plant_alerts.id", ondelete="SET NULL"), nullable=True, index=True)
+    inspection_id = Column(String(128), ForeignKey("inspections.id", ondelete="SET NULL"), nullable=True, index=True)
+    checklist = Column(Text, nullable=True)                 # JSON string: [{"id": "...", "text": "...", "done": bool}]
+    verified_at = Column(DateTime, nullable=True)           # set on → verified
+    pi_before = Column(Float, nullable=True)                # PI before repair
+    pi_after = Column(Float, nullable=True)                 # PI after repair
+    recovery_percent = Column(Float, nullable=True)         # PI recovery %
+    before_photo_path = Column(String(512), nullable=True)
+    after_photo_path = Column(String(512), nullable=True)
     # ── Repair workflow ──
     assignee = Column(String(200), nullable=True)           # free-text name or email
     due_date = Column(Date, nullable=True)
@@ -132,6 +170,7 @@ class FaultPhoto(Base):
     __tablename__ = "fault_photos"
     id = Column(Integer, primary_key=True, autoincrement=True)
     fault_id = Column(Integer, ForeignKey("panel_faults.id"), nullable=False, index=True)
+    photo_type = Column(String(32), default="proof", nullable=False)  # "before" | "after" | "proof"
     original_name = Column(String(200), nullable=False)     # sanitized upload filename
     stored_name = Column(String(400), nullable=False)       # object key, e.g. fault-photos/12/<uuid>_x.jpg
     content_type = Column(String(64), nullable=False)
