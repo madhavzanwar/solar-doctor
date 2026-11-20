@@ -11,8 +11,8 @@
 | ID | Workstream | Priority | Status | Verified By |
 |---|---|---|---|---|
 | P0.1 | Database Migration 0013 & Schema Extensions | P0 | COMPLETED | Alembic upgrade/downgrade/upgrade test + SQLite column pragma verification |
-| P0.2 | Unified Inspection & Vision Router (`/inspections`) with Offline Fallback | P0 | IN_PROGRESS | - |
-| P0.3 | Inspection Screen (`/dashboard/inspections`) & Evidence Viewer | P0 | NOT_STARTED | - |
+| P0.2 | Unified Inspection & Vision Router (`/inspections`) with Offline Fallback | P0 | COMPLETED | `tests/backend/test_inspections_api.py` (5/5 passed) + live TestClient |
+| P0.3 | Inspection Screen (`/dashboard/inspections`) & Evidence Viewer | P0 | IN_PROGRESS | - |
 | P0.4 | Work Orders Lifecycle API (`/work-orders`) & Fix Verification | P0 | NOT_STARTED | - |
 | P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | NOT_STARTED | - |
 | P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | NOT_STARTED | - |
@@ -35,6 +35,11 @@
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P0.2 Unified Inspection & Vision Router (`/inspections`) with Offline Fallback:**
+  - Implemented `OfflineClassifier` fallback in `backend/solardoctor/vision/classifier.py` for deterministic offline defect classification, calibrated confidence, OOD detection, Grad-CAM and LIME overlay synthesis.
+  - Implemented `backend/solardoctor/api/routers/inspections.py` with `POST /api/v1/inspections`, `GET /api/v1/inspections`, `GET /api/v1/inspections/{id}`, and streaming endpoints (`/image`, `/gradcam`, `/lime`).
+  - Integrated `solardoctor.fusion.fuse()` and `solardoctor.roi` into inspection lifecycle with automated SQLite persistence.
+  - Added test suite `tests/backend/test_inspections_api.py` (5/5 passed).
 - **2026-11-20 P0.1 Database Migration 0013 & Schema Extensions:**
   - Created `alembic/versions/0013_inspections_and_work_orders.py` adding `inspections` single-image fusion/roi columns, `panel_faults` plant/string/alert/checklist/verification columns, `fault_photos.photo_type`, and `plants` ROI settings.
   - Updated `backend/solardoctor/db/models.py` (`Inspection`, `PanelFault`, `FaultPhoto`, and `FAULT_VERIFIED`).

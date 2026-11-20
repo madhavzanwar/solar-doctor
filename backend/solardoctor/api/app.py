@@ -20,7 +20,7 @@ from solardoctor.api.deps import (
 )
 from solardoctor.api.agents_router import router as agents_router
 from solardoctor.api.routers import (
-    alerts, analytics, auth, corrections, diff, faults, health, inspection, inventory,
+    alerts, analytics, auth, corrections, diff, faults, health, inspection, inspections, inventory,
     map, missions, ortho, ortho_generate, park, park_layout, projects, results,
     settings, share_links, track, users, vision, work_orders,
 )
@@ -266,6 +266,7 @@ _ROUTER_POLICIES = (   # original registration order preserved
     (plants, _INTERNAL), (forecast, _INTERNAL), (diagnosis, _INTERNAL),
     (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL), (performance, _INTERNAL),
     (vision, _INTERNAL),              # RGB defect classifier + XAI
+    (inspections, _INTERNAL),         # Unified single-image defect inspection & fusion
 )
 for _module, _policy in _ROUTER_POLICIES:
     _deps = [Depends(_policy)] if _policy else []

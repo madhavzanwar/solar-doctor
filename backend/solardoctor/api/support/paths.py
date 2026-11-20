@@ -21,4 +21,7 @@ TRACK_FILES_DIR.mkdir(parents=True, exist_ok=True)
 FAULT_PHOTOS_DIR = OUTPUT_DIR / "fault_photos"
 FAULT_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 
-__all__ = ["OUTPUT_DIR", "ORTHO_DIR", "TRACK_FILES_DIR", "FAULT_PHOTOS_DIR"]
+INSPECTIONS_DIR = OUTPUT_DIR / "inspections"
+INSPECTIONS_DIR.mkdir(parents=True, exist_ok=True)
+
+__all__ = ["OUTPUT_DIR", "ORTHO_DIR", "TRACK_FILES_DIR", "FAULT_PHOTOS_DIR", "INSPECTIONS_DIR"]
