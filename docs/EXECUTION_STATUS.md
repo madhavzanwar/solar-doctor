@@ -12,10 +12,10 @@
 |---|---|---|---|---|
 | P0.1 | Database Migration 0013 & Schema Extensions | P0 | COMPLETED | Alembic upgrade/downgrade/upgrade test + SQLite column pragma verification |
 | P0.2 | Unified Inspection & Vision Router (`/inspections`) with Offline Fallback | P0 | COMPLETED | `tests/backend/test_inspections_api.py` (5/5 passed) + live TestClient |
-| P0.3 | Inspection Screen (`/dashboard/inspections`) & Evidence Viewer | P0 | IN_PROGRESS | - |
+| P0.3 | Inspection Screen (`/dashboard/inspections`) & Evidence Viewer | P0 | COMPLETED | Vitest + `tsc --noEmit` + dropzone/XAI/fusion/create-work-order integration |
 | P0.4 | Work Orders Lifecycle API (`/work-orders`) & Fix Verification | P0 | COMPLETED | `tests/backend/test_work_orders_api.py` (100% passed) |
-| P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | IN_PROGRESS | - |
-| P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | IN_PROGRESS | Backend API verified (`tests/backend/test_roi_api.py`) |
+| P0.5 | Work Orders Screen (`/dashboard/work-orders`) Kanban & Drawer | P0 | COMPLETED | Vitest + `tsc --noEmit` + Kanban 5-column board + 440px drawer + verify action |
+| P0.6 | ROI API (`/roi`) & Screen (`/dashboard/roi`) | P0 | COMPLETED | `tests/backend/test_roi_api.py` + Vitest + form persistence + string breakdown |
 | P1.7 | Alerts Integration Bridge (`/dashboard/alerts`) | P1 | NOT_STARTED | - |
 | P1.8 | Settings Persistence & User RBAC (`/dashboard/settings`) | P1 | NOT_STARTED | - |
 | P1.9 | Keyless Open-Meteo Weather Unification | P1 | NOT_STARTED | - |
@@ -28,13 +28,18 @@
 ---
 
 ## 2. Test Execution Baseline
-- Backend Unit Tests: 73 passed (fusion & roi), 207 passed (physics deficit).
-- Frontend Unit Tests: 99 passed (Vitest).
+- Backend Unit Tests: 73 passed (fusion & roi), 207 passed (physics deficit), 12 passed (inspections & work orders).
+- Frontend Unit Tests: 99 passed (Vitest across 13 test files).
 - Typecheck: 0 errors (`tsc --noEmit`).
 
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-20 P0.3, P0.5, P0.6 Frontend Screens & Full Operational Integration:**
+  - Implemented `/dashboard/inspections`: Dropzone with multi-format support (JPG/PNG/WebP), sample loader (`dusty-panel-closeup.webp`), Grad-CAM/LIME/Side-by-side tabs with opacity slider, top-3 distribution bars, OOD alerts, telemetry cross-check, fusion verdict, and "Create Work Order" modal trigger.
+  - Implemented `/dashboard/work-orders`: 5-column Kanban board (`open`, `assigned`, `in_progress`, `resolved`, `verified`) and List view, 440px slide-out drawer, checklist toggles, proof photo attachment, resolution notes, and "Verify Fix" action against real backend telemetry.
+  - Implemented `/dashboard/roi`: State tariff presets, dynamic cost inputs form with PUT persistence, string-level financial breakdown table, rain-aware advisory banner, and water-saved counter.
+  - Connected `useRecoverableInr` in `src/lib/roi.ts` to `roiApi.get(plantId)` with safe endpoint fallback. All 99 Vitest unit tests and `tsc --noEmit` pass with 0 errors.
 - **2026-11-20 P0.4 Work Orders Lifecycle API (`/work-orders`) & Verification:**
   - Implemented full CRUD lifecycle (`GET /api/v1/work-orders`, `POST /api/v1/work-orders`, `GET /api/v1/work-orders/{id}`, `PATCH /api/v1/work-orders/{id}`).
   - Enforced state transition constraints (`open -> assigned -> in_progress -> resolved -> verified`) with ownership guard and completion guards (resolution note, after photo evidence, checklist completion).

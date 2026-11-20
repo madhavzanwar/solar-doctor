@@ -184,3 +184,166 @@ export interface ParkFaultsResponse {
   total: number;
   faults: ParkFault[];
 }
+
+// ── Unified Inspections, Work Orders & ROI Types ──────────────────────────────
+
+export interface InspectionTop3Item {
+  class: string;
+  prob: number;
+}
+
+export interface InspectionPrediction {
+  model_version: string | null;
+  predicted_class: string;
+  confidence: number;
+  probs: Record<string, number>;
+  top3: InspectionTop3Item[];
+  ood_score: number | null;
+  is_ood: boolean;
+  needs_field_check: boolean;
+  field_check_reason: string | null;
+  image_sha256: string | null;
+}
+
+export interface InspectionFusion {
+  verdict: string;
+  action: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  reason: string;
+}
+
+export interface InspectionRoi {
+  recoverable_kwh_day: number | null;
+  recoverable_inr_day: number | null;
+  payback_days: number | null;
+  decision: string | null;
+}
+
+export interface InspectionRecord {
+  id: string;
+  plant_id: number | null;
+  string_id: number | null;
+  alert_id: number | null;
+  park_id: string | null;
+  created_at: string | null;
+  captured_at: string | null;
+  source: string;
+  status: string;
+  image_url: string | null;
+  xai_gradcam_url: string | null;
+  xai_lime_url: string | null;
+  gradcam_base64?: string | null;
+  lime_base64?: string | null;
+  prediction: InspectionPrediction;
+  fusion: InspectionFusion;
+  roi: InspectionRoi;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface WorkOrderRecord {
+  id: number;
+  plant_id: number | null;
+  park_id: string | null;
+  string_id: number | null;
+  alert_id: number | null;
+  inspection_id: string | null;
+  panel_id: string;
+  class: string;
+  severity: string;
+  priority: string | null;
+  status: "open" | "assigned" | "in_progress" | "resolved" | "verified";
+  assignee: string | null;
+  due_date: string | null;
+  lat: number | null;
+  lon: number | null;
+  notes: string | null;
+  checklist: ChecklistItem[];
+  resolution_note: string | null;
+  resolved_at: string | null;
+  verified_at: string | null;
+  pi_before: number | null;
+  pi_after: number | null;
+  recovery_percent: number | null;
+  before_photo_path: string | null;
+  after_photo_path: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface WorkOrderCreateInput {
+  plant_id?: number | null;
+  park_id?: string | null;
+  string_id?: number | null;
+  alert_id?: number | null;
+  inspection_id?: string | null;
+  panel_id: string;
+  class: string;
+  severity?: string;
+  priority?: string | null;
+  assignee?: string | null;
+  due_date?: string | null;
+  notes?: string | null;
+  checklist?: ChecklistItem[];
+  before_photo_path?: string | null;
+}
+
+export interface WorkOrderUpdateInput {
+  status?: string;
+  assignee?: string | null;
+  due_date?: string | null;
+  priority?: string | null;
+  notes?: string | null;
+  resolution_note?: string | null;
+  after_photo_path?: string | null;
+  checklist?: ChecklistItem[];
+}
+
+export interface WorkOrderVerifyResult {
+  verified: boolean;
+  message: string;
+  work_order: WorkOrderRecord;
+}
+
+export interface StringRoiDecision {
+  string_id: number;
+  string_name: string;
+  module_count: number;
+  decision: "CLEAN NOW" | "WAIT" | "FIELD CHECK" | "REPLACE";
+  reason: string;
+  recoverable_kwh_day: number;
+  inr_per_day: number;
+  payback_days: number;
+}
+
+export interface PlantRoiSettings {
+  tariff_inr_kwh: number;
+  tariff_preset: string;
+  cleaning_cost_per_module_inr: number;
+  water_l_per_module: number;
+  water_cost_inr_per_l: number;
+  labour_cost_inr: number;
+  module_count: number;
+}
+
+export interface RoiResponse {
+  plant_id: number;
+  plant_name: string;
+  state: "ready" | "unconfigured" | "loading" | "error";
+  decision: "CLEAN NOW" | "WAIT" | "FIELD CHECK" | "REPLACE";
+  reason: string;
+  recoverable_kwh_day: number;
+  inr_per_day: number;
+  inr_per_month: number;
+  cleaning_cost_inr: number | null;
+  payback_days: number | null;
+  optimal_interval_days: number;
+  rain_wait: boolean;
+  water_saved_l_per_year: number;
+  settings: PlantRoiSettings;
+  strings: StringRoiDecision[];
+}

@@ -21,6 +21,13 @@ import type {
   ProbabilisticForecastResponse,
   RootCauseTaxonomyItem,
   WeatherData,
+  InspectionRecord,
+  WorkOrderRecord,
+  WorkOrderCreateInput,
+  WorkOrderUpdateInput,
+  WorkOrderVerifyResult,
+  RoiResponse,
+  PlantRoiSettings,
 } from "../api.types";
 import { ApiError } from "./errors";
 import { apiFetch } from "./http";
@@ -140,4 +147,66 @@ export const performanceApi = {
 export const parksApi = {
   grid: (parkId: string) => apiFetch<ParkGrid>(`/api/v1/park/${encodeURIComponent(parkId)}/grid`),
   faults: (parkId: string) => apiFetch<ParkFaultsResponse>(`/api/v1/parks/${encodeURIComponent(parkId)}/faults`),
+};
+
+// ── Inspections endpoints ──────────────────────────────────────────────────────
+
+export const inspectionsApi = {
+  list: (plantId?: number, limit = 50) => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (plantId) qs.set("plant_id", String(plantId));
+    return apiFetch<InspectionRecord[]>(`/api/v1/inspections?${qs}`);
+  },
+  get: (id: string) => apiFetch<InspectionRecord>(`/api/v1/inspections/${id}`),
+  create: async (formData: FormData): Promise<InspectionRecord> => {
+    const res = await fetch("/api/v1/inspections", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({ detail: "Inspection upload failed" }));
+      throw new Error(errJson.detail || "Inspection upload failed");
+    }
+    return res.json();
+  },
+};
+
+// ── Work Orders endpoints ──────────────────────────────────────────────────────
+
+export const workOrdersApi = {
+  list: (params: { plant_id?: number; status?: string; assignee?: string; limit?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.plant_id) qs.set("plant_id", String(params.plant_id));
+    if (params.status) qs.set("status", params.status);
+    if (params.assignee) qs.set("assignee", params.assignee);
+    if (params.limit) qs.set("limit", String(params.limit));
+    const s = qs.toString();
+    return apiFetch<WorkOrderRecord[]>(`/api/v1/work-orders${s ? `?${s}` : ""}`);
+  },
+  get: (id: number) => apiFetch<WorkOrderRecord>(`/api/v1/work-orders/${id}`),
+  create: (data: WorkOrderCreateInput) =>
+    apiFetch<WorkOrderRecord>("/api/v1/work-orders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: number, data: WorkOrderUpdateInput) =>
+    apiFetch<WorkOrderRecord>(`/api/v1/work-orders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  verify: (id: number) =>
+    apiFetch<WorkOrderVerifyResult>(`/api/v1/work-orders/${id}/verify`, {
+      method: "POST",
+    }),
+};
+
+// ── ROI & Cleaning Decision endpoints ──────────────────────────────────────────
+
+export const roiApi = {
+  get: (plantId: number) => apiFetch<RoiResponse>(`/api/v1/roi/${plantId}`),
+  updateSettings: (plantId: number, settings: Partial<PlantRoiSettings>) =>
+    apiFetch<PlantRoiSettings>(`/api/v1/roi/${plantId}/settings`, {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
 };
