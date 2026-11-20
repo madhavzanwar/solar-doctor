@@ -61,6 +61,16 @@ export function RegisterForm() {
         Create an account to start finding and fixing solar yield loss.
       </p>
 
+      <div className="mt-5 rounded border border-[color:var(--line)] bg-[color:var(--panel)] p-3 text-xs leading-relaxed text-[color:var(--muted)] flex items-center justify-between">
+        <span>Looking to explore demo data?</span>
+        <Link
+          href="/login"
+          className="font-semibold text-[color:var(--field)] underline-offset-2 hover:underline ml-2 whitespace-nowrap"
+        >
+          1-Click Demo Login &rarr;
+        </Link>
+      </div>
+
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold">Full name</span>
