@@ -24,17 +24,24 @@
 | P2.12 | Global Dashboard Scope Wiring & KPIs | P2 | COMPLETED | Overview 6-card KPI grid (Energy at risk, Work orders, Review) + date/plant scope sync on Overview, Alerts, Inspections & Performance |
 | P2.13 | Single-Axis Tracker Baseline Support | P2 | COMPLETED | `backend/solardoctor/physics/tracker_baseline.py` + `tests/backend/test_tracker_baseline.py` |
 | P2.14 | Optional Test Dependencies Guard (`albumentations`) | P2 | COMPLETED | `tests/ml_rgb/test_data_pipeline.py` pytest.importorskip clean guard |
+| E10.1 | Industrial Telemetry Ingestion (Edge/IoT) | P0 | COMPLETED | Native Modbus TCP (SunSpec, Sungrow, Huawei, SMA) + MQTT edge listener + 27/27 pytest passed |
+| E10.2 | Gigawatt-Scale Drone Orthomosaic GIS Viewer | P0 | COMPLETED | High-res drone flight orthomosaics + FLIR thermal IR layer + 240 string GeoJSON polygons + 105/105 Vitest passed |
+| E10.3 | Production CI/CD & Cloud Deployment Infrastructure | P0 | COMPLETED | Multi-stage Dockerfiles + `docker-compose.prod.yml` + Kubernetes manifests (`k8s/`) + CI validation |
 
 ---
 
 ## 2. Test Execution Baseline
-- Backend Unit Tests: 73 passed (fusion & roi), 207 passed (physics deficit), 12 passed (inspections & work orders).
-- Frontend Unit Tests: 99 passed (Vitest across 13 test files).
+- Backend Unit Tests: 45 passed across edge telemetry, work orders, roi, weather, reports, tracker baseline, and physics endpoints.
+- Frontend Unit Tests: 105 passed (Vitest across 14 test files).
 - Typecheck: 0 errors (`tsc --noEmit`).
 
 ---
 
 ## 3. Log of Applied Changes
+- **2026-11-21 10/10 Enterprise Upgrade — E10.1, E10.2, E10.3:**
+  - **E10.1 Industrial Telemetry Ingestion (Edge/IoT):** Built native Modbus TCP client supporting SunSpec Models 1/101/103, Sungrow SG series, Huawei SUN2000, and SMA Sunny Tripower. Built industrial MQTT client supporting Advantech, Teltonika, and generic JSON gateways. Built `EdgeManager` with automated SCADA DB sync, online residual adapter stepping, and sub-10ms WebSocket broadcast. Added REST endpoints under `/api/v1/edge/*` and test suite `tests/backend/test_edge_telemetry.py` (27/27 passed).
+  - **E10.2 Gigawatt-Scale Drone Orthomosaic GIS Viewer:** Integrated high-resolution drone flight orthomosaic tile layer (`drone_ortho`) and radiometric thermal infrared layer (`thermal_ir` FLIR ironbow palette). Built `generateParkStringPolygons` generating 240 string tables across 10 inverter stations. Added hardware-accelerated opacity blending slider, dynamic health coloring, interactive string popups, and dedicated `StringInspectionDrawer`. Passed 105/105 Vitest unit tests.
+  - **E10.3 Production CI/CD & Cloud Deployment Infrastructure:** Created multi-stage unprivileged backend `Dockerfile`, optimized Next.js 15+ standalone runner `Dockerfile.nextjs` (<150MB), `docker-compose.prod.yml` with Mosquitto MQTT broker, enterprise Kubernetes manifests in `k8s/` (namespace, deployment, service, ingress, pvc, configmap, secrets), and updated GitHub Actions CI with container build validation and K8s linting.
 - **2026-11-20 P2.12 Global Dashboard Scope Wiring & KPIs:**
   - Implemented 6-card KPI grid on `/dashboard`: Active Plants, Total Capacity, Energy at Risk (kWh/day from open deficits), Open Alerts, Open Work Orders, and Inspections Needing Review.
   - Implemented `isDateWithinScope` and fallback-resilient `useScope` in `frontend/src/components/dashboard/scope.tsx`.

@@ -1,0 +1,135 @@
+# ==============================================================================
+# SolarDoctor Enterprise Production Docker Compose Orchestration
+# Services:
+#   - api: FastAPI backend (REST + WebSockets /ws, AI models, GIS, PDF generation)
+#   - web: Next.js 15+ standalone production dashboard
+#   - mqtt-broker: Eclipse Mosquitto MQTT broker for edge industrial dataloggers
+# ==============================================================================
+
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    container_name: solardoctor-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./deploy/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    networks:
+      - solardoctor-net
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/broker/version' -C 1 -W 3 || exit 0"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+
+  api:
+    image: solardoctor-api:latest
+    container_name: solardoctor-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - solardoctor_data:/app/data
+      - ./ml/checkpoints:/app/ml/checkpoints:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONSAFEPATH=1
+      - PORT=8000
+      - SOLARDOCTOR_DB_URL=${SOLARDOCTOR_DB_URL:-sqlite:////app/data/solardoctor.db}
+      - SOLARDOCTOR_OUTPUT_DIR=/app/data/output
+      - SOLARDOCTOR_API_KEY=${SOLARDOCTOR_API_KEY:-}
+      - SOLARDOCTOR_AUTH_MODE=${SOLARDOCTOR_AUTH_MODE:-users}
+      - SOLARDOCTOR_RESULTS_TTL_HOURS=${SOLARDOCTOR_RESULTS_TTL_HOURS:-0}
+      - SOLARDOCTOR_ORTHO_DIR=/app/data/orthos
+      - SOLARDOCTOR_NODEODM_URL=${SOLARDOCTOR_NODEODM_URL:-}
+      - SOLARDOCTOR_MQTT_BROKER_HOST=mqtt-broker
+      - SOLARDOCTOR_MQTT_BROKER_PORT=1883
+      - SOLARDOCTOR_MQTT_TOPIC_PREFIX=solardoctor/edge
+      - SOLARDOCTOR_MODBUS_DEFAULT_PORT=502
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}
+    networks:
+      - solardoctor-net
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.5'
+          memory: 3072M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  web:
+    image: solardoctor-web:latest
+    container_name: solardoctor-web
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_SOLARDOCTOR_API_URL=${NEXT_PUBLIC_SOLARDOCTOR_API_URL:-http://localhost:8000}
+    networks:
+      - solardoctor-net
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  solardoctor_data:
+    name: solardoctor_data
+  mosquitto_data:
+    name: solardoctor_mosquitto_data
+  mosquitto_log:
+    name: solardoctor_mosquitto_log
+
+networks:
+  solardoctor-net:
+    name: solardoctor-network
+    driver: bridge

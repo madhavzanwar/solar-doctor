@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 // Photos are self-hosted in public/images (credits in docs/IMAGE_CREDITS.md); no remote image hosts.
@@ -52,6 +53,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: path.join(__dirname, "./"),
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // next/image serves AVIF when the browser accepts it, WebP otherwise
   images: { formats: ["image/avif", "image/webp"], qualities: [40, 75] },

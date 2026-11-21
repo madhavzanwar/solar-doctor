@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: solardoctor-config
+  namespace: solardoctor
+  labels:
+    app.kubernetes.io/name: solardoctor
+    app.kubernetes.io/part-of: solardoctor-platform
+data:
+  PORT: "8000"
+  SOLARDOCTOR_OUTPUT_DIR: "/app/data/output"
+  SOLARDOCTOR_ORTHO_DIR: "/app/data/orthos"
+  SOLARDOCTOR_NODEODM_URL: "http://nodeodm-service.solardoctor.svc.cluster.local:3000"
+  SOLARDOCTOR_RESULTS_TTL_HOURS: "0"
+  SOLARDOCTOR_AUTH_MODE: "users"
+  SOLARDOCTOR_MQTT_BROKER_HOST: "solardoctor-mqtt"
+  SOLARDOCTOR_MQTT_BROKER_PORT: "1883"
+  SOLARDOCTOR_MQTT_TOPIC_PREFIX: "solardoctor/edge"
+  SOLARDOCTOR_MODBUS_DEFAULT_PORT: "502"
+  NEXT_PUBLIC_API_URL: "https://solardoctor.example.com"
+  NEXT_PUBLIC_SOLARDOCTOR_API_URL: "https://solardoctor.example.com"
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"

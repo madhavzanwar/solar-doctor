@@ -24,7 +24,7 @@ from solardoctor.api.routers import (
     map, missions, ortho, ortho_generate, park, park_layout, projects, results, roi,
     settings, share_links, track, users, vision, work_orders,
 )
-from solardoctor.api.routers import diagnosis, forecast, performance, physics_alerts, plants, scada, weather
+from solardoctor.api.routers import diagnosis, edge, forecast, performance, physics_alerts, plants, scada, weather
 from solardoctor.api.support.odm_jobs import resume_odm_jobs
 from drone.relay.server import create_app as create_relay_app
 from solardoctor.core.observability import init_sentry
@@ -265,6 +265,7 @@ _ROUTER_POLICIES = (   # original registration order preserved
     # Physics (ported SolarPulse endpoints). Read: viewer+, write: operator+.
     (plants, _INTERNAL), (forecast, _INTERNAL), (diagnosis, _INTERNAL),
     (weather, _INTERNAL), (scada, _INTERNAL), (physics_alerts, _INTERNAL), (performance, _INTERNAL),
+    (edge, _INTERNAL),
     (vision, _INTERNAL),              # RGB defect classifier + XAI
     (inspections, _INTERNAL),         # Unified single-image defect inspection & fusion
     (roi, _INTERNAL),                 # ROI calculation and cleaning decisions

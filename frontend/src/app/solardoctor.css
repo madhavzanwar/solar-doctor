@@ -785,3 +785,251 @@ summary:focus-visible,
   border-right: 1px solid var(--dash-border);
   border-bottom: 1px solid var(--dash-border);
 }
+
+/* ── Gigawatt-Scale Orthomosaic GIS Viewer & Radiometric Thermal IR ── */
+
+.sd-layer-ortho {
+  filter: contrast(118%) saturate(125%) brightness(1.02);
+}
+
+.sd-layer-thermal {
+  /* FLIR Ironbow false-color mapping simulation on satellite tiles */
+  filter: hue-rotate(280deg) saturate(320%) contrast(145%) brightness(1.08);
+}
+
+.sd-opacity-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 0.8rem;
+}
+
+.sd-opacity-slider {
+  width: 95px;
+  accent-color: var(--field);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.sd-map-hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 800;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(4px);
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  box-shadow: 0 4px 12px rgba(20, 24, 20, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 290px;
+}
+
+.sd-map-hud-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Leaflet Popup Styling conforming to SolarDoctor Design Tokens */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: var(--ink) !important;
+  border-radius: 4px !important;
+  border: 1.5px solid var(--line) !important;
+  box-shadow: 0 6px 20px rgba(20, 24, 20, 0.18) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0.85rem 1rem !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+.sd-string-popup {
+  min-width: 240px;
+  max-width: 280px;
+}
+
+.sd-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.sd-popup-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sd-popup-station {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.55rem;
+}
+
+.sd-popup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.35rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0.45rem 0.55rem;
+  margin-bottom: 0.55rem;
+}
+
+.sd-popup-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.sd-metric-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.sd-metric-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.sd-metric-alert {
+  color: var(--sev-critical);
+  font-weight: 700;
+}
+
+.sd-popup-diagnosis {
+  font-size: 0.78rem;
+  padding: 0.35rem 0.5rem;
+  border-left: 3px solid var(--field);
+  background: rgba(26, 58, 42, 0.04);
+  margin-bottom: 0.6rem;
+  border-radius: 0 2px 2px 0;
+}
+
+.sd-diagnosis-label {
+  font-weight: 600;
+  display: block;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.sd-diagnosis-text {
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.sd-popup-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none !important;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.75rem;
+  box-sizing: border-box;
+}
+
+/* Status Badges */
+.sd-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+}
+
+.sd-status-normal {
+  background: rgba(47, 107, 79, 0.12);
+  color: #2f6b4f;
+  border: 1px solid rgba(47, 107, 79, 0.3);
+}
+
+.sd-status-derated {
+  background: rgba(168, 121, 47, 0.12);
+  color: #a8792f;
+  border: 1px solid rgba(168, 121, 47, 0.3);
+}
+
+.sd-status-critical {
+  background: rgba(155, 44, 44, 0.12);
+  color: #9b2c2c;
+  border: 1px solid rgba(155, 44, 44, 0.3);
+}
+
+/* String Drawer Styles */
+.sd-string-drawer-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin: 0.85rem 0;
+}
+
+.sd-string-metric-card {
+  padding: 0.5rem 0.65rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sd-string-metric-card .label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+}
+
+.sd-string-metric-card .val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.sd-string-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.85rem;
+  font-size: 0.75rem;
+}
+
+.sd-string-summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+

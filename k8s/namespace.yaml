@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: solardoctor
+  labels:
+    name: solardoctor
+    app.kubernetes.io/name: solardoctor
+    app.kubernetes.io/part-of: solardoctor-platform
+    environment: production

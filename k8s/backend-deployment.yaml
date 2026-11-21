@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solardoctor-backend
+  namespace: solardoctor
+  labels:
+    app.kubernetes.io/name: solardoctor-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: solardoctor-platform
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: solardoctor-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: solardoctor-backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: solardoctor-platform
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: solardoctor-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: solardoctor-config
+            - secretRef:
+                name: solardoctor-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2560Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+          volumeMounts:
+            - name: persistent-data
+              mountPath: /app/data
+      volumes:
+        - name: persistent-data
+          persistentVolumeClaim:
+            claimName: solardoctor-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: solardoctor-backend
+  namespace: solardoctor
+  labels:
+    app.kubernetes.io/name: solardoctor-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: solardoctor-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: solardoctor-backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP

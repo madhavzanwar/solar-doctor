@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { parksApi, type GridPanel, type ParkFaultsResponse, type ParkGrid } from "@/lib/api";
-import { severityKey, type PlantPin } from "@/lib/map";
+import { generateParkStringPolygons, severityKey, type PlantPin, type StringTelemetry } from "@/lib/map";
 import { formatNumber } from "@/lib/performance";
 import ParkMapGrid from "./ParkMapGrid";
 
@@ -17,7 +17,7 @@ export function SevBadge({ severity }: { severity: string | null | undefined }) 
   );
 }
 
-/** Side drawer for a selected plant: open alerts, then (if the plant is linked to a park) the panel grid, panel detail and tracked faults. */
+/** Side drawer for a selected plant: open alerts, string health summary, panel grid and tracked faults. */
 export default function PlantDrawer({
   pin,
   selectedPanelId,
@@ -25,6 +25,7 @@ export default function PlantDrawer({
   onGrid,
   alertsKnown = true,
   onClose,
+  onSelectString,
 }: {
   pin: PlantPin;
   selectedPanelId: string | null;
@@ -32,6 +33,7 @@ export default function PlantDrawer({
   onGrid: (g: ParkGrid | null) => void;
   alertsKnown?: boolean;
   onClose: () => void;
+  onSelectString?: (str: StringTelemetry | null) => void;
 }) {
   const { plant, openAlerts, severity } = pin;
   const parkId = plant.park_id ?? null;
@@ -71,6 +73,13 @@ export default function PlantDrawer({
 
   const panel = grid?.panels.find((p) => p.panel_id === selectedPanelId) ?? null;
 
+  // Compute utility-scale string polygons & health summary for GIS viewer
+  const parkStrings = useMemo(() => generateParkStringPolygons(plant), [plant]);
+  const flaggedStrings = useMemo(
+    () => parkStrings.strings.filter((s) => s.properties.status !== "NORMAL"),
+    [parkStrings]
+  );
+
   return (
     <aside className="dash-card sd-drawer" aria-label={`${plant.name} details`}>
       <div className="dash-card-title">
@@ -81,6 +90,56 @@ export default function PlantDrawer({
       <div className="dash-stat-row"><span className="dash-stat-label">Capacity</span><span className="dash-stat-value">{formatNumber(plant.capacity_kw)} kW</span></div>
       <div className="dash-stat-row"><span className="dash-stat-label">Status</span><span className="dash-stat-value">{plant.is_active ? "Active" : "Inactive"}</span></div>
       <div className="dash-stat-row"><span className="dash-stat-label">Worst open issue</span><span className="dash-stat-value">{alertsKnown ? <SevBadge severity={severity} /> : <span className="dash-badge dash-badge-muted">UNKNOWN</span>}</span></div>
+
+      {/* Gigawatt-Scale String Telemetry Summary */}
+      <h3 className="sd-drawer-h">Inverter Stations & Strings</h3>
+      <div className="sd-string-summary-bar">
+        <span className="sd-string-summary-item">
+          <strong>{parkStrings.summary.total_stations}</strong> Stations
+        </span>
+        <span className="sd-string-summary-item" style={{ color: "var(--cls-clean)" }}>
+          <strong>{parkStrings.summary.normal_count}</strong> Normal
+        </span>
+        <span className="sd-string-summary-item" style={{ color: "var(--cls-dusty)" }}>
+          <strong>{parkStrings.summary.derated_count}</strong> Derated
+        </span>
+        <span className="sd-string-summary-item" style={{ color: "var(--sev-critical)" }}>
+          <strong>{parkStrings.summary.critical_count}</strong> Critical
+        </span>
+      </div>
+
+      {flaggedStrings.length > 0 && (
+        <div style={{ marginBottom: "1rem" }}>
+          <span className="dash-page-sub" style={{ display: "block", marginBottom: "0.35rem" }}>
+            Flagged Strings ({flaggedStrings.length}):
+          </span>
+          <ul className="sd-drawer-list">
+            {flaggedStrings.slice(0, 5).map((f) => (
+              <li key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <span className={`sd-status-badge sd-status-${f.properties.status.toLowerCase()}`} style={{ marginRight: "0.4rem" }}>
+                    {f.properties.status}
+                  </span>
+                  <strong>{f.properties.global_string_id}</strong>
+                  <div style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+                    Loss: {f.properties.loss_pct.toFixed(1)}% · Shortfall: {f.properties.shortfall_kw.toFixed(2)} kW
+                  </div>
+                </div>
+                {onSelectString && (
+                  <button
+                    type="button"
+                    className="dash-btn dash-btn-ghost dash-btn-sm"
+                    onClick={() => onSelectString(f.properties)}
+                    style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }}
+                  >
+                    Inspect
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <h3 className="sd-drawer-h">Open alerts ({openAlerts.length})</h3>
       {!alertsKnown ? (

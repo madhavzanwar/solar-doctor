@@ -25,6 +25,29 @@ logger = logging.getLogger("solardoctor.physics.scada_ws")
 
 POLL_INTERVAL_SECONDS = 5.0
 
+_ws_subscribers: dict[int, set[asyncio.Queue]] = {}
+
+
+def register_ws_subscriber(plant_id: int) -> asyncio.Queue:
+    q: asyncio.Queue = asyncio.Queue()
+    _ws_subscribers.setdefault(plant_id, set()).add(q)
+    return q
+
+
+def unregister_ws_subscriber(plant_id: int, q: asyncio.Queue) -> None:
+    if plant_id in _ws_subscribers:
+        _ws_subscribers[plant_id].discard(q)
+
+
+def broadcast_telemetry(plant_id: int, frame: dict) -> None:
+    """Broadcast real-time edge telemetry frame to all active frontend subscribers."""
+    queues = _ws_subscribers.get(plant_id, set())
+    for q in list(queues):
+        try:
+            q.put_nowait(frame)
+        except Exception:
+            pass
+
 
 def _plant_exists(plant_id: int) -> bool:
     session = get_session()
@@ -71,15 +94,20 @@ async def scada_ws_handler(websocket: WebSocket, plant_id: int, poll_interval: f
         "plant_id": plant_id, "timestamp": datetime.now(tz=timezone.utc).isoformat(),
         "status": "connected", "power_kw": 0.0, "_source": "stream_init",
     }))
+    queue = register_ws_subscriber(plant_id)
     try:
         while True:
-            await asyncio.sleep(interval)
-            data = await run_in_threadpool(_latest_frame, plant_id)
-            if data is None:
-                data = {"plant_id": plant_id, "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                        "message": "No SCADA data available yet", "_source": "no_data"}
+            try:
+                data = await asyncio.wait_for(queue.get(), timeout=interval)
+            except asyncio.TimeoutError:
+                data = await run_in_threadpool(_latest_frame, plant_id)
+                if data is None:
+                    data = {"plant_id": plant_id, "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                            "message": "No SCADA data available yet", "_source": "no_data"}
             await websocket.send_text(json.dumps(data))
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected: plant_id=%s", plant_id)
     except Exception as exc:
         logger.warning("WebSocket error: plant_id=%s error=%s", plant_id, exc)
+    finally:
+        unregister_ws_subscriber(plant_id, queue)

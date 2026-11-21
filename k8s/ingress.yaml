@@ -1,0 +1,75 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: solardoctor-ingress
+  namespace: solardoctor
+  labels:
+    app.kubernetes.io/name: solardoctor-ingress
+    app.kubernetes.io/part-of: solardoctor-platform
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "solardoctor-backend"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+spec:
+  tls:
+    - hosts:
+        - solardoctor.example.com
+      secretName: solardoctor-tls-cert
+  rules:
+    - host: solardoctor.example.com
+      http:
+        paths:
+          # Backend REST APIs
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: solardoctor-backend
+                port:
+                  number: 8000
+          # SCADA & Live Edge Telemetry WebSockets
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: solardoctor-backend
+                port:
+                  number: 8000
+          # Direct Backend Health Check
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: solardoctor-backend
+                port:
+                  number: 8000
+          # OpenAPI / Swagger Documentation
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: solardoctor-backend
+                port:
+                  number: 8000
+          - path: /openapi.json
+            pathType: Exact
+            backend:
+              service:
+                name: solardoctor-backend
+                port:
+                  number: 8000
+          # Next.js 15+ Frontend Dashboard Root
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: solardoctor-frontend
+                port:
+                  number: 3000

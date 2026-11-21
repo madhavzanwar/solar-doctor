@@ -190,12 +190,28 @@ def create_work_order(data: WorkOrderCreate):
     try:
         # Determine park_id if plant_id provided
         park_id = data.park_id
-        if not park_id and data.plant_id:
-            plant = session.query(Plant).filter_by(id=data.plant_id).first()
-            if plant and plant.park_id:
-                park_id = plant.park_id
+        valid_plant_id = None
+        if data.plant_id:
+            plant_row = session.query(Plant).filter_by(id=data.plant_id).first()
+            if plant_row:
+                valid_plant_id = plant_row.id
+                if plant_row.park_id:
+                    park_id = plant_row.park_id
         if not park_id:
             park_id = "SOLAR_PARK_DEMO"
+
+        # Ensure park exists to satisfy SQLite foreign key constraint
+        park_obj = session.query(Park).filter_by(id=park_id).first()
+        if not park_obj:
+            park_obj = Park(id=park_id, name="Solar Park Demo")
+            session.add(park_obj)
+            session.flush()
+
+        valid_alert_id = None
+        if data.alert_id:
+            alert_row = session.query(PlantAlert).filter_by(id=data.alert_id).first()
+            if alert_row:
+                valid_alert_id = alert_row.id
 
         # Initial status
         init_status = FAULT_ASSIGNED if data.assignee and data.assignee.strip() else FAULT_OPEN
@@ -215,9 +231,9 @@ def create_work_order(data: WorkOrderCreate):
 
         if existing is not None:
             fault = existing
-            fault.plant_id = data.plant_id or fault.plant_id
+            fault.plant_id = valid_plant_id or fault.plant_id
             fault.string_id = data.string_id or fault.string_id
-            fault.alert_id = data.alert_id or fault.alert_id
+            fault.alert_id = valid_alert_id or fault.alert_id
             fault.inspection_id = data.inspection_id or fault.inspection_id
             fault.status = init_status
             if data.assignee is not None:
@@ -234,10 +250,10 @@ def create_work_order(data: WorkOrderCreate):
             fault.updated_at = _utcnow()
         else:
             fault = PanelFault(
-                plant_id=data.plant_id,
+                plant_id=valid_plant_id,
                 park_id=park_id,
                 string_id=data.string_id,
-                alert_id=data.alert_id,
+                alert_id=valid_alert_id,
                 inspection_id=data.inspection_id,
                 panel_id=data.panel_id,
                 class_=data.class_,

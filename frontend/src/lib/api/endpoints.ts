@@ -256,3 +256,36 @@ export const reportsApi = {
   list: () => apiFetch<ReportSummary[]>("/api/v1/reports"),
   getDownloadUrl: (id: string, format: string) => `/api/v1/report/${id}?format=${format}`,
 };
+
+// ── Edge & IoT telemetry endpoints ──────────────────────────────────────────
+
+export interface EdgeStringStatus {
+  plant_id: number;
+  inverter_id: string;
+  string_id: string;
+  power_kw: number;
+  voltage_v: number;
+  current_a: number;
+  shortfall_kw: number;
+  status: "NORMAL" | "DERATED" | "CRITICAL";
+  defect_diagnosis?: string;
+  loss_pct?: number;
+  temperature_c?: number;
+}
+
+export const edgeApi = {
+  strings: (plantId: number, inverterId?: string) =>
+    apiFetch<EdgeStringStatus[]>(
+      `/api/v1/edge/${plantId}/strings${inverterId ? `?inverter_id=${encodeURIComponent(inverterId)}` : ""}`
+    ),
+  poll: (data: { plant_id: number; inverter_id?: string; profile?: string; simulate?: boolean }) =>
+    apiFetch<{ success: boolean; string_statuses: EdgeStringStatus[] }>("/api/v1/edge/poll", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  simulatePacket: (data: Record<string, unknown>) =>
+    apiFetch<{ success: boolean; string_statuses: EdgeStringStatus[] }>("/api/v1/edge/simulate-packet", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
